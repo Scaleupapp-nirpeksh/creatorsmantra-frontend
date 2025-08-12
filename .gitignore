@@ -1,0 +1,274 @@
+# CreatorsMantra Frontend - Git Ignore Configuration
+# Files and directories to exclude from version control
+# 
+# @author CreatorsMantra Team
+# @version 1.0.0
+
+# ==========================================
+# DEPENDENCIES
+# ==========================================
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Package lock files (choose one based on your package manager)
+# Uncomment the one you DON'T use
+# package-lock.json
+# yarn.lock
+
+# ==========================================
+# ENVIRONMENT & CONFIGURATION
+# ==========================================
+
+# Environment files (contain sensitive data)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging
+
+# Configuration files with secrets
+config.local.js
+config.development.js
+config.production.js
+
+# ==========================================
+# BUILD OUTPUTS
+# ==========================================
+
+# Production build
+/build
+/dist
+
+# Static files
+/static
+
+# Bundle analyzer output
+bundle-analyzer-report.html
+
+# Source maps
+*.map
+node_modules/
+
+# ==========================================
+# CACHE & TEMPORARY FILES
+# ==========================================
+
+# Cache directories
+.cache/
+.parcel-cache/
+.npm
+.yarn-cache/
+.pnp
+.pnp.js
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+.temp/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ==========================================
+# LOGS
+# ==========================================
+
+# Log files
+*.log
+logs/
+log/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime logs
+.npm
+.eslintcache
+
+# ==========================================
+# DEVELOPMENT TOOLS
+# ==========================================
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# VS Code settings (comment out if you want to share settings)
+.vscode/settings.json
+.vscode/launch.json
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Atom
+.atom/
+
+# ==========================================
+# OPERATING SYSTEM FILES
+# ==========================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ==========================================
+# TESTING
+# ==========================================
+
+# Coverage reports
+/coverage
+/.nyc_output
+coverage.lcov
+
+# Jest cache
+.jest/
+
+# Testing screenshots
+screenshots/
+test-results/
+
+# ==========================================
+# DOCUMENTATION
+# ==========================================
+
+# Auto-generated documentation
+/docs/generated
+/storybook-static
+
+# ==========================================
+# DEPLOYMENT
+# ==========================================
+
+# Deployment files
+.deploy/
+deploy.zip
+
+# Docker
+.dockerignore
+Dockerfile.local
+
+# ==========================================
+# PACKAGE MANAGERS
+# ==========================================
+
+# Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# NPM
+.npmrc
+
+# ==========================================
+# SECURITY & KEYS
+# ==========================================
+
+# Certificate files
+*.pem
+*.key
+*.crt
+*.cert
+
+# SSH keys
+id_rsa
+id_rsa.pub
+
+# API keys and secrets (just in case)
+secrets.json
+keys.json
+*.secret
+
+# ==========================================
+# CUSTOM PROJECT FILES
+# ==========================================
+
+# Upload directories (user uploaded files during development)
+uploads/
+public/uploads/
+
+# Backup files
+*.backup
+*.bak
+
+# Database files (if any local SQLite)
+*.sqlite
+*.sqlite3
+*.db
+
+# ==========================================
+# PERFORMANCE & MONITORING
+# ==========================================
+
+# Bundle analyzer
+bundle-report.html
+webpack-bundle-analyzer-report.html
+
+# Performance files
+.trace
+.profile
+
+# ==========================================
+# MISC
+# ==========================================
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env.backup
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Local Netlify folder
+.netlify
+package-lock.json
