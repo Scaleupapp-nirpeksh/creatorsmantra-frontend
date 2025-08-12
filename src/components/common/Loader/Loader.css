@@ -1,0 +1,736 @@
+/**
+ * CreatorsMantra Design System - Loader Component Styles
+ * 
+ * @author CreatorsMantra Team
+ * @version 1.0.0
+ * @path src/components/common/Loader/Loader.css
+ */
+
+/* ============================================
+   LOADER BASE
+   ============================================ */
+
+   .loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-body);
+    color: var(--color-text-primary);
+  }
+  
+  .loader__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    text-align: center;
+  }
+  
+  /* ============================================
+     LOADER SIZES
+     ============================================ */
+  
+  .loader--xs {
+    --loader-size: 16px;
+    --loader-text-size: var(--font-size-xs);
+  }
+  
+  .loader--sm {
+    --loader-size: 24px;
+    --loader-text-size: var(--font-size-sm);
+  }
+  
+  .loader--md {
+    --loader-size: 32px;
+    --loader-text-size: var(--font-size-base);
+  }
+  
+  .loader--lg {
+    --loader-size: 48px;
+    --loader-text-size: var(--font-size-lg);
+  }
+  
+  .loader--xl {
+    --loader-size: 64px;
+    --loader-text-size: var(--font-size-xl);
+  }
+  
+  /* ============================================
+     LOADER COLORS
+     ============================================ */
+  
+  .loader--primary {
+    --loader-color: var(--color-primary);
+    --loader-secondary: var(--color-primary-light);
+  }
+  
+  .loader--secondary {
+    --loader-color: var(--color-secondary);
+    --loader-secondary: var(--color-secondary-light);
+  }
+  
+  .loader--neutral {
+    --loader-color: var(--color-text-secondary);
+    --loader-secondary: var(--color-border-hover);
+  }
+  
+  .loader--white {
+    --loader-color: var(--color-white);
+    --loader-secondary: rgba(255, 255, 255, 0.3);
+    color: var(--color-white);
+  }
+  
+  /* ============================================
+     SPINNER LOADER
+     ============================================ */
+  
+  .loader__spinner {
+    width: var(--loader-size);
+    height: var(--loader-size);
+    position: relative;
+  }
+  
+  .loader__spinner-circle {
+    width: 100%;
+    height: 100%;
+    border: 3px solid var(--loader-secondary);
+    border-top: 3px solid var(--loader-color);
+    border-radius: 50%;
+    animation: loaderSpin 1s linear infinite;
+  }
+  
+  .loader--xs .loader__spinner-circle {
+    border-width: 2px;
+  }
+  
+  .loader--sm .loader__spinner-circle {
+    border-width: 2px;
+  }
+  
+  .loader--lg .loader__spinner-circle,
+  .loader--xl .loader__spinner-circle {
+    border-width: 4px;
+  }
+  
+  @keyframes loaderSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* ============================================
+     DOTS LOADER
+     ============================================ */
+  
+  .loader__dots {
+    display: flex;
+    gap: calc(var(--loader-size) * 0.2);
+    align-items: center;
+  }
+  
+  .loader__dot {
+    width: calc(var(--loader-size) * 0.25);
+    height: calc(var(--loader-size) * 0.25);
+    background-color: var(--loader-color);
+    border-radius: 50%;
+    animation: loaderDots 1.5s ease-in-out infinite;
+  }
+  
+  .loader__dot:nth-child(1) {
+    animation-delay: 0s;
+  }
+  
+  .loader__dot:nth-child(2) {
+    animation-delay: 0.3s;
+  }
+  
+  .loader__dot:nth-child(3) {
+    animation-delay: 0.6s;
+  }
+  
+  @keyframes loaderDots {
+    0%, 60%, 100% {
+      transform: scale(1);
+      opacity: 0.7;
+    }
+    30% {
+      transform: scale(1.3);
+      opacity: 1;
+    }
+  }
+  
+  /* ============================================
+     PULSE LOADER
+     ============================================ */
+  
+  .loader__pulse {
+    width: var(--loader-size);
+    height: var(--loader-size);
+    position: relative;
+  }
+  
+  .loader__pulse-circle {
+    width: 100%;
+    height: 100%;
+    background-color: var(--loader-color);
+    border-radius: 50%;
+    animation: loaderPulse 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes loaderPulse {
+    0% {
+      transform: scale(0.8);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.2);
+      opacity: 0.7;
+    }
+    100% {
+      transform: scale(0.8);
+      opacity: 1;
+    }
+  }
+  
+  /* ============================================
+     SKELETON LOADER
+     ============================================ */
+  
+  .loader--skeleton {
+    width: 100%;
+  }
+  
+  .loader__skeleton-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    width: 100%;
+  }
+  
+  .loader__skeleton-line {
+    background: linear-gradient(
+      90deg,
+      var(--color-bg-secondary) 25%,
+      var(--color-bg-tertiary) 50%,
+      var(--color-bg-secondary) 75%
+    );
+    background-size: 200% 100%;
+    border-radius: var(--border-radius-sm);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .loader--animated .loader__skeleton-line {
+    animation: loaderSkeleton 1.5s ease-in-out infinite;
+  }
+  
+  .loader--rounded .loader__skeleton-line {
+    border-radius: var(--border-radius-full);
+  }
+  
+  @keyframes loaderSkeleton {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+  
+  /* ============================================
+     PROGRESS LOADER
+     ============================================ */
+  
+  .loader__progress-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    width: 100%;
+    min-width: 200px;
+  }
+  
+  .loader__progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--loader-secondary);
+    border-radius: var(--border-radius-full);
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .loader__progress-fill {
+    height: 100%;
+    background-color: var(--loader-color);
+    border-radius: var(--border-radius-full);
+    transition: width var(--transition-duration-slow) var(--transition-easing);
+    position: relative;
+  }
+  
+  .loader__progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    animation: loaderProgressShine 2s ease-in-out infinite;
+  }
+  
+  .loader__progress-text {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--loader-color);
+    text-align: center;
+  }
+  
+  @keyframes loaderProgressShine {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  
+  /* ============================================
+     LOADER VARIANTS
+     ============================================ */
+  
+  .loader--minimal .loader__inner {
+    gap: var(--spacing-sm);
+  }
+  
+  .loader--minimal .loader__text {
+    font-size: calc(var(--loader-text-size) * 0.9);
+  }
+  
+  .loader--branded .loader__spinner-circle {
+    background: conic-gradient(var(--gradient-primary));
+    border: none;
+    mask: radial-gradient(circle at center, transparent 60%, black 60%);
+  }
+  
+  .loader--branded .loader__dot {
+    background: var(--gradient-primary);
+  }
+  
+  .loader--branded .loader__pulse-circle {
+    background: var(--gradient-primary);
+  }
+  
+  /* ============================================
+     LOADER CONTENT
+     ============================================ */
+  
+  .loader__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    align-items: center;
+    text-align: center;
+    max-width: 300px;
+  }
+  
+  .loader__text {
+    font-size: var(--loader-text-size);
+    font-weight: var(--font-weight-medium);
+    color: inherit;
+    line-height: 1.4;
+  }
+  
+  .loader__description {
+    font-size: calc(var(--loader-text-size) * 0.85);
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+  }
+  
+  .loader--white .loader__description {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  /* ============================================
+     TIMEOUT STATE
+     ============================================ */
+  
+  .loader--timed-out .loader__spinner,
+  .loader--timed-out .loader__dots,
+  .loader--timed-out .loader__pulse {
+    opacity: 0.5;
+  }
+  
+  .loader__timeout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    align-items: center;
+    text-align: center;
+  }
+  
+  .loader__timeout-title {
+    font-size: var(--loader-text-size);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-warning);
+  }
+  
+  .loader__timeout-description {
+    font-size: calc(var(--loader-text-size) * 0.85);
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+  }
+  
+  /* ============================================
+     OVERLAY LOADER
+     ============================================ */
+  
+  .loader__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  
+  .loader__overlay--backdrop {
+    background-color: var(--color-overlay-light);
+    backdrop-filter: blur(2px);
+  }
+  
+  .loader__overlay--fullscreen {
+    position: fixed;
+    z-index: 9999;
+    background-color: var(--color-overlay);
+    backdrop-filter: blur(4px);
+  }
+  
+  .loader__overlay-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  
+  /* ============================================
+     SKELETON PATTERNS
+     ============================================ */
+  
+  /* Card Skeleton */
+  .skeleton-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    background-color: var(--color-bg-primary);
+  }
+  
+  .skeleton-card__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  /* List Skeleton */
+  .skeleton-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  
+  .skeleton-list__item {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    padding: var(--spacing-sm);
+  }
+  
+  .skeleton-list__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    flex: 1;
+  }
+  
+  /* Table Skeleton */
+  .skeleton-table {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+  }
+  
+  .skeleton-table__header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background-color: var(--color-bg-secondary);
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+  
+  .skeleton-table__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+  
+  .skeleton-table__row:last-child {
+    border-bottom: none;
+  }
+  
+  /* ============================================
+     RESPONSIVE DESIGN
+     ============================================ */
+  
+  @media (max-width: 768px) {
+    .loader--lg {
+      --loader-size: 40px;
+      --loader-text-size: var(--font-size-base);
+    }
+    
+    .loader--xl {
+      --loader-size: 48px;
+      --loader-text-size: var(--font-size-lg);
+    }
+    
+    .loader__inner {
+      gap: var(--spacing-sm);
+    }
+    
+    .loader__content {
+      max-width: 280px;
+    }
+    
+    .loader__progress-container {
+      min-width: 150px;
+    }
+    
+    .skeleton-card {
+      padding: var(--spacing-sm);
+      gap: var(--spacing-sm);
+    }
+    
+    .skeleton-list__item {
+      padding: var(--spacing-xs);
+      gap: var(--spacing-sm);
+    }
+    
+    .skeleton-table__header,
+    .skeleton-table__row {
+      padding: var(--spacing-sm);
+      gap: var(--spacing-sm);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .loader__overlay--fullscreen .loader__inner {
+      padding: var(--spacing-md);
+    }
+    
+    .loader__content {
+      max-width: 260px;
+    }
+    
+    .skeleton-table__header,
+    .skeleton-table__row {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  /* ============================================
+     ACCESSIBILITY ENHANCEMENTS
+     ============================================ */
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .loader__spinner-circle {
+      border-width: 4px;
+    }
+    
+    .loader__skeleton-line {
+      background: linear-gradient(
+        90deg,
+        var(--color-border) 25%,
+        var(--color-text-tertiary) 50%,
+        var(--color-border) 75%
+      );
+    }
+    
+    .loader__progress-bar {
+      border: 1px solid var(--color-border);
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .loader__spinner-circle,
+    .loader__dot,
+    .loader__pulse-circle,
+    .loader__skeleton-line,
+    .loader__progress-fill::after {
+      animation: none;
+    }
+    
+    .loader__progress-fill {
+      transition: none;
+    }
+    
+    .loader--animated .loader__skeleton-line {
+      background: var(--color-bg-secondary);
+    }
+  }
+  
+  /* Screen reader accessibility */
+  .loader[aria-hidden="true"] {
+    display: none;
+  }
+  
+  .loader__text,
+  .loader__description {
+    user-select: none;
+  }
+  
+  /* Focus management for overlay loaders */
+  .loader__overlay--fullscreen {
+    outline: none;
+  }
+  
+  .loader__overlay--fullscreen:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
+  
+  /* ============================================
+     DARK MODE SUPPORT
+     ============================================ */
+  
+  @media (prefers-color-scheme: dark) {
+    .skeleton-card {
+      background-color: var(--color-bg-primary-dark, #1a1a1a);
+      border-color: var(--color-border-dark, #333);
+    }
+    
+    .skeleton-table {
+      border-color: var(--color-border-dark, #333);
+    }
+    
+    .skeleton-table__header {
+      background-color: var(--color-bg-secondary-dark, #2a2a2a);
+      border-color: var(--color-border-dark, #333);
+    }
+    
+    .skeleton-table__row {
+      border-color: var(--color-border-dark, #333);
+    }
+    
+    .loader__skeleton-line {
+      background: linear-gradient(
+        90deg,
+        var(--color-bg-secondary-dark, #2a2a2a) 25%,
+        var(--color-bg-tertiary-dark, #333) 50%,
+        var(--color-bg-secondary-dark, #2a2a2a) 75%
+      );
+    }
+    
+    .loader__overlay--backdrop {
+      background-color: var(--color-overlay-dark, rgba(0, 0, 0, 0.7));
+    }
+    
+    .loader__overlay--fullscreen {
+      background-color: var(--color-overlay-dark, rgba(0, 0, 0, 0.8));
+    }
+  }
+  
+  /* ============================================
+     PRINT STYLES
+     ============================================ */
+  
+  @media print {
+    .loader__overlay,
+    .loader__overlay--fullscreen {
+      display: none !important;
+    }
+    
+    .loader {
+      background: white !important;
+      color: black !important;
+    }
+    
+    .loader__spinner-circle,
+    .loader__dot,
+    .loader__pulse-circle {
+      animation: none !important;
+      border-color: black !important;
+      background-color: black !important;
+    }
+    
+    .loader__skeleton-line {
+      background: #f0f0f0 !important;
+      animation: none !important;
+    }
+    
+    .skeleton-card,
+    .skeleton-table {
+      border-color: black !important;
+      background: white !important;
+    }
+  }
+  
+  /* ============================================
+     PERFORMANCE OPTIMIZATIONS
+     ============================================ */
+  
+  .loader__spinner,
+  .loader__dots,
+  .loader__pulse {
+    contain: layout style paint;
+    will-change: transform;
+  }
+  
+  .loader__skeleton-line {
+    contain: layout style paint;
+    will-change: background-position;
+  }
+  
+  .loader__progress-fill {
+    contain: layout style paint;
+    will-change: width;
+  }
+  
+  .loader__overlay {
+    contain: layout style paint;
+  }
+  
+  /* Optimize animations for performance */
+  @supports (backdrop-filter: blur(4px)) {
+    .loader__overlay--backdrop,
+    .loader__overlay--fullscreen {
+      backdrop-filter: blur(4px);
+    }
+  }
+  
+  /* GPU acceleration for smooth animations */
+  .loader__spinner-circle,
+  .loader__dot,
+  .loader__pulse-circle {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }

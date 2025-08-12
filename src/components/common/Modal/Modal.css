@@ -1,0 +1,477 @@
+/**
+ * CreatorsMantra Design System - Modal Component Styles
+ * 
+ * @author CreatorsMantra Team
+ * @version 1.0.0
+ * @path src/components/common/Modal/Modal.css
+ */
+
+/* ============================================
+   MODAL OVERLAY
+   ============================================ */
+
+   .modal__overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-overlay);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-md);
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-duration-slow) var(--transition-easing);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  
+  .modal__overlay--active {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  /* ============================================
+     MODAL CONTAINER
+     ============================================ */
+  
+  .modal {
+    background-color: var(--color-bg-primary);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-xl);
+    border: var(--border-width) solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - var(--spacing-xl));
+    position: relative;
+    transform: scale(0.95) translateY(20px);
+    transition: all var(--transition-duration-slow) var(--transition-easing);
+    outline: none;
+  }
+  
+  .modal__overlay--active .modal {
+    transform: scale(1) translateY(0);
+  }
+  
+  /* ============================================
+     MODAL SIZES
+     ============================================ */
+  
+  .modal--xs {
+    width: 100%;
+    max-width: 320px;
+  }
+  
+  .modal--sm {
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  .modal--md {
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .modal--lg {
+    width: 100%;
+    max-width: 700px;
+  }
+  
+  .modal--xl {
+    width: 100%;
+    max-width: 900px;
+  }
+  
+  .modal--full {
+    width: calc(100vw - var(--spacing-lg));
+    height: calc(100vh - var(--spacing-lg));
+    max-width: none;
+    max-height: none;
+  }
+  
+  /* ============================================
+     MODAL VARIANTS
+     ============================================ */
+  
+  .modal--default {
+    border-color: var(--color-border);
+  }
+  
+  .modal--danger {
+    border-color: var(--color-error);
+    box-shadow: var(--shadow-xl), 0 0 0 1px var(--color-error-light);
+  }
+  
+  .modal--warning {
+    border-color: var(--color-warning);
+    box-shadow: var(--shadow-xl), 0 0 0 1px var(--color-warning-light);
+  }
+  
+  .modal--success {
+    border-color: var(--color-success);
+    box-shadow: var(--shadow-xl), 0 0 0 1px var(--color-success-light);
+  }
+  
+  .modal--info {
+    border-color: var(--color-info);
+    box-shadow: var(--shadow-xl), 0 0 0 1px var(--color-info-light);
+  }
+  
+  /* ============================================
+     MODAL HEADER
+     ============================================ */
+  
+  .modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+    border-bottom: var(--border-width) solid var(--color-border);
+    flex-shrink: 0;
+  }
+  
+  .modal__title-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .modal__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    font-size: var(--font-size-lg);
+    flex-shrink: 0;
+  }
+  
+  .modal__title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0;
+    line-height: 1.3;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .modal__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
+    border-radius: var(--border-radius-md);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: var(--transition-base);
+    flex-shrink: 0;
+    margin-left: var(--spacing-sm);
+  }
+  
+  .modal__close:hover {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+  }
+  
+  .modal__close:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  
+  .modal__close:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .modal__close svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  /* ============================================
+     MODAL BODY
+     ============================================ */
+  
+  .modal__body {
+    padding: var(--spacing-md) var(--spacing-lg);
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    color: var(--color-text-primary);
+    line-height: 1.6;
+  }
+  
+  .modal__body::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .modal__body::-webkit-scrollbar-track {
+    background: var(--color-bg-secondary);
+    border-radius: var(--border-radius-sm);
+  }
+  
+  .modal__body::-webkit-scrollbar-thumb {
+    background: var(--color-border-hover);
+    border-radius: var(--border-radius-sm);
+  }
+  
+  .modal__body::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-tertiary);
+  }
+  
+  /* ============================================
+     MODAL FOOTER
+     ============================================ */
+  
+  .modal__footer {
+    padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+    border-top: var(--border-width) solid var(--color-border);
+    flex-shrink: 0;
+  }
+  
+  .modal__actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+  }
+  
+  .modal__actions .btn {
+    min-width: 80px;
+  }
+  
+  /* ============================================
+     LOADING STATES
+     ============================================ */
+  
+  .modal--loading {
+    pointer-events: none;
+  }
+  
+  .modal__loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-overlay-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius-lg);
+    z-index: 1;
+  }
+  
+  .modal__spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border);
+    border-top: 3px solid var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* ============================================
+     BUTTON SPINNER (for action buttons)
+     ============================================ */
+  
+  .btn__spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: var(--spacing-xs);
+  }
+  
+  /* ============================================
+     RESPONSIVE DESIGN
+     ============================================ */
+  
+  @media (max-width: 768px) {
+    .modal__overlay {
+      padding: var(--spacing-sm);
+      align-items: flex-end;
+    }
+    
+    .modal {
+      max-height: calc(100vh - var(--spacing-md));
+      width: 100% !important;
+      max-width: none !important;
+      margin: 0;
+      transform: translateY(100%);
+      border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    }
+    
+    .modal__overlay--active .modal {
+      transform: translateY(0);
+    }
+    
+    .modal__header {
+      padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
+    }
+    
+    .modal__body {
+      padding: var(--spacing-sm) var(--spacing-md);
+    }
+    
+    .modal__footer {
+      padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+    }
+    
+    .modal__actions {
+      flex-direction: column-reverse;
+    }
+    
+    .modal__actions .btn {
+      width: 100%;
+      min-width: auto;
+    }
+    
+    .modal--full {
+      width: 100% !important;
+      height: 100% !important;
+      border-radius: 0;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .modal__overlay {
+      padding: 0;
+    }
+    
+    .modal {
+      height: 100%;
+      border-radius: 0;
+    }
+    
+    .modal__title {
+      font-size: var(--font-size-lg);
+    }
+  }
+  
+  /* ============================================
+     ACCESSIBILITY ENHANCEMENTS
+     ============================================ */
+  
+  /* Focus management */
+  .modal:focus {
+    outline: none;
+  }
+  
+  .modal:focus-visible {
+    box-shadow: var(--shadow-xl), 0 0 0 3px var(--color-primary-light);
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .modal {
+      border-width: var(--border-width-thick);
+      box-shadow: var(--shadow-xl), 0 0 0 2px var(--color-border);
+    }
+    
+    .modal__header,
+    .modal__footer {
+      border-width: var(--border-width-thick);
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .modal__overlay,
+    .modal,
+    .modal__close {
+      transition: none;
+    }
+    
+    .modal__spinner,
+    .btn__spinner {
+      animation: none;
+    }
+    
+    .modal__overlay--active .modal {
+      transform: none;
+    }
+  }
+  
+  /* ============================================
+     DARK MODE SUPPORT
+     ============================================ */
+  
+  @media (prefers-color-scheme: dark) {
+    .modal {
+      background-color: var(--color-bg-primary-dark, #1a1a1a);
+      border-color: var(--color-border-dark, #333);
+      color: var(--color-text-primary-dark, #fff);
+    }
+    
+    .modal__header,
+    .modal__footer {
+      border-color: var(--color-border-dark, #333);
+    }
+    
+    .modal__overlay {
+      background-color: var(--color-overlay-dark, rgba(0, 0, 0, 0.8));
+    }
+  }
+  
+  /* ============================================
+     ANIMATION PERFORMANCE
+     ============================================ */
+  
+  .modal__overlay,
+  .modal {
+    will-change: transform, opacity;
+  }
+  
+  .modal__overlay--active {
+    will-change: auto;
+  }
+  
+  /* ============================================
+     PRINT STYLES
+     ============================================ */
+  
+  @media print {
+    .modal__overlay {
+      position: static !important;
+      background: none !important;
+      backdrop-filter: none !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    
+    .modal {
+      box-shadow: none !important;
+      border: 1px solid black !important;
+      transform: none !important;
+      max-height: none !important;
+      page-break-inside: avoid;
+    }
+    
+    .modal__close {
+      display: none !important;
+    }
+    
+    .modal__loading-overlay {
+      display: none !important;
+    }
+  }

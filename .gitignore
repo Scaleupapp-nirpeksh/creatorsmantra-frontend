@@ -53,7 +53,7 @@ bundle-analyzer-report.html
 
 # Source maps
 *.map
-node_modules/
+
 
 # ==========================================
 # CACHE & TEMPORARY FILES

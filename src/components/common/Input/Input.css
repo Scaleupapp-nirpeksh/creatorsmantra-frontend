@@ -1,0 +1,519 @@
+/**
+ * CreatorsMantra Design System - Input Component Styles
+ * 
+ * @author CreatorsMantra Team
+ * @version 1.0.0
+ * @path src/components/common/Input/Input.css
+ */
+
+/* ============================================
+   INPUT WRAPPER
+   ============================================ */
+
+   .input-wrapper {
+    position: relative;
+    width: 100%;
+    font-family: var(--font-body);
+  }
+  
+  .input-wrapper--disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  
+  /* ============================================
+     INPUT LABEL
+     ============================================ */
+  
+  .input__label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    line-height: 1.4;
+    transition: var(--transition-base);
+  }
+  
+  .input__required {
+    color: var(--color-error);
+    margin-left: var(--spacing-2xs);
+    font-weight: var(--font-weight-semibold);
+  }
+  
+  .input-wrapper--focused .input__label {
+    color: var(--color-primary);
+  }
+  
+  .input-wrapper--error .input__label {
+    color: var(--color-error);
+  }
+  
+  .input-wrapper--success .input__label {
+    color: var(--color-success);
+  }
+  
+  /* ============================================
+     INPUT CONTAINER
+     ============================================ */
+  
+  .input__container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+  
+  /* ============================================
+     BASE INPUT STYLES
+     ============================================ */
+  
+  .input {
+    flex: 1;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-normal);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    transition: var(--transition-base);
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    outline: none;
+    appearance: none;
+    width: 100%;
+  }
+  
+  .input::placeholder {
+    color: var(--color-text-tertiary);
+    opacity: 1;
+  }
+  
+  .input::-webkit-input-placeholder {
+    color: var(--color-text-tertiary);
+  }
+  
+  .input::-moz-placeholder {
+    color: var(--color-text-tertiary);
+    opacity: 1;
+  }
+  
+  .input:-ms-input-placeholder {
+    color: var(--color-text-tertiary);
+  }
+  
+  /* ============================================
+     INPUT SIZES
+     ============================================ */
+  
+  .input--sm {
+    height: var(--input-height-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+  
+  .input--md {
+    height: var(--input-height-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-base);
+  }
+  
+  .input--lg {
+    height: var(--input-height-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-lg);
+  }
+  
+  /* ============================================
+     INPUT VARIANTS
+     ============================================ */
+  
+  /* Default Variant */
+  .input--default {
+    background-color: var(--color-bg-primary);
+    border-color: var(--color-border);
+  }
+  
+  .input--default:hover:not(:disabled) {
+    border-color: var(--color-border-hover);
+  }
+  
+  .input--default:focus {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-focus);
+  }
+  
+  /* Filled Variant */
+  .input--filled {
+    background-color: var(--color-bg-secondary);
+    border-color: transparent;
+  }
+  
+  .input--filled:hover:not(:disabled) {
+    background-color: var(--color-bg-tertiary);
+  }
+  
+  .input--filled:focus {
+    background-color: var(--color-bg-primary);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-focus);
+  }
+  
+  /* Outlined Variant */
+  .input--outlined {
+    background-color: transparent;
+    border-width: var(--border-width-thick);
+    border-color: var(--color-border);
+  }
+  
+  .input--outlined:hover:not(:disabled) {
+    border-color: var(--color-border-hover);
+  }
+  
+  .input--outlined:focus {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-focus);
+  }
+  
+  /* ============================================
+     INPUT STATES
+     ============================================ */
+  
+  /* Focus State */
+  .input--focused {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-focus);
+  }
+  
+  /* Error State */
+  .input--error {
+    border-color: var(--color-error) !important;
+    box-shadow: 0 0 0 3px var(--color-error-light) !important;
+  }
+  
+  .input--error:focus {
+    box-shadow: 0 0 0 3px var(--color-error-light) !important;
+  }
+  
+  /* Success State */
+  .input--success {
+    border-color: var(--color-success) !important;
+    box-shadow: 0 0 0 3px var(--color-success-light) !important;
+  }
+  
+  /* Disabled State */
+  .input:disabled {
+    background-color: var(--color-bg-disabled);
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+    border-color: var(--color-border-disabled);
+  }
+  
+  .input:disabled::placeholder {
+    color: var(--color-text-disabled);
+  }
+  
+  /* Loading State */
+  .input--loading {
+    cursor: wait;
+  }
+  
+  /* ============================================
+     TEXTAREA SPECIFIC
+     ============================================ */
+  
+  textarea.input {
+    height: auto;
+    min-height: calc(var(--input-height-md) * 2);
+    resize: vertical;
+    padding-top: var(--spacing-sm);
+    padding-bottom: var(--spacing-sm);
+    line-height: 1.5;
+  }
+  
+  textarea.input--sm {
+    min-height: calc(var(--input-height-sm) * 2);
+    padding-top: var(--spacing-xs);
+    padding-bottom: var(--spacing-xs);
+  }
+  
+  textarea.input--lg {
+    min-height: calc(var(--input-height-lg) * 1.5);
+    padding-top: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+  }
+  
+  /* ============================================
+     SELECT SPECIFIC
+     ============================================ */
+  
+  select.input {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6,9 12,15 18,9'></polyline></svg>");
+    background-repeat: no-repeat;
+    background-position: right var(--spacing-sm) center;
+    background-size: 16px;
+    padding-right: calc(var(--spacing-md) + 20px);
+  }
+  
+  select.input::-ms-expand {
+    display: none;
+  }
+  
+  select.input[multiple] {
+    height: auto;
+    min-height: calc(var(--input-height-md) * 3);
+    background-image: none;
+    padding-right: var(--spacing-md);
+  }
+  
+  /* ============================================
+     ICON HANDLING
+     ============================================ */
+  
+  .input--with-icon {
+    padding-left: calc(var(--spacing-md) + 24px + var(--spacing-sm));
+  }
+  
+  .input--icon-right.input--with-icon {
+    padding-left: var(--spacing-md);
+    padding-right: calc(var(--spacing-md) + 24px + var(--spacing-sm));
+  }
+  
+  .input__icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    color: var(--color-text-secondary);
+    z-index: 1;
+    pointer-events: none;
+  }
+  
+  .input__icon--clickable {
+    pointer-events: all;
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition-base);
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+  }
+  
+  .input__icon--clickable:hover {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+  }
+  
+  .input__icon--clickable:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  
+  /* Left Icon */
+  .input__icon:not(.input__icon--loading) {
+    left: var(--spacing-sm);
+  }
+  
+  /* Right Icons Container */
+  .input__right-elements {
+    position: absolute;
+    right: var(--spacing-sm);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    z-index: 1;
+  }
+  
+  /* ============================================
+     LOADING SPINNER
+     ============================================ */
+  
+  .input__spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-border);
+    border-top: 2px solid var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* ============================================
+     CLEAR BUTTON
+     ============================================ */
+  
+  .input__clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    transition: var(--transition-base);
+    font-size: var(--font-size-sm);
+    line-height: 1;
+  }
+  
+  .input__clear:hover {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+  }
+  
+  .input__clear:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  
+  /* ============================================
+     FOOTER ELEMENTS
+     ============================================ */
+  
+  .input__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: var(--spacing-xs);
+    min-height: var(--font-size-sm);
+    line-height: 1.4;
+  }
+  
+  .input__error,
+  .input__success,
+  .input__helper {
+    font-size: var(--font-size-sm);
+    flex: 1;
+  }
+  
+  .input__error {
+    color: var(--color-error);
+    font-weight: var(--font-weight-medium);
+  }
+  
+  .input__success {
+    color: var(--color-success);
+    font-weight: var(--font-weight-medium);
+  }
+  
+  .input__helper {
+    color: var(--color-text-secondary);
+  }
+  
+  .input__character-count {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    margin-left: var(--spacing-sm);
+    white-space: nowrap;
+  }
+  
+  /* ============================================
+     RESPONSIVE DESIGN
+     ============================================ */
+  
+  @media (max-width: 768px) {
+    .input--sm {
+      height: var(--input-height-md);
+      font-size: var(--font-size-base);
+    }
+    
+    .input--md {
+      height: var(--input-height-lg);
+    }
+    
+    .input__footer {
+      flex-direction: column;
+      gap: var(--spacing-2xs);
+    }
+    
+    .input__character-count {
+      margin-left: 0;
+      align-self: flex-end;
+    }
+  }
+  
+  /* ============================================
+     ACCESSIBILITY ENHANCEMENTS
+     ============================================ */
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .input {
+      border-width: var(--border-width-thick);
+    }
+    
+    .input:focus {
+      outline: 3px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .input,
+    .input__icon,
+    .input__clear {
+      transition: none;
+    }
+    
+    .input__spinner {
+      animation: none;
+    }
+  }
+  
+  /* Focus visible for keyboard navigation */
+  .input:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  
+  /* ============================================
+     DARK MODE SUPPORT
+     ============================================ */
+  
+  @media (prefers-color-scheme: dark) {
+    .input {
+      background-color: var(--color-bg-primary-dark, #1a1a1a);
+      border-color: var(--color-border-dark, #333);
+      color: var(--color-text-primary-dark, #fff);
+    }
+    
+    .input::placeholder {
+      color: var(--color-text-tertiary-dark, #888);
+    }
+    
+    .input--filled {
+      background-color: var(--color-bg-secondary-dark, #2a2a2a);
+    }
+  }
+  
+  /* ============================================
+     PRINT STYLES
+     ============================================ */
+  
+  @media print {
+    .input {
+      background: white !important;
+      border: 1px solid black !important;
+      color: black !important;
+    }
+    
+    .input__icon,
+    .input__clear {
+      display: none !important;
+    }
+  }
