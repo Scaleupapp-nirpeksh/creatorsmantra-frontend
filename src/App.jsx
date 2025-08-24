@@ -5,8 +5,8 @@ import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
 
 // Store imports
-import  useAuthStore  from './store/authStore';
-import  useUIStore  from './store/uiStore';
+import useAuthStore from './store/authStore';
+import useUIStore from './store/uiStore';
 
 // Layout imports
 import MainLayout from './layouts/MainLayout';
@@ -28,43 +28,55 @@ import './styles/index.css';
 
 function App() {
   const [appReady, setAppReady] = useState(false);
-  const { initialize, isAuthenticated, isLoading } = useAuthStore();
-  const { theme, initializeTheme, checkViewport } = useUIStore();
+  const { initialize, isAuthenticated, isInitialized } = useAuthStore();
+  const { theme, setTheme, updateViewport, initializeViewport } = useUIStore();
 
   // Initialize app
   useEffect(() => {
     const initApp = async () => {
       try {
-        // Initialize theme
-        initializeTheme();
+        // Initialize theme from stored preference
+        const storedTheme = localStorage.getItem('cm_ui-storage');
+        if (storedTheme) {
+          try {
+            const parsed = JSON.parse(storedTheme);
+            if (parsed.state?.theme) {
+              setTheme(parsed.state.theme);
+            }
+          } catch (e) {
+            console.error('Error parsing stored theme:', e);
+          }
+        }
         
-        // Check viewport for responsive features
-        checkViewport();
+        // Initialize viewport
+        const cleanupViewport = initializeViewport();
         
         // Initialize auth (check stored tokens)
         await initialize();
         
         // App is ready
         setAppReady(true);
+        
+        // Return cleanup function
+        return cleanupViewport;
       } catch (error) {
         console.error('App initialization error:', error);
         setAppReady(true); // Still show app even if init fails
       }
     };
 
-    initApp();
+    const cleanup = initApp();
 
-    // Setup viewport listener
-    const handleResize = () => {
-      checkViewport();
+    // Cleanup on unmount
+    return () => {
+      if (cleanup && typeof cleanup === 'function') {
+        cleanup();
+      }
     };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [initialize, initializeTheme, checkViewport]);
+  }, [initialize, setTheme, initializeViewport]);
 
   // Show loading screen while initializing
-  if (!appReady || isLoading) {
+  if (!appReady || !isInitialized) {
     return (
       <div style={styles.loadingContainer}>
         <div style={styles.loadingContent}>
@@ -156,6 +168,12 @@ function App() {
                   <Route path="settings" element={<div>Settings - Coming Soon</div>} />
                   <Route path="subscription" element={<div>Subscription - Coming Soon</div>} />
                   <Route path="team" element={<div>Team Management - Coming Soon</div>} />
+                </Route>
+
+                {/* Settings Routes */}
+                <Route path="/settings">
+                  <Route index element={<div>Settings - Coming Soon</div>} />
+                  <Route path="subscription" element={<div>Subscription - Coming Soon</div>} />
                 </Route>
               </Route>
             </Route>
@@ -313,12 +331,18 @@ const styles = {
 };
 
 // Add global keyframes for spinner
-const styleSheet = document.createElement('style');
-styleSheet.textContent = `
-  @keyframes spin {
-    to { transform: rotate(360deg); }
+if (typeof document !== 'undefined') {
+  const existingStyle = document.getElementById('app-keyframes');
+  if (!existingStyle) {
+    const styleSheet = document.createElement('style');
+    styleSheet.id = 'app-keyframes';
+    styleSheet.textContent = `
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(styleSheet);
   }
-`;
-document.head.appendChild(styleSheet);
+}
 
 export default App;

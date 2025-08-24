@@ -1,10 +1,10 @@
-// src/pages/auth/RegisterPage.jsx
+// src/pages/auth/RegisterPage.jsx - DEBUG VERSION
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import  useAuthStore  from '../../store/authStore';
+import useAuthStore from '../../store/authStore';
 import { 
   User,
   Mail,
@@ -19,27 +19,40 @@ import {
   AlertCircle,
   Instagram,
   Youtube,
-  Briefcase,
-  Users,
-  TrendingUp,
-  Sparkles,
-  Shield,
-  ChevronDown
+  Briefcase
 } from 'lucide-react';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { register: registerUser, sendOTP, checkPhoneExists, isLoading } = useAuthStore();
+  const { register: registerUser, sendOTP, checkPhone, isLoading } = useAuthStore();
   
   // Check if coming from OTP verification
   const { phone: verifiedPhone, otpVerified } = location.state || {};
   
-  // State management
-  const [currentStep, setCurrentStep] = useState(1);
+  // Debug logging
+  console.log('RegisterPage - Location State:', location.state);
+  
+  // State management - Initialize based on verification status
+  const [currentStep, setCurrentStep] = useState(() => {
+    const initialStep = verifiedPhone && otpVerified ? 2 : 1;
+    console.log('Initial step:', initialStep);
+    return initialStep;
+  });
   const [showPassword, setShowPassword] = useState(false);
-  const [phoneChecked, setPhoneChecked] = useState(false);
-  const [formData, setFormData] = useState({});
+  const [phoneChecked, setPhoneChecked] = useState(() => {
+    return !!(verifiedPhone && otpVerified);
+  });
+  const [formData, setFormData] = useState(() => ({
+    phone: verifiedPhone || ''
+  }));
+  
+  // Debug: Log step changes
+  useEffect(() => {
+    console.log('Current step changed to:', currentStep);
+    console.log('Phone checked status:', phoneChecked);
+    console.log('Form data:', formData);
+  }, [currentStep, phoneChecked, formData]);
   
   // React Hook Form
   const { 
@@ -55,10 +68,13 @@ const RegisterPage = () => {
     defaultValues: {
       phone: verifiedPhone || '',
       creatorType: 'lifestyle',
-      socialProfiles: {
-        instagram: { username: '', followersCount: 0 },
-        youtube: { channelName: '', subscribersCount: 0 }
-      }
+      fullName: '',
+      email: '',
+      password: '',
+      instagram_username: '',
+      instagram_followers: '',
+      youtube_channel: '',
+      youtube_subscribers: ''
     }
   });
   
@@ -77,20 +93,35 @@ const RegisterPage = () => {
     { value: 'other', label: 'Other', icon: '🎨' }
   ];
   
-  // Set verified phone if available
+  // Handle verified phone on component mount
   useEffect(() => {
-    if (verifiedPhone && otpVerified) {
-      setValue('phone', verifiedPhone);
+    if (location.state?.phone && location.state?.otpVerified === true) {
+      console.log('Phone verified, moving to step 2');
+      
+      // Update form value
+      setValue('phone', location.state.phone);
+      
+      // Update states
       setPhoneChecked(true);
-      setCurrentStep(2); // Skip phone verification step
+      setCurrentStep(2);
+      
+      // Save to formData
+      setFormData(prev => ({
+        ...prev,
+        phone: location.state.phone
+      }));
+      
+      // Clear location state to prevent re-triggering
+      window.history.replaceState({}, document.title);
     }
-  }, [verifiedPhone, otpVerified, setValue]);
+  }, []); // Run only once on mount
   
   // Step 1: Phone Verification
   const handlePhoneVerification = async (data) => {
+    console.log('Starting phone verification for:', data.phone);
     try {
       // Check if phone exists
-      const result = await checkPhoneExists(data.phone);
+      const result = await checkPhone(data.phone);
       
       if (result.exists) {
         toast.error('An account already exists with this phone number');
@@ -98,11 +129,9 @@ const RegisterPage = () => {
       }
       
       // Send OTP
-      const otpResult = await sendOTP(data.phone, 'registration');
+      const otpResult = await sendOTP(data.phone);
       
       if (otpResult.success) {
-        toast.success('OTP sent successfully!');
-        
         // Navigate to OTP verification
         navigate('/verify-otp', {
           state: {
@@ -111,10 +140,12 @@ const RegisterPage = () => {
             from: '/register'
           }
         });
+        return true;
       }
       
-      return true;
+      return false;
     } catch (error) {
+      console.error('Phone verification error:', error);
       toast.error(error.message || 'Failed to send OTP');
       return false;
     }
@@ -122,68 +153,122 @@ const RegisterPage = () => {
   
   // Step Navigation
   const handleNextStep = async () => {
+    console.log('=== Handle Next Step Called ===');
+    console.log('Current Step:', currentStep);
+    console.log('Phone Checked:', phoneChecked);
+    
     // Validate current step fields
     let fieldsToValidate = [];
     
     if (currentStep === 1) {
       fieldsToValidate = ['phone'];
       const isValid = await trigger(fieldsToValidate);
+      console.log('Step 1 validation result:', isValid);
       
       if (isValid && !phoneChecked) {
-        const success = await handlePhoneVerification(getValues());
-        if (!success) return;
+        await handlePhoneVerification(getValues());
+        // Don't proceed further - navigation will happen
+        return;
+      }
+      
+      // Only continue to next step if phone is already verified
+      if (!phoneChecked) {
+        toast.error('Please verify your phone number first');
+        return;
       }
     } else if (currentStep === 2) {
       fieldsToValidate = ['fullName', 'email', 'password'];
       const isValid = await trigger(fieldsToValidate);
-      if (!isValid) return;
+      console.log('Step 2 validation result:', isValid);
+      console.log('Step 2 field values:', {
+        fullName: getValues('fullName'),
+        email: getValues('email'),
+        password: getValues('password')
+      });
+      console.log('Step 2 validation errors:', errors);
+      
+      if (!isValid) {
+        console.log('Step 2 validation failed, not proceeding');
+        return;
+      }
     }
     
     // Save current step data
     const currentData = getValues();
-    setFormData({ ...formData, ...currentData });
+    console.log('Saving current data:', currentData);
+    setFormData(prev => {
+      const newData = { ...prev, ...currentData };
+      console.log('Updated form data:', newData);
+      return newData;
+    });
     
     // Move to next step
     if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      console.log('Moving from step', currentStep, 'to step', nextStep);
+      setCurrentStep(nextStep);
+    } else {
+      console.log('Already at final step');
     }
   };
   
   const handlePrevStep = () => {
     if (currentStep > 1) {
+      console.log('Going back from step', currentStep, 'to step', currentStep - 1);
       setCurrentStep(currentStep - 1);
     }
   };
   
   // Final Registration
   const onSubmit = async (data) => {
+    console.log('Final submission started');
+    console.log('Submit data:', data);
+    
     try {
+      // Ensure we have the phone number
+      const finalData = {
+        ...formData,
+        ...data
+      };
+      
+      console.log('Final merged data:', finalData);
+      
       // Prepare registration data
       const registrationData = {
-        ...data,
+        phone: finalData.phone,
+        fullName: finalData.fullName,
+        email: finalData.email,
+        password: finalData.password,
         userType: 'creator',
+        creatorType: finalData.creatorType,
         socialProfiles: {
           instagram: {
-            username: data.instagram_username || '',
-            followersCount: parseInt(data.instagram_followers) || 0,
-            avgLikes: Math.floor((parseInt(data.instagram_followers) || 0) * 0.03), // 3% engagement estimate
-            avgComments: Math.floor((parseInt(data.instagram_followers) || 0) * 0.005) // 0.5% comment rate
+            username: finalData.instagram_username || '',
+            followersCount: parseInt(finalData.instagram_followers) || 0,
+            avgLikes: Math.floor((parseInt(finalData.instagram_followers) || 0) * 0.03),
+            avgComments: Math.floor((parseInt(finalData.instagram_followers) || 0) * 0.005)
           },
           youtube: {
-            channelName: data.youtube_channel || '',
-            subscribersCount: parseInt(data.youtube_subscribers) || 0,
-            avgViews: Math.floor((parseInt(data.youtube_subscribers) || 0) * 0.1) // 10% view rate estimate
+            channelName: finalData.youtube_channel || '',
+            subscribersCount: parseInt(finalData.youtube_subscribers) || 0,
+            avgViews: Math.floor((parseInt(finalData.youtube_subscribers) || 0) * 0.1)
           }
         }
       };
       
+      console.log('Submitting registration data:', registrationData);
+      
       const result = await registerUser(registrationData);
       
       if (result.success) {
+        console.log('Registration successful!');
         toast.success('Registration successful! Welcome to CreatorsMantra!');
         navigate('/dashboard');
+      } else {
+        console.log('Registration failed:', result);
       }
     } catch (error) {
+      console.error('Registration error:', error);
       toast.error(error.message || 'Registration failed');
     }
   };
@@ -224,12 +309,13 @@ const RegisterPage = () => {
     </div>
   );
   
-  // Inline styles
+  // Inline styles (keeping same as original)
   const styles = {
     container: {
       maxWidth: '520px',
       width: '100%',
       margin: '0 auto',
+      padding: '2rem',
     },
     
     header: {
@@ -240,13 +326,13 @@ const RegisterPage = () => {
     title: {
       fontSize: '2rem',
       fontWeight: '700',
-      color: 'var(--color-neutral-900)',
+      color: '#111827',
       marginBottom: '0.5rem',
     },
     
     subtitle: {
       fontSize: '1rem',
-      color: 'var(--color-neutral-600)',
+      color: '#6b7280',
     },
     
     progressContainer: {
@@ -255,7 +341,7 @@ const RegisterPage = () => {
     
     progressBar: {
       height: '4px',
-      background: 'var(--color-neutral-200)',
+      background: '#e5e7eb',
       borderRadius: '2px',
       overflow: 'hidden',
       marginBottom: '1rem',
@@ -263,7 +349,7 @@ const RegisterPage = () => {
     
     progressFill: {
       height: '100%',
-      background: 'linear-gradient(90deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
       transition: 'width 0.3s ease',
     },
     
@@ -277,18 +363,18 @@ const RegisterPage = () => {
       width: '32px',
       height: '32px',
       borderRadius: '50%',
-      background: 'var(--color-neutral-200)',
+      background: '#e5e7eb',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       fontSize: '0.875rem',
       fontWeight: '600',
-      color: 'var(--color-neutral-500)',
+      color: '#9ca3af',
       transition: 'all 0.3s ease',
     },
     
     progressStepActive: {
-      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white',
     },
     
@@ -296,10 +382,11 @@ const RegisterPage = () => {
       display: 'flex',
       justifyContent: 'space-between',
       fontSize: '0.75rem',
+      color: '#9ca3af',
     },
     
     progressLabelActive: {
-      color: 'var(--color-primary-600)',
+      color: '#667eea',
       fontWeight: '600',
     },
     
@@ -322,14 +409,14 @@ const RegisterPage = () => {
     label: {
       fontSize: '0.875rem',
       fontWeight: '500',
-      color: 'var(--color-neutral-700)',
+      color: '#374151',
       display: 'flex',
       alignItems: 'center',
       gap: '0.5rem',
     },
     
     required: {
-      color: 'var(--color-error)',
+      color: '#ef4444',
     },
     
     inputWrapper: {
@@ -342,21 +429,22 @@ const RegisterPage = () => {
       width: '100%',
       padding: '0.75rem 1rem',
       paddingLeft: '2.75rem',
-      border: '1px solid var(--color-neutral-300)',
+      border: '1px solid #d1d5db',
       borderRadius: '12px',
       fontSize: '1rem',
       transition: 'all 0.2s ease',
       background: 'white',
+      outline: 'none',
     },
     
     inputError: {
-      borderColor: 'var(--color-error)',
+      borderColor: '#ef4444',
     },
     
     inputIcon: {
       position: 'absolute',
       left: '1rem',
-      color: 'var(--color-neutral-400)',
+      color: '#9ca3af',
       pointerEvents: 'none',
     },
     
@@ -365,14 +453,14 @@ const RegisterPage = () => {
       right: '1rem',
       background: 'none',
       border: 'none',
-      color: 'var(--color-neutral-400)',
+      color: '#9ca3af',
       cursor: 'pointer',
       padding: '0.25rem',
     },
     
     error: {
       fontSize: '0.75rem',
-      color: 'var(--color-error)',
+      color: '#ef4444',
       display: 'flex',
       alignItems: 'center',
       gap: '0.25rem',
@@ -387,7 +475,7 @@ const RegisterPage = () => {
     
     creatorTypeOption: {
       padding: '0.75rem',
-      border: '2px solid var(--color-neutral-200)',
+      border: '2px solid #e5e7eb',
       borderRadius: '12px',
       background: 'white',
       cursor: 'pointer',
@@ -396,7 +484,7 @@ const RegisterPage = () => {
     },
     
     creatorTypeOptionSelected: {
-      borderColor: 'var(--color-primary-500)',
+      borderColor: '#667eea',
       background: 'rgba(102, 126, 234, 0.05)',
     },
     
@@ -408,12 +496,12 @@ const RegisterPage = () => {
     creatorTypeLabel: {
       fontSize: '0.75rem',
       fontWeight: '500',
-      color: 'var(--color-neutral-700)',
+      color: '#374151',
     },
     
     socialSection: {
       padding: '1rem',
-      background: 'var(--color-neutral-50)',
+      background: '#f9fafb',
       borderRadius: '12px',
       marginBottom: '1rem',
     },
@@ -425,7 +513,7 @@ const RegisterPage = () => {
       marginBottom: '1rem',
       fontSize: '0.875rem',
       fontWeight: '600',
-      color: 'var(--color-neutral-700)',
+      color: '#374151',
     },
     
     socialInputGroup: {
@@ -443,8 +531,8 @@ const RegisterPage = () => {
     backButton: {
       padding: '0.875rem 1.5rem',
       background: 'white',
-      color: 'var(--color-neutral-700)',
-      border: '1px solid var(--color-neutral-300)',
+      color: '#374151',
+      border: '1px solid #d1d5db',
       borderRadius: '12px',
       fontSize: '1rem',
       fontWeight: '600',
@@ -458,7 +546,7 @@ const RegisterPage = () => {
     nextButton: {
       flex: 1,
       padding: '0.875rem',
-      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white',
       border: 'none',
       borderRadius: '12px',
@@ -480,19 +568,19 @@ const RegisterPage = () => {
     
     helpText: {
       fontSize: '0.75rem',
-      color: 'var(--color-neutral-500)',
+      color: '#6b7280',
       fontStyle: 'italic',
     },
     
     loginLink: {
       textAlign: 'center',
       fontSize: '0.875rem',
-      color: 'var(--color-neutral-600)',
+      color: '#6b7280',
       marginTop: '2rem',
     },
     
     loginLinkAnchor: {
-      color: 'var(--color-primary-600)',
+      color: '#667eea',
       textDecoration: 'none',
       fontWeight: '600',
     },
@@ -512,16 +600,33 @@ const RegisterPage = () => {
       alignItems: 'center',
       gap: '0.75rem',
       fontSize: '0.875rem',
-      color: 'var(--color-neutral-700)',
+      color: '#374151',
     },
     
     benefitIcon: {
-      color: 'var(--color-success)',
+      color: '#10b981',
     },
   };
   
+  // Add debug display
   return (
     <div style={styles.container}>
+      {/* Debug Info Box */}
+      <div style={{
+        background: '#f3f4f6',
+        padding: '1rem',
+        borderRadius: '8px',
+        marginBottom: '1rem',
+        fontSize: '0.75rem',
+        fontFamily: 'monospace'
+      }}>
+        <strong>DEBUG INFO:</strong><br />
+        Current Step: {currentStep}<br />
+        Phone Checked: {phoneChecked ? 'Yes' : 'No'}<br />
+        Phone: {formData.phone || 'Not set'}<br />
+        Is Loading: {isLoading ? 'Yes' : 'No'}
+      </div>
+      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -590,7 +695,9 @@ const RegisterPage = () => {
                     </span>
                   )}
                   <p style={styles.helpText}>
-                    We'll send you an OTP to verify your number
+                    {phoneChecked 
+                      ? '✓ Phone number verified' 
+                      : 'We\'ll send you an OTP to verify your number'}
                   </p>
                 </div>
                 
@@ -794,10 +901,10 @@ const RegisterPage = () => {
                       <input
                         type="text"
                         placeholder="Username (without @)"
-                        style={styles.input}
+                        style={{ ...styles.input, paddingLeft: '1rem' }}
                         {...register('instagram_username', {
                           pattern: {
-                            value: /^[a-zA-Z0-9._]{1,30}$/,
+                            value: /^[a-zA-Z0-9._]{0,30}$/,
                             message: 'Invalid Instagram username'
                           }
                         })}
@@ -812,7 +919,7 @@ const RegisterPage = () => {
                       <input
                         type="number"
                         placeholder="Followers count"
-                        style={styles.input}
+                        style={{ ...styles.input, paddingLeft: '1rem' }}
                         {...register('instagram_followers', {
                           min: {
                             value: 0,
@@ -835,7 +942,7 @@ const RegisterPage = () => {
                       <input
                         type="text"
                         placeholder="Channel name"
-                        style={styles.input}
+                        style={{ ...styles.input, paddingLeft: '1rem' }}
                         {...register('youtube_channel')}
                       />
                     </div>
@@ -843,7 +950,7 @@ const RegisterPage = () => {
                       <input
                         type="number"
                         placeholder="Subscribers count"
-                        style={styles.input}
+                        style={{ ...styles.input, paddingLeft: '1rem' }}
                         {...register('youtube_subscribers', {
                           min: {
                             value: 0,
@@ -892,7 +999,7 @@ const RegisterPage = () => {
                   </>
                 ) : (
                   <>
-                    {currentStep === 1 ? 'Verify Phone' : 'Next'}
+                    {currentStep === 1 && !phoneChecked ? 'Verify Phone' : 'Next'}
                     <ArrowRight size={20} />
                   </>
                 )}

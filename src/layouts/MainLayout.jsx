@@ -1,892 +1,770 @@
-/**
- * Main Layout Component
- * 
- * This layout wraps all authenticated pages and provides:
- * - Sidebar navigation
- * - Top header with user menu
- * - Main content area
- * - Responsive mobile menu
- * - Global loading states
- * - Breadcrumbs
- * 
- * File: src/layouts/MainLayout.jsx
- */
-
+// src/layouts/MainLayout.jsx
 import React, { useEffect, useState } from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore, useUIStore, useDataStore } from '@/store';
+import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu,
   X,
-  ChevronDown,
-  Bell,
-  Search,
-  Settings,
-  LogOut,
-  User,
-  HelpCircle,
   Home,
-  FileText,
-  DollarSign,
-  BarChart3,
   Briefcase,
-  TrendingUp,
-  FileSignature,
+  FileText,
+  BarChart3,
   CreditCard,
   Users,
+  Settings,
+  LogOut,
+  Bell,
+  Search,
+  ChevronDown,
   ChevronRight,
-  Sun,
   Moon,
-  Loader2,
+  Sun,
+  HelpCircle,
+  User,
   Package,
+  TrendingUp,
+  Star,
   Zap,
-  Shield
+  Shield,
+  Award,
+  Target,
+  Sparkles,
+  ChevronLeft
 } from 'lucide-react';
+import { useAuthStore, useUIStore, useDataStore } from '../store';
 import toast from 'react-hot-toast';
 
-// ============================================
-// Navigation Configuration
-// ============================================
-const navigationItems = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: Home,
-    path: '/dashboard',
-    badge: null
-  },
-  {
-    id: 'deals',
-    label: 'Deals',
-    icon: Briefcase,
-    path: '/deals',
-    badge: 'new',
-    subItems: [
-      { id: 'deals-list', label: 'All Deals', path: '/deals' },
-      { id: 'deals-pipeline', label: 'Pipeline', path: '/deals/pipeline' },
-      { id: 'deals-create', label: 'Create Deal', path: '/deals/create' }
-    ]
-  },
-  {
-    id: 'invoices',
-    label: 'Invoices',
-    icon: FileText,
-    path: '/invoices',
-    requiredSubscription: ['starter', 'pro', 'elite', 'agency_starter', 'agency_pro']
-  },
-  {
-    id: 'briefs',
-    label: 'Briefs',
-    icon: FileSignature,
-    path: '/briefs',
-    requiredSubscription: ['pro', 'elite', 'agency_starter', 'agency_pro'],
-    badge: 'pro'
-  },
-  {
-    id: 'analytics',
-    label: 'Analytics',
-    icon: BarChart3,
-    path: '/analytics',
-    requiredSubscription: ['pro', 'elite', 'agency_starter', 'agency_pro'],
-    badge: 'pro',
-    subItems: [
-      { id: 'analytics-dashboard', label: 'Dashboard', path: '/analytics' },
-      { id: 'analytics-revenue', label: 'Revenue', path: '/analytics/revenue' },
-      { id: 'analytics-performance', label: 'Performance', path: '/analytics/performance' }
-    ]
-  },
-  {
-    id: 'performance',
-    label: 'Performance',
-    icon: TrendingUp,
-    path: '/performance',
-    requiredSubscription: ['pro', 'elite', 'agency_starter', 'agency_pro']
-  },
-  {
-    id: 'contracts',
-    label: 'Contracts',
-    icon: Shield,
-    path: '/contracts'
-  },
-  {
-    id: 'ratecards',
-    label: 'Rate Cards',
-    icon: CreditCard,
-    path: '/ratecards'
-  }
-];
-
-const bottomNavigationItems = [
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: Settings,
-    path: '/settings'
-  },
-  {
-    id: 'help',
-    label: 'Help & Support',
-    icon: HelpCircle,
-    path: '/help'
-  }
-];
-
-// ============================================
-// Sidebar Component
-// ============================================
-const Sidebar = ({ isOpen, isMobile, onClose }) => {
-  const location = useLocation();
+const MainLayout = () => {
   const navigate = useNavigate();
-  const { user, subscription, hasSubscription } = useAuthStore();
-  const { sidebar, toggleMenuExpansion } = useUIStore();
-  const [expandedItems, setExpandedItems] = useState([]);
-
-  const isItemActive = (path) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
-  };
-
-  const handleNavClick = (item) => {
-    if (item.subItems) {
-      const isExpanded = expandedItems.includes(item.id);
-      setExpandedItems(
-        isExpanded 
-          ? expandedItems.filter(id => id !== item.id)
-          : [...expandedItems, item.id]
-      );
-    } else {
-      navigate(item.path);
-      if (isMobile) {
-        onClose();
-      }
+  const location = useLocation();
+  
+  // Auth Store
+  const { user, subscription, logout } = useAuthStore();
+  
+  // UI Store - Fixed to handle loading state properly
+  const { 
+    sidebar,
+    toggleSidebar,
+    collapseSidebar,
+    setActiveMenuItem,
+    toggleMenuExpansion,
+    viewport,
+    theme,
+    toggleTheme,
+    openModal,
+    setPageTitle,
+    loading: loadingState = { global: false, page: false, action: false, submit: false }
+  } = useUIStore();
+  
+  // Data Store
+  const { refreshAllData } = useDataStore();
+  
+  // Local state
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Safely access loading states with fallback
+  const isPageLoading = loadingState?.page || false;
+  const isGlobalLoading = loadingState?.global || false;
+  
+  // Menu items configuration
+  const menuItems = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: Home,
+      path: '/dashboard',
+      badge: null
+    },
+    {
+      id: 'deals',
+      label: 'Deals',
+      icon: Briefcase,
+      path: '/deals',
+      badge: { count: 3, type: 'primary' },
+      subItems: [
+        { id: 'deals-list', label: 'All Deals', path: '/deals' },
+        { id: 'deals-pipeline', label: 'Pipeline', path: '/deals/pipeline' },
+        { id: 'deals-new', label: 'New Deal', path: '/deals/new' }
+      ]
+    },
+    {
+      id: 'invoices',
+      label: 'Invoices',
+      icon: FileText,
+      path: '/invoices',
+      badge: { count: 2, type: 'warning' },
+      subItems: [
+        { id: 'invoices-list', label: 'All Invoices', path: '/invoices' },
+        { id: 'invoices-pending', label: 'Pending', path: '/invoices/pending' },
+        { id: 'invoices-new', label: 'Create Invoice', path: '/invoices/new' }
+      ]
+    },
+    {
+      id: 'performance',
+      label: 'Performance',
+      icon: TrendingUp,
+      path: '/performance',
+      badge: null,
+      subItems: [
+        { id: 'performance-overview', label: 'Overview', path: '/performance' },
+        { id: 'performance-analytics', label: 'Analytics', path: '/performance/analytics' },
+        { id: 'performance-reports', label: 'Reports', path: '/performance/reports' }
+      ]
+    },
+    {
+      id: 'briefs',
+      label: 'Briefs',
+      icon: Sparkles,
+      path: '/briefs',
+      badge: { count: 1, type: 'success' },
+      premium: true
+    },
+    {
+      id: 'rate-cards',
+      label: 'Rate Cards',
+      icon: CreditCard,
+      path: '/rate-cards',
+      premium: true
+    },
+    {
+      id: 'contracts',
+      label: 'Contracts',
+      icon: Shield,
+      path: '/contracts',
+      premium: true
+    }
+  ];
+  
+  // Bottom menu items
+  const bottomMenuItems = [
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: User,
+      path: '/profile'
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: Settings,
+      path: '/settings'
+    },
+    {
+      id: 'help',
+      label: 'Help & Support',
+      icon: HelpCircle,
+      path: '/help'
+    }
+  ];
+  
+  // Update active menu item based on current path
+  useEffect(() => {
+    const path = location.pathname;
+    const activeItem = menuItems.find(item => 
+      path.startsWith(item.path)
+    )?.id || 'dashboard';
+    
+    setActiveMenuItem(activeItem);
+    
+    // Update page title based on active item
+    const item = menuItems.find(item => item.id === activeItem);
+    if (item) {
+      setPageTitle(item.label);
+    }
+  }, [location.pathname, setActiveMenuItem, setPageTitle]);
+  
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+      toast.success('Logged out successfully');
+    } catch (error) {
+      toast.error('Failed to logout');
     }
   };
-
-  const canAccessItem = (item) => {
-    if (!item.requiredSubscription) return true;
-    return hasSubscription(item.requiredSubscription);
+  
+  // Handle search
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
   };
-
-  return (
-    <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''} ${isMobile ? 'sidebar-mobile' : ''}`}>
-      <div className="sidebar-header">
-        <Link to="/dashboard" className="sidebar-logo">
-          <div className="logo-icon">
-            <span className="logo-letter">C</span>
-          </div>
-          <span className="logo-text">CreatorsMantra</span>
-        </Link>
-        {isMobile && (
-          <button onClick={onClose} className="sidebar-close">
-            <X size={20} />
-          </button>
-        )}
-      </div>
-
-      <nav className="sidebar-nav">
-        <div className="nav-section">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = isItemActive(item.path);
-            const isExpanded = expandedItems.includes(item.id);
-            const canAccess = canAccessItem(item);
-
-            return (
-              <div key={item.id} className="nav-item-wrapper">
-                <button
-                  className={`nav-item ${isActive ? 'nav-item-active' : ''} ${!canAccess ? 'nav-item-locked' : ''}`}
-                  onClick={() => canAccess && handleNavClick(item)}
-                  disabled={!canAccess}
-                >
-                  <Icon size={20} className="nav-icon" />
-                  <span className="nav-label">{item.label}</span>
-                  {item.badge && (
-                    <span className={`nav-badge nav-badge-${item.badge}`}>
-                      {item.badge}
-                    </span>
-                  )}
-                  {item.subItems && (
-                    <ChevronRight 
-                      size={16} 
-                      className={`nav-chevron ${isExpanded ? 'nav-chevron-expanded' : ''}`} 
-                    />
-                  )}
-                  {!canAccess && <Shield size={14} className="nav-lock" />}
-                </button>
-                
-                {item.subItems && isExpanded && canAccess && (
-                  <div className="nav-subitems">
-                    {item.subItems.map((subItem) => (
-                      <Link
-                        key={subItem.id}
-                        to={subItem.path}
-                        className={`nav-subitem ${location.pathname === subItem.path ? 'nav-subitem-active' : ''}`}
-                        onClick={() => isMobile && onClose()}
-                      >
-                        {subItem.label}
-                      </Link>
-                    ))}
-                  </div>
+  
+  // Check if feature is premium and locked
+  const isFeatureLocked = (item) => {
+    return item.premium && (!subscription || subscription.tier === 'starter');
+  };
+  
+  // Render menu item
+  const renderMenuItem = (item) => {
+    const Icon = item.icon;
+    const isActive = sidebar.activeItem === item.id;
+    const isExpanded = sidebar.expandedItems?.includes(item.id);
+    const isLocked = isFeatureLocked(item);
+    const hasSubItems = item.subItems && item.subItems.length > 0;
+    
+    return (
+      <div key={item.id} style={styles.menuItemContainer}>
+        <div
+          onClick={() => {
+            if (isLocked) {
+              openModal('upgradePlan');
+              return;
+            }
+            
+            if (hasSubItems) {
+              toggleMenuExpansion(item.id);
+            } else {
+              navigate(item.path);
+            }
+          }}
+          style={{
+            ...styles.menuItem,
+            ...(isActive ? styles.menuItemActive : {}),
+            ...(isLocked ? styles.menuItemLocked : {})
+          }}
+        >
+          <div style={styles.menuItemContent}>
+            <Icon size={20} />
+            {!sidebar.isCollapsed && (
+              <>
+                <span style={styles.menuItemLabel}>{item.label}</span>
+                {item.premium && (
+                  <Zap size={14} color="var(--color-warning)" />
                 )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="nav-section nav-section-bottom">
-          {bottomNavigationItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = isItemActive(item.path);
-
-            return (
-              <Link
-                key={item.id}
-                to={item.path}
-                className={`nav-item ${isActive ? 'nav-item-active' : ''}`}
-                onClick={() => isMobile && onClose()}
-              >
-                <Icon size={20} className="nav-icon" />
-                <span className="nav-label">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
-
-      <div className="sidebar-footer">
-        <div className="user-info">
-          <div className="user-avatar">
-            {user?.profile?.avatar ? (
-              <img src={user.profile.avatar} alt={user.name} />
-            ) : (
-              <User size={20} />
+                {item.badge && !sidebar.isCollapsed && (
+                  <span style={{
+                    ...styles.badge,
+                    ...(item.badge.type === 'primary' ? styles.badgePrimary :
+                        item.badge.type === 'warning' ? styles.badgeWarning :
+                        styles.badgeSuccess)
+                  }}>
+                    {item.badge.count}
+                  </span>
+                )}
+                {hasSubItems && (
+                  <ChevronRight 
+                    size={16} 
+                    style={{
+                      ...styles.chevron,
+                      transform: isExpanded ? 'rotate(90deg)' : 'none'
+                    }}
+                  />
+                )}
+              </>
             )}
           </div>
-          <div className="user-details">
-            <div className="user-name">{user?.name || 'User'}</div>
-            <div className="user-tier">
-              {subscription?.tier ? (
-                <span className={`tier-badge tier-${subscription.tier}`}>
-                  {subscription.tier}
-                </span>
-              ) : (
-                <span className="tier-badge tier-free">Free</span>
-              )}
-            </div>
-          </div>
         </div>
-      </div>
-
-      <style jsx>{`
-        .sidebar {
-          position: fixed;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 280px;
-          background: white;
-          border-right: 1px solid var(--color-neutral-200);
-          display: flex;
-          flex-direction: column;
-          transform: translateX(-100%);
-          transition: transform var(--duration-200) var(--ease-out);
-          z-index: var(--z-modal);
-        }
-
-        .sidebar-open {
-          transform: translateX(0);
-        }
-
-        .sidebar-mobile {
-          box-shadow: var(--shadow-xl);
-        }
-
-        .sidebar-header {
-          padding: var(--space-6);
-          border-bottom: 1px solid var(--color-neutral-200);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .sidebar-logo {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          text-decoration: none;
-          color: var(--color-neutral-900);
-        }
-
-        .logo-icon {
-          width: 40px;
-          height: 40px;
-          background: var(--gradient-primary);
-          border-radius: var(--radius-xl);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .logo-letter {
-          color: white;
-          font-size: var(--text-xl);
-          font-weight: var(--font-bold);
-        }
-
-        .logo-text {
-          font-size: var(--text-xl);
-          font-weight: var(--font-bold);
-        }
-
-        .sidebar-close {
-          background: none;
-          border: none;
-          color: var(--color-neutral-600);
-          cursor: pointer;
-          padding: var(--space-2);
-        }
-
-        .sidebar-nav {
-          flex: 1;
-          overflow-y: auto;
-          padding: var(--space-4);
-        }
-
-        .nav-section {
-          margin-bottom: var(--space-6);
-        }
-
-        .nav-section-bottom {
-          margin-top: auto;
-          margin-bottom: 0;
-          padding-top: var(--space-4);
-          border-top: 1px solid var(--color-neutral-200);
-        }
-
-        .nav-item-wrapper {
-          margin-bottom: var(--space-1);
-        }
-
-        .nav-item {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          padding: var(--space-3) var(--space-4);
-          background: none;
-          border: none;
-          border-radius: var(--radius-lg);
-          color: var(--color-neutral-700);
-          text-decoration: none;
-          cursor: pointer;
-          transition: all var(--duration-150) var(--ease-out);
-          position: relative;
-        }
-
-        .nav-item:hover {
-          background: var(--color-neutral-100);
-          color: var(--color-neutral-900);
-        }
-
-        .nav-item-active {
-          background: var(--color-primary-100);
-          color: var(--color-primary-700);
-        }
-
-        .nav-item-locked {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .nav-icon {
-          flex-shrink: 0;
-        }
-
-        .nav-label {
-          flex: 1;
-          text-align: left;
-          font-size: var(--text-sm);
-          font-weight: var(--font-medium);
-        }
-
-        .nav-badge {
-          padding: var(--space-0-5) var(--space-2);
-          border-radius: var(--radius-full);
-          font-size: var(--text-xs);
-          font-weight: var(--font-semibold);
-          text-transform: uppercase;
-        }
-
-        .nav-badge-new {
-          background: var(--color-success-light);
-          color: var(--color-success-dark);
-        }
-
-        .nav-badge-pro {
-          background: var(--gradient-primary);
-          color: white;
-        }
-
-        .nav-chevron {
-          transition: transform var(--duration-150) var(--ease-out);
-        }
-
-        .nav-chevron-expanded {
-          transform: rotate(90deg);
-        }
-
-        .nav-lock {
-          color: var(--color-warning);
-        }
-
-        .nav-subitems {
-          margin-left: var(--space-8);
-          margin-top: var(--space-1);
-        }
-
-        .nav-subitem {
-          display: block;
-          padding: var(--space-2) var(--space-4);
-          color: var(--color-neutral-600);
-          text-decoration: none;
-          font-size: var(--text-sm);
-          border-radius: var(--radius-md);
-          transition: all var(--duration-150) var(--ease-out);
-        }
-
-        .nav-subitem:hover {
-          background: var(--color-neutral-100);
-          color: var(--color-neutral-900);
-        }
-
-        .nav-subitem-active {
-          color: var(--color-primary-600);
-          font-weight: var(--font-medium);
-        }
-
-        .sidebar-footer {
-          padding: var(--space-4);
-          border-top: 1px solid var(--color-neutral-200);
-        }
-
-        .user-info {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          padding: var(--space-3);
-          background: var(--color-neutral-50);
-          border-radius: var(--radius-lg);
-        }
-
-        .user-avatar {
-          width: 40px;
-          height: 40px;
-          background: var(--gradient-primary);
-          border-radius: var(--radius-full);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          overflow: hidden;
-        }
-
-        .user-avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .user-details {
-          flex: 1;
-        }
-
-        .user-name {
-          font-size: var(--text-sm);
-          font-weight: var(--font-semibold);
-          color: var(--color-neutral-900);
-        }
-
-        .tier-badge {
-          display: inline-block;
-          padding: var(--space-0-5) var(--space-2);
-          border-radius: var(--radius-full);
-          font-size: var(--text-xs);
-          font-weight: var(--font-semibold);
-          text-transform: uppercase;
-          margin-top: var(--space-1);
-        }
-
-        .tier-free {
-          background: var(--color-neutral-200);
-          color: var(--color-neutral-700);
-        }
-
-        .tier-starter {
-          background: var(--color-info-light);
-          color: var(--color-info-dark);
-        }
-
-        .tier-pro {
-          background: var(--gradient-purple);
-          color: white;
-        }
-
-        .tier-elite {
-          background: var(--gradient-primary);
-          color: white;
-        }
-
-        @media (min-width: 1024px) {
-          .sidebar {
-            position: relative;
-            transform: translateX(0);
-          }
-
-          .sidebar-close {
-            display: none;
-          }
-        }
-      `}</style>
-    </aside>
-  );
-};
-
-// ============================================
-// Header Component
-// ============================================
-const Header = ({ onMenuClick }) => {
-  const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
-  const { theme, toggleTheme, openModal } = useUIStore();
-  const [showUserMenu, setShowUserMenu] = useState(false);
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-    toast.success('Logged out successfully');
-  };
-
-  return (
-    <header className="header">
-      <div className="header-left">
-        <button className="menu-toggle" onClick={onMenuClick}>
-          <Menu size={24} />
-        </button>
         
-        <button className="search-button" onClick={() => openModal('search')}>
-          <Search size={20} />
-          <span>Search...</span>
-        </button>
+        {/* Sub Items */}
+        {hasSubItems && isExpanded && !sidebar.isCollapsed && (
+          <div style={styles.subItemsContainer}>
+            {item.subItems.map(subItem => (
+              <Link
+                key={subItem.id}
+                to={subItem.path}
+                style={{
+                  ...styles.subItem,
+                  ...(location.pathname === subItem.path ? styles.subItemActive : {})
+                }}
+              >
+                {subItem.label}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
-
-      <div className="header-right">
-        <button className="header-icon" onClick={toggleTheme}>
-          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-
-        <button className="header-icon notification-button" onClick={() => openModal('notifications')}>
-          <Bell size={20} />
-          <span className="notification-badge">3</span>
-        </button>
-
-        <div className="user-menu-wrapper">
-          <button 
-            className="user-menu-trigger"
-            onClick={() => setShowUserMenu(!showUserMenu)}
-          >
-            <div className="user-avatar-small">
-              {user?.profile?.avatar ? (
-                <img src={user.profile.avatar} alt={user.name} />
-              ) : (
-                <User size={16} />
-              )}
-            </div>
-            <span className="user-name-header">{user?.name || 'User'}</span>
-            <ChevronDown size={16} />
-          </button>
-
-          {showUserMenu && (
-            <div className="user-dropdown">
-              <Link to="/settings/profile" className="dropdown-item">
-                <User size={16} />
-                <span>Profile</span>
-              </Link>
-              <Link to="/settings" className="dropdown-item">
-                <Settings size={16} />
-                <span>Settings</span>
-              </Link>
-              <Link to="/settings/subscription" className="dropdown-item">
-                <Zap size={16} />
-                <span>Subscription</span>
-              </Link>
-              <div className="dropdown-divider" />
-              <button onClick={handleLogout} className="dropdown-item dropdown-item-danger">
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <style jsx>{`
-        .header {
-          height: 64px;
-          background: white;
-          border-bottom: 1px solid var(--color-neutral-200);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 var(--space-6);
-          position: sticky;
-          top: 0;
-          z-index: var(--z-dropdown);
-        }
-
-        .header-left {
-          display: flex;
-          align-items: center;
-          gap: var(--space-4);
-        }
-
-        .menu-toggle {
-          background: none;
-          border: none;
-          color: var(--color-neutral-700);
-          cursor: pointer;
-          padding: var(--space-2);
-        }
-
-        .search-button {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          padding: var(--space-2) var(--space-4);
-          background: var(--color-neutral-100);
-          border: 1px solid var(--color-neutral-200);
-          border-radius: var(--radius-lg);
-          color: var(--color-neutral-500);
-          cursor: pointer;
-          min-width: 200px;
-        }
-
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: var(--space-4);
-        }
-
-        .header-icon {
-          background: none;
-          border: none;
-          color: var(--color-neutral-700);
-          cursor: pointer;
-          padding: var(--space-2);
-          position: relative;
-        }
-
-        .notification-badge {
-          position: absolute;
-          top: 0;
-          right: 0;
-          background: var(--color-error);
-          color: white;
-          font-size: var(--text-xs);
-          padding: 2px 6px;
-          border-radius: var(--radius-full);
-        }
-
-        .user-menu-wrapper {
-          position: relative;
-        }
-
-        .user-menu-trigger {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          padding: var(--space-2);
-          background: none;
-          border: none;
-          cursor: pointer;
-          border-radius: var(--radius-lg);
-          transition: background var(--duration-150) var(--ease-out);
-        }
-
-        .user-menu-trigger:hover {
-          background: var(--color-neutral-100);
-        }
-
-        .user-avatar-small {
-          width: 32px;
-          height: 32px;
-          background: var(--gradient-primary);
-          border-radius: var(--radius-full);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          overflow: hidden;
-        }
-
-        .user-avatar-small img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .user-name-header {
-          font-size: var(--text-sm);
-          font-weight: var(--font-medium);
-          color: var(--color-neutral-900);
-        }
-
-        .user-dropdown {
-          position: absolute;
-          top: 100%;
-          right: 0;
-          margin-top: var(--space-2);
-          background: white;
-          border: 1px solid var(--color-neutral-200);
-          border-radius: var(--radius-lg);
-          box-shadow: var(--shadow-lg);
-          min-width: 200px;
-          padding: var(--space-2);
-        }
-
-        .dropdown-item {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          padding: var(--space-2) var(--space-3);
-          background: none;
-          border: none;
-          border-radius: var(--radius-md);
-          color: var(--color-neutral-700);
-          text-decoration: none;
-          cursor: pointer;
-          width: 100%;
-          transition: background var(--duration-150) var(--ease-out);
-        }
-
-        .dropdown-item:hover {
-          background: var(--color-neutral-100);
-        }
-
-        .dropdown-item-danger {
-          color: var(--color-error);
-        }
-
-        .dropdown-divider {
-          height: 1px;
-          background: var(--color-neutral-200);
-          margin: var(--space-2) 0;
-        }
-
-        @media (min-width: 1024px) {
-          .menu-toggle {
-            display: none;
-          }
-        }
-      `}</style>
-    </header>
-  );
-};
-
-// ============================================
-// Main Layout Component
-// ============================================
-const MainLayout = () => {
-  const location = useLocation();
-  const { viewport } = useUIStore();
-  const [sidebarOpen, setSidebarOpen] = useState(!viewport.isMobile);
-  const { loading } = useUIStore((state) => state.loading);
-
-  useEffect(() => {
-    // Close mobile sidebar on route change
-    if (viewport.isMobile) {
-      setSidebarOpen(false);
-    }
-  }, [location, viewport.isMobile]);
-
-  useEffect(() => {
-    // Update sidebar state based on viewport
-    setSidebarOpen(!viewport.isMobile);
-  }, [viewport.isMobile]);
-
+    );
+  };
+  
+  // Styles
+  const styles = {
+    container: {
+      display: 'flex',
+      minHeight: '100vh',
+      background: 'var(--color-background)',
+    },
+    
+    // Sidebar Styles
+    sidebar: {
+      width: sidebar.isCollapsed ? '80px' : '260px',
+      background: 'white',
+      borderRight: '1px solid var(--color-neutral-200)',
+      display: 'flex',
+      flexDirection: 'column',
+      transition: 'width 0.3s ease',
+      position: viewport.isMobile ? 'fixed' : 'relative',
+      height: viewport.isMobile ? '100vh' : 'auto',
+      zIndex: viewport.isMobile ? 100 : 1,
+      transform: viewport.isMobile ? 
+        (sidebar.isMobileOpen ? 'translateX(0)' : 'translateX(-100%)') : 
+        'none',
+    },
+    
+    sidebarHeader: {
+      padding: '1.5rem',
+      borderBottom: '1px solid var(--color-neutral-200)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: sidebar.isCollapsed ? 'center' : 'space-between',
+    },
+    
+    logo: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.75rem',
+      textDecoration: 'none',
+    },
+    
+    logoIcon: {
+      width: '32px',
+      height: '32px',
+      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      borderRadius: '10px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'white',
+      fontWeight: '700',
+      fontSize: '1.125rem',
+    },
+    
+    logoText: {
+      fontSize: '1.25rem',
+      fontWeight: '700',
+      color: 'var(--color-neutral-900)',
+      display: sidebar.isCollapsed ? 'none' : 'block',
+    },
+    
+    collapseButton: {
+      padding: '0.5rem',
+      background: 'transparent',
+      border: 'none',
+      cursor: 'pointer',
+      color: 'var(--color-neutral-600)',
+      borderRadius: '8px',
+      transition: 'all 0.2s ease',
+      display: viewport.isMobile ? 'none' : 'flex',
+    },
+    
+    sidebarContent: {
+      flex: 1,
+      padding: '1rem',
+      overflowY: 'auto',
+    },
+    
+    menuSection: {
+      marginBottom: '2rem',
+    },
+    
+    menuItemContainer: {
+      marginBottom: '0.25rem',
+    },
+    
+    menuItem: {
+      display: 'flex',
+      alignItems: 'center',
+      padding: sidebar.isCollapsed ? '0.75rem' : '0.75rem 1rem',
+      borderRadius: '10px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      color: 'var(--color-neutral-700)',
+      textDecoration: 'none',
+      justifyContent: sidebar.isCollapsed ? 'center' : 'flex-start',
+    },
+    
+    menuItemActive: {
+      background: 'rgba(102, 126, 234, 0.1)',
+      color: 'var(--color-primary-600)',
+      fontWeight: '600',
+    },
+    
+    menuItemLocked: {
+      opacity: 0.6,
+      cursor: 'not-allowed',
+    },
+    
+    menuItemContent: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.75rem',
+      width: '100%',
+    },
+    
+    menuItemLabel: {
+      flex: 1,
+      fontSize: '0.875rem',
+    },
+    
+    badge: {
+      padding: '0.125rem 0.5rem',
+      borderRadius: '10px',
+      fontSize: '0.75rem',
+      fontWeight: '600',
+    },
+    
+    badgePrimary: {
+      background: 'var(--color-primary-100)',
+      color: 'var(--color-primary-700)',
+    },
+    
+    badgeWarning: {
+      background: 'var(--color-warning-100)',
+      color: 'var(--color-warning-700)',
+    },
+    
+    badgeSuccess: {
+      background: 'var(--color-success-100)',
+      color: 'var(--color-success-700)',
+    },
+    
+    chevron: {
+      transition: 'transform 0.2s ease',
+    },
+    
+    subItemsContainer: {
+      marginLeft: sidebar.isCollapsed ? '0' : '2.5rem',
+      marginTop: '0.25rem',
+    },
+    
+    subItem: {
+      display: 'block',
+      padding: '0.5rem 1rem',
+      fontSize: '0.813rem',
+      color: 'var(--color-neutral-600)',
+      textDecoration: 'none',
+      borderRadius: '8px',
+      transition: 'all 0.2s ease',
+      marginBottom: '0.125rem',
+    },
+    
+    subItemActive: {
+      background: 'rgba(102, 126, 234, 0.05)',
+      color: 'var(--color-primary-600)',
+      fontWeight: '500',
+    },
+    
+    sidebarFooter: {
+      padding: '1rem',
+      borderTop: '1px solid var(--color-neutral-200)',
+    },
+    
+    userProfile: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.75rem',
+      padding: '0.75rem',
+      borderRadius: '10px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      justifyContent: sidebar.isCollapsed ? 'center' : 'flex-start',
+    },
+    
+    userAvatar: {
+      width: '36px',
+      height: '36px',
+      borderRadius: '50%',
+      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'white',
+      fontWeight: '600',
+      fontSize: '0.875rem',
+    },
+    
+    userInfo: {
+      flex: 1,
+      display: sidebar.isCollapsed ? 'none' : 'block',
+    },
+    
+    userName: {
+      fontSize: '0.875rem',
+      fontWeight: '600',
+      color: 'var(--color-neutral-900)',
+      marginBottom: '0.125rem',
+    },
+    
+    userRole: {
+      fontSize: '0.75rem',
+      color: 'var(--color-neutral-600)',
+    },
+    
+    // Main Content Styles
+    mainContent: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'var(--color-background)',
+      minHeight: '100vh',
+    },
+    
+    // Header Styles
+    header: {
+      background: 'white',
+      borderBottom: '1px solid var(--color-neutral-200)',
+      padding: '1rem 2rem',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '2rem',
+      position: 'sticky',
+      top: 0,
+      zIndex: 10,
+    },
+    
+    mobileMenuButton: {
+      padding: '0.5rem',
+      background: 'transparent',
+      border: 'none',
+      cursor: 'pointer',
+      color: 'var(--color-neutral-700)',
+      display: viewport.isMobile ? 'flex' : 'none',
+    },
+    
+    searchBar: {
+      flex: 1,
+      maxWidth: '500px',
+      position: 'relative',
+    },
+    
+    searchInput: {
+      width: '100%',
+      padding: '0.625rem 1rem',
+      paddingLeft: '2.5rem',
+      border: '1px solid var(--color-neutral-200)',
+      borderRadius: '10px',
+      fontSize: '0.875rem',
+      outline: 'none',
+      transition: 'all 0.2s ease',
+    },
+    
+    searchIcon: {
+      position: 'absolute',
+      left: '1rem',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      color: 'var(--color-neutral-400)',
+    },
+    
+    headerActions: {
+      marginLeft: 'auto',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1rem',
+    },
+    
+    iconButton: {
+      padding: '0.625rem',
+      background: 'transparent',
+      border: '1px solid var(--color-neutral-200)',
+      borderRadius: '10px',
+      cursor: 'pointer',
+      color: 'var(--color-neutral-700)',
+      transition: 'all 0.2s ease',
+      position: 'relative',
+    },
+    
+    notificationBadge: {
+      position: 'absolute',
+      top: '-4px',
+      right: '-4px',
+      width: '18px',
+      height: '18px',
+      background: 'var(--color-error)',
+      color: 'white',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '0.625rem',
+      fontWeight: '600',
+    },
+    
+    // Content Area
+    content: {
+      flex: 1,
+      padding: '2rem',
+      overflowY: 'auto',
+      position: 'relative',
+    },
+    
+    // Loading Overlay
+    loadingOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(255, 255, 255, 0.9)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 100,
+    },
+    
+    loadingSpinner: {
+      width: '40px',
+      height: '40px',
+      border: '3px solid var(--color-neutral-200)',
+      borderTopColor: 'var(--color-primary-500)',
+      borderRadius: '50%',
+      animation: 'spin 1s linear infinite',
+    },
+    
+    // Mobile overlay
+    mobileOverlay: {
+      display: viewport.isMobile && sidebar.isMobileOpen ? 'block' : 'none',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.5)',
+      zIndex: 99,
+    },
+  };
+  
   return (
-    <div className="main-layout">
-      <Sidebar 
-        isOpen={sidebarOpen} 
-        isMobile={viewport.isMobile}
-        onClose={() => setSidebarOpen(false)}
+    <div style={styles.container}>
+      {/* Mobile Overlay */}
+      <div 
+        style={styles.mobileOverlay}
+        onClick={() => toggleSidebar()}
       />
       
-      <div className={`main-content ${sidebarOpen && !viewport.isMobile ? 'main-content-shifted' : ''}`}>
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+      {/* Sidebar */}
+      <aside style={styles.sidebar}>
+        <div style={styles.sidebarHeader}>
+          <Link to="/dashboard" style={styles.logo}>
+            <div style={styles.logoIcon}>C</div>
+            <span style={styles.logoText}>CreatorsMantra</span>
+          </Link>
+          {!sidebar.isCollapsed && (
+            <button
+              onClick={() => collapseSidebar()}
+              style={styles.collapseButton}
+            >
+              <ChevronLeft size={20} />
+            </button>
+          )}
+        </div>
         
-        <main className="page-content">
-          {loading.page && (
-            <div className="page-loading">
-              <Loader2 size={32} className="loading-spinner" />
+        <div style={styles.sidebarContent}>
+          <div style={styles.menuSection}>
+            {menuItems.map(renderMenuItem)}
+          </div>
+          
+          <div style={styles.menuSection}>
+            {bottomMenuItems.map(renderMenuItem)}
+          </div>
+        </div>
+        
+        <div style={styles.sidebarFooter}>
+          <div 
+            style={styles.userProfile}
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+          >
+            <div style={styles.userAvatar}>
+              {user?.fullName?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            <div style={styles.userInfo}>
+              <div style={styles.userName}>
+                {user?.fullName || 'User'}
+              </div>
+              <div style={styles.userRole}>
+                {subscription?.tier || 'Starter'} Plan
+              </div>
+            </div>
+          </div>
+          
+          {/* Logout Button */}
+          {!sidebar.isCollapsed && (
+            <button
+              onClick={handleLogout}
+              style={{
+                ...styles.menuItem,
+                marginTop: '0.5rem',
+                color: 'var(--color-error)',
+              }}
+            >
+              <LogOut size={20} />
+              <span style={styles.menuItemLabel}>Logout</span>
+            </button>
+          )}
+        </div>
+      </aside>
+      
+      {/* Main Content */}
+      <div style={styles.mainContent}>
+        {/* Header */}
+        <header style={styles.header}>
+          {viewport.isMobile && (
+            <button
+              onClick={() => toggleSidebar()}
+              style={styles.mobileMenuButton}
+            >
+              <Menu size={24} />
+            </button>
+          )}
+          
+          <form onSubmit={handleSearch} style={styles.searchBar}>
+            <Search size={18} style={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search deals, invoices, brands..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={styles.searchInput}
+            />
+          </form>
+          
+          <div style={styles.headerActions}>
+            <button
+              onClick={() => toggleTheme()}
+              style={styles.iconButton}
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              style={styles.iconButton}
+            >
+              <Bell size={20} />
+              <span style={styles.notificationBadge}>3</span>
+            </button>
+            
+            <button
+              onClick={() => refreshAllData()}
+              style={styles.iconButton}
+            >
+              <TrendingUp size={20} />
+            </button>
+          </div>
+        </header>
+        
+        {/* Content Area */}
+        <main style={styles.content}>
+          {/* Loading Overlay */}
+          {isPageLoading && (
+            <div style={styles.loadingOverlay}>
+              <div style={styles.loadingSpinner} />
             </div>
           )}
+          
+          {/* Page Content */}
           <Outlet />
         </main>
       </div>
-
-      {viewport.isMobile && sidebarOpen && (
-        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
-      )}
-
+      
+      {/* Add keyframes for spinner */}
       <style jsx>{`
-        .main-layout {
-          min-height: 100vh;
-          background: var(--color-neutral-50);
-        }
-
-        .main-content {
-          transition: margin-left var(--duration-200) var(--ease-out);
-        }
-
-        .main-content-shifted {
-          margin-left: 280px;
-        }
-
-        .page-content {
-          padding: var(--space-6);
-          min-height: calc(100vh - 64px);
-          position: relative;
-        }
-
-        .page-loading {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-        }
-
-        .loading-spinner {
-          animation: spin 1s linear infinite;
-          color: var(--color-primary-500);
-        }
-
-        .sidebar-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          z-index: calc(var(--z-modal) - 1);
-        }
-
         @keyframes spin {
           to { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 1023px) {
-          .main-content-shifted {
-            margin-left: 0;
-          }
         }
       `}</style>
     </div>

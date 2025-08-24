@@ -155,6 +155,40 @@ const useAuthStore = create(
       },
       
       // ============================================
+// OTP Operations
+// ============================================
+checkPhone: async (phone) => {
+    try {
+      set({ isLoading: true });
+      
+      const response = await authAPI.checkPhone(phone);
+      
+      if (response.success) {
+        return { 
+          success: true, 
+          exists: response.data?.exists || false 
+        };
+      }
+      
+      return { 
+        success: false, 
+        exists: false,
+        message: response.message 
+      };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to check phone';
+      console.error('Phone check error:', error);
+      return { 
+        success: false, 
+        exists: false,
+        message 
+      };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+      // ============================================
       // Registration
       // ============================================
       register: async (userData) => {

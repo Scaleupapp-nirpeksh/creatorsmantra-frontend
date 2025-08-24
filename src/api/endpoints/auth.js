@@ -1,3 +1,4 @@
+// src/api/endpoints/auth.js
 import { api } from '../client';
 
 export const authAPI = {
@@ -9,7 +10,10 @@ export const authAPI = {
     api.post('/auth/send-otp', { phone }),
   
   verifyOTP: (phone, otp) => 
-    api.post('/auth/verify-otp', { phone, otp }),
+    api.post('/auth/verify-otp', { 
+      phone, 
+      otpCode: otp  // Fixed: Backend expects 'otpCode' not 'otp'
+    }),
   
   register: (data) => 
     api.post('/auth/register', data),
@@ -18,7 +22,10 @@ export const authAPI = {
     api.post('/auth/login', { email, password }),
   
   loginWithOTP: (phone, otp) => 
-    api.post('/auth/login-otp', { phone, otp }),
+    api.post('/auth/login-otp', { 
+      phone, 
+      otpCode: otp  // Fixed: Backend expects 'otpCode' not 'otp'
+    }),
   
   resetPassword: (email) => 
     api.post('/auth/reset-password', { email }),
