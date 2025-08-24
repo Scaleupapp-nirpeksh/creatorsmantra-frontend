@@ -50,19 +50,26 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { useAuthStore, useDataStore, useUIStore } from '../store';
+import useAuthStore from '../store/authStore';
+import useDataStore from '../store/dataStore';
+import useUIStore from '../store/uiStore';
 import toast from 'react-hot-toast';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
-  const { user, subscription } = useAuthStore();
-  const { 
-    fetchDashboardData, 
-    dashboardData, 
-    isLoading,
-    refreshData 
-  } = useDataStore();
-  const { viewport } = useUIStore();
+  
+  // Get data from stores with safe defaults
+  const user = useAuthStore((state) => state.user) || {};
+  const subscription = useAuthStore((state) => state.subscription) || { tier: 'starter' };
+  
+  // Data store - with safe access
+  const fetchDashboardData = useDataStore((state) => state.fetchAnalyticsDashboard) || (() => Promise.resolve());
+  const dashboardData = useDataStore((state) => state.analytics?.dashboard) || {};
+  const isDataLoading = useDataStore((state) => state.analytics?.isLoading) || false;
+  const refreshData = useDataStore((state) => state.refreshAllData) || (() => Promise.resolve());
+  
+  // UI Store - with safe access
+  const viewport = useUIStore((state) => state.viewport) || { isMobile: false };
   
   // State
   const [timeRange, setTimeRange] = useState('month'); // week, month, quarter, year
@@ -75,18 +82,28 @@ const DashboardPage = () => {
   
   const loadDashboardData = async () => {
     try {
-      await fetchDashboardData(timeRange);
+      if (fetchDashboardData) {
+        await fetchDashboardData(timeRange);
+      }
     } catch (error) {
-      toast.error('Failed to load dashboard data');
+      console.error('Failed to load dashboard data:', error);
+      // Don't show error toast for initial load
     }
   };
   
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refreshData();
-    await loadDashboardData();
-    setRefreshing(false);
-    toast.success('Dashboard refreshed');
+    try {
+      if (refreshData) {
+        await refreshData();
+      }
+      await loadDashboardData();
+      toast.success('Dashboard refreshed');
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
   
   // Mock data for charts (replace with real API data)
@@ -133,7 +150,7 @@ const DashboardPage = () => {
       description: 'Instagram Reel + Story package',
       time: '2 hours ago',
       icon: Briefcase,
-      color: 'var(--color-primary-500)'
+      color: '#667eea'
     },
     {
       id: 2,
@@ -142,7 +159,7 @@ const DashboardPage = () => {
       description: '₹45,000 received',
       time: '5 hours ago',
       icon: DollarSign,
-      color: 'var(--color-success)'
+      color: '#10b981'
     },
     {
       id: 3,
@@ -151,7 +168,7 @@ const DashboardPage = () => {
       description: 'Review required',
       time: '1 day ago',
       icon: FileText,
-      color: 'var(--color-warning)'
+      color: '#f59e0b'
     },
   ];
   
@@ -186,28 +203,28 @@ const DashboardPage = () => {
       id: 'new-deal',
       label: 'New Deal',
       icon: Briefcase,
-      color: 'var(--color-primary-500)',
+      color: '#667eea',
       path: '/deals/new'
     },
     {
       id: 'create-invoice',
       label: 'Create Invoice',
       icon: FileText,
-      color: 'var(--color-success)',
+      color: '#10b981',
       path: '/invoices/new'
     },
     {
       id: 'analyze-brief',
       label: 'Analyze Brief',
       icon: Sparkles,
-      color: 'var(--color-warning)',
+      color: '#f59e0b',
       path: '/briefs/analyze'
     },
     {
       id: 'view-analytics',
       label: 'Analytics',
       icon: BarChart3,
-      color: 'var(--color-info)',
+      color: '#06b6d4',
       path: '/performance'
     },
   ];
@@ -238,13 +255,13 @@ const DashboardPage = () => {
     greetingTitle: {
       fontSize: '2rem',
       fontWeight: '700',
-      color: 'var(--color-neutral-900)',
+      color: '#111827',
       marginBottom: '0.5rem',
     },
     
     greetingSubtitle: {
       fontSize: '1rem',
-      color: 'var(--color-neutral-600)',
+      color: '#6b7280',
     },
     
     headerActions: {
@@ -257,7 +274,7 @@ const DashboardPage = () => {
       display: 'flex',
       gap: '0.5rem',
       padding: '0.25rem',
-      background: 'var(--color-neutral-100)',
+      background: '#f3f4f6',
       borderRadius: '10px',
     },
     
@@ -268,21 +285,21 @@ const DashboardPage = () => {
       borderRadius: '8px',
       fontSize: '0.875rem',
       fontWeight: '500',
-      color: 'var(--color-neutral-600)',
+      color: '#6b7280',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
     },
     
     timeRangeActive: {
       background: 'white',
-      color: 'var(--color-primary-600)',
+      color: '#667eea',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
     },
     
     refreshButton: {
       padding: '0.625rem',
       background: 'white',
-      border: '1px solid var(--color-neutral-200)',
+      border: '1px solid #e5e7eb',
       borderRadius: '10px',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
@@ -293,7 +310,7 @@ const DashboardPage = () => {
     
     downloadButton: {
       padding: '0.625rem 1.25rem',
-      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white',
       border: 'none',
       borderRadius: '10px',
@@ -318,7 +335,7 @@ const DashboardPage = () => {
       background: 'white',
       borderRadius: '16px',
       padding: '1.5rem',
-      border: '1px solid var(--color-neutral-200)',
+      border: '1px solid #e5e7eb',
       transition: 'all 0.3s ease',
       cursor: 'pointer',
     },
@@ -341,14 +358,14 @@ const DashboardPage = () => {
     
     statLabel: {
       fontSize: '0.875rem',
-      color: 'var(--color-neutral-600)',
+      color: '#6b7280',
       marginBottom: '0.5rem',
     },
     
     statValue: {
       fontSize: '2rem',
       fontWeight: '700',
-      color: 'var(--color-neutral-900)',
+      color: '#111827',
       lineHeight: '1',
     },
     
@@ -362,11 +379,11 @@ const DashboardPage = () => {
     },
     
     statChangePositive: {
-      color: 'var(--color-success)',
+      color: '#10b981',
     },
     
     statChangeNegative: {
-      color: 'var(--color-error)',
+      color: '#ef4444',
     },
     
     statIcon: {
@@ -389,7 +406,7 @@ const DashboardPage = () => {
       background: 'white',
       borderRadius: '16px',
       padding: '1.5rem',
-      border: '1px solid var(--color-neutral-200)',
+      border: '1px solid #e5e7eb',
     },
     
     chartHeader: {
@@ -402,7 +419,7 @@ const DashboardPage = () => {
     chartTitle: {
       fontSize: '1.125rem',
       fontWeight: '600',
-      color: 'var(--color-neutral-900)',
+      color: '#111827',
     },
     
     chartLegend: {
@@ -433,7 +450,7 @@ const DashboardPage = () => {
     quickActionCard: {
       padding: '1rem',
       background: 'white',
-      border: '1px solid var(--color-neutral-200)',
+      border: '1px solid #e5e7eb',
       borderRadius: '12px',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
@@ -456,7 +473,7 @@ const DashboardPage = () => {
     quickActionLabel: {
       fontSize: '0.875rem',
       fontWeight: '500',
-      color: 'var(--color-neutral-700)',
+      color: '#374151',
     },
     
     activityList: {
@@ -469,7 +486,7 @@ const DashboardPage = () => {
       display: 'flex',
       gap: '1rem',
       padding: '1rem',
-      background: 'var(--color-neutral-50)',
+      background: '#f9fafb',
       borderRadius: '12px',
       transition: 'all 0.2s ease',
     },
@@ -491,18 +508,18 @@ const DashboardPage = () => {
     activityTitle: {
       fontSize: '0.875rem',
       fontWeight: '600',
-      color: 'var(--color-neutral-900)',
+      color: '#111827',
       marginBottom: '0.25rem',
     },
     
     activityDescription: {
       fontSize: '0.75rem',
-      color: 'var(--color-neutral-600)',
+      color: '#6b7280',
     },
     
     activityTime: {
       fontSize: '0.75rem',
-      color: 'var(--color-neutral-500)',
+      color: '#9ca3af',
     },
     
     tasksList: {
@@ -516,7 +533,7 @@ const DashboardPage = () => {
       alignItems: 'center',
       gap: '1rem',
       padding: '0.875rem',
-      background: 'var(--color-neutral-50)',
+      background: '#f9fafb',
       borderRadius: '10px',
       transition: 'all 0.2s ease',
     },
@@ -525,7 +542,7 @@ const DashboardPage = () => {
       width: '20px',
       height: '20px',
       borderRadius: '6px',
-      border: '2px solid var(--color-neutral-300)',
+      border: '2px solid #d1d5db',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
     },
@@ -537,13 +554,13 @@ const DashboardPage = () => {
     taskTitle: {
       fontSize: '0.875rem',
       fontWeight: '500',
-      color: 'var(--color-neutral-900)',
+      color: '#111827',
       marginBottom: '0.25rem',
     },
     
     taskDue: {
       fontSize: '0.75rem',
-      color: 'var(--color-neutral-600)',
+      color: '#6b7280',
     },
     
     taskPriority: {
@@ -555,17 +572,17 @@ const DashboardPage = () => {
     
     priorityHigh: {
       background: 'rgba(239, 68, 68, 0.1)',
-      color: 'var(--color-error)',
+      color: '#ef4444',
     },
     
     priorityMedium: {
       background: 'rgba(251, 191, 36, 0.1)',
-      color: 'var(--color-warning)',
+      color: '#f59e0b',
     },
     
     priorityLow: {
       background: 'rgba(16, 185, 129, 0.1)',
-      color: 'var(--color-success)',
+      color: '#10b981',
     },
     
     sectionHeader: {
@@ -578,12 +595,12 @@ const DashboardPage = () => {
     sectionTitle: {
       fontSize: '1rem',
       fontWeight: '600',
-      color: 'var(--color-neutral-900)',
+      color: '#111827',
     },
     
     viewAllLink: {
       fontSize: '0.875rem',
-      color: 'var(--color-primary-600)',
+      color: '#667eea',
       textDecoration: 'none',
       fontWeight: '500',
       display: 'flex',
@@ -615,18 +632,18 @@ const DashboardPage = () => {
     subscriptionTitle: {
       fontSize: '1.125rem',
       fontWeight: '600',
-      color: 'var(--color-neutral-900)',
+      color: '#111827',
       marginBottom: '0.5rem',
     },
     
     subscriptionDescription: {
       fontSize: '0.875rem',
-      color: 'var(--color-neutral-600)',
+      color: '#6b7280',
     },
     
     upgradeButton: {
       padding: '0.75rem 1.5rem',
-      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white',
       border: 'none',
       borderRadius: '10px',
@@ -735,7 +752,7 @@ const DashboardPage = () => {
               ...styles.statIcon,
               background: 'rgba(16, 185, 129, 0.1)',
             }}>
-              <DollarSign size={24} color="var(--color-success)" />
+              <DollarSign size={24} color="#10b981" />
             </div>
           </div>
         </motion.div>
@@ -761,7 +778,7 @@ const DashboardPage = () => {
               ...styles.statIcon,
               background: 'rgba(102, 126, 234, 0.1)',
             }}>
-              <Briefcase size={24} color="var(--color-primary-500)" />
+              <Briefcase size={24} color="#667eea" />
             </div>
           </div>
         </motion.div>
@@ -777,7 +794,7 @@ const DashboardPage = () => {
               <div style={styles.statValue}>{stats.pendingInvoices}</div>
               <div style={{
                 ...styles.statChange,
-                color: 'var(--color-warning)'
+                color: '#f59e0b'
               }}>
                 ₹{(stats.invoiceAmount / 1000).toFixed(0)}K pending
               </div>
@@ -786,7 +803,7 @@ const DashboardPage = () => {
               ...styles.statIcon,
               background: 'rgba(251, 191, 36, 0.1)',
             }}>
-              <FileText size={24} color="var(--color-warning)" />
+              <FileText size={24} color="#f59e0b" />
             </div>
           </div>
         </motion.div>
@@ -812,7 +829,7 @@ const DashboardPage = () => {
               ...styles.statIcon,
               background: 'rgba(118, 75, 162, 0.1)',
             }}>
-              <Target size={24} color="var(--color-secondary-500)" />
+              <Target size={24} color="#764ba2" />
             </div>
           </div>
         </motion.div>
@@ -830,14 +847,14 @@ const DashboardPage = () => {
                 <div style={styles.legendItem}>
                   <span style={{
                     ...styles.legendDot,
-                    background: 'var(--color-primary-500)'
+                    background: '#667eea'
                   }} />
                   <span>Revenue</span>
                 </div>
                 <div style={styles.legendItem}>
                   <span style={{
                     ...styles.legendDot,
-                    background: 'var(--color-secondary-500)'
+                    background: '#764ba2'
                   }} />
                   <span>Deals</span>
                 </div>
