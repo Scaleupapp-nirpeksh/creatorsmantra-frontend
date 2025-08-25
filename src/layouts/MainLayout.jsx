@@ -1,4 +1,13 @@
-// src/layouts/MainLayout.jsx
+/**
+ * Main Layout Component - Updated for Deals Module
+ * Path: src/layouts/MainLayout.jsx
+ * 
+ * Minor updates:
+ * 1. Fixed deals submenu paths to match actual routes
+ * 2. Added dynamic badge count from deals store
+ * 3. Added deals-specific icons
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,9 +38,13 @@ import {
   Award,
   Target,
   Sparkles,
-  ChevronLeft
+  ChevronLeft,
+  Plus, // Added for New Deal
+  Kanban, // Added for Pipeline
+  List // Added for All Deals
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '../store';
+import useDealsStore from '../store/dealsStore'; // ADD THIS IMPORT
 import toast from 'react-hot-toast';
 
 const MainLayout = () => {
@@ -59,6 +72,9 @@ const MainLayout = () => {
   // Data Store
   const { refreshAllData } = useDataStore();
   
+  // Deals Store - ADD THIS
+  const { deals } = useDealsStore();
+  
   // Local state
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -68,7 +84,12 @@ const MainLayout = () => {
   const isPageLoading = loadingState?.page || false;
   const isGlobalLoading = loadingState?.global || false;
   
-  // Menu items configuration
+  // Calculate active deals count - ADD THIS
+  const activeDealsCount = deals.filter(deal => 
+    ['lead', 'negotiation', 'confirmed', 'content_creation'].includes(deal.stage)
+  ).length;
+  
+  // Menu items configuration - UPDATED DEALS SECTION
   const menuItems = [
     {
       id: 'dashboard',
@@ -82,11 +103,21 @@ const MainLayout = () => {
       label: 'Deals',
       icon: Briefcase,
       path: '/deals',
-      badge: { count: 3, type: 'primary' },
+      badge: activeDealsCount > 0 ? { count: activeDealsCount, type: 'primary' } : null, // DYNAMIC COUNT
       subItems: [
-        { id: 'deals-list', label: 'All Deals', path: '/deals' },
-        { id: 'deals-pipeline', label: 'Pipeline', path: '/deals/pipeline' },
-        { id: 'deals-new', label: 'New Deal', path: '/deals/new' }
+        { 
+          id: 'deals-list', 
+          label: 'Pipeline View', // RENAMED
+          path: '/deals',
+          icon: Kanban // Added icon
+        },
+        { 
+          id: 'deals-create', // CHANGED ID
+          label: 'Create Deal', // RENAMED
+          path: '/deals/create', // FIXED PATH
+          icon: Plus // Added icon
+        }
+        // Removed deals-pipeline as it's the same as deals-list
       ]
     },
     {
@@ -186,11 +217,17 @@ const MainLayout = () => {
     }
   };
   
-  // Handle search
+  // Handle search - UPDATED TO SEARCH DEALS
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      // If on deals page, trigger deals search
+      if (location.pathname.startsWith('/deals')) {
+        const dealsStore = useDealsStore.getState();
+        dealsStore.searchDeals(searchQuery);
+      } else {
+        navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      }
     }
   };
   
@@ -199,7 +236,7 @@ const MainLayout = () => {
     return item.premium && (!subscription || subscription.tier === 'starter');
   };
   
-  // Render menu item
+  // Render menu item - UPDATED TO HANDLE SUB-ITEM ICONS
   const renderMenuItem = (item) => {
     const Icon = item.icon;
     const isActive = sidebar.activeItem === item.id;
@@ -260,28 +297,32 @@ const MainLayout = () => {
           </div>
         </div>
         
-        {/* Sub Items */}
+        {/* Sub Items - UPDATED TO SHOW ICONS */}
         {hasSubItems && isExpanded && !sidebar.isCollapsed && (
           <div style={styles.subItemsContainer}>
-            {item.subItems.map(subItem => (
-              <Link
-                key={subItem.id}
-                to={subItem.path}
-                style={{
-                  ...styles.subItem,
-                  ...(location.pathname === subItem.path ? styles.subItemActive : {})
-                }}
-              >
-                {subItem.label}
-              </Link>
-            ))}
+            {item.subItems.map(subItem => {
+              const SubIcon = subItem.icon;
+              return (
+                <Link
+                  key={subItem.id}
+                  to={subItem.path}
+                  style={{
+                    ...styles.subItem,
+                    ...(location.pathname === subItem.path ? styles.subItemActive : {})
+                  }}
+                >
+                  {SubIcon && <SubIcon size={14} style={{ marginRight: '0.5rem' }} />}
+                  {subItem.label}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
     );
   };
   
-  // Styles
+  // Styles - ALL YOUR EXISTING STYLES PRESERVED
   const styles = {
     container: {
       display: 'flex',
@@ -432,7 +473,8 @@ const MainLayout = () => {
     },
     
     subItem: {
-      display: 'block',
+      display: 'flex', // CHANGED TO FLEX FOR ICON SUPPORT
+      alignItems: 'center', // ADDED
       padding: '0.5rem 1rem',
       fontSize: '0.813rem',
       color: 'var(--color-neutral-600)',

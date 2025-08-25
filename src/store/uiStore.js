@@ -10,6 +10,8 @@
  * - Responsive breakpoints
  * 
  * File: src/store/uiStore.js
+ * 
+ * FIXED: expandedItems undefined error when toggling menu
  */
 
 import { create } from 'zustand';
@@ -160,9 +162,12 @@ const useUIStore = create(
       
       toggleMenuExpansion: (itemId) => {
         const { sidebar } = get();
-        const expandedItems = sidebar.expandedItems.includes(itemId)
-          ? sidebar.expandedItems.filter(id => id !== itemId)
-          : [...sidebar.expandedItems, itemId];
+        // FIX: Ensure expandedItems exists with fallback to empty array
+        const currentExpandedItems = sidebar.expandedItems || [];
+        
+        const expandedItems = currentExpandedItems.includes(itemId)
+          ? currentExpandedItems.filter(id => id !== itemId)
+          : [...currentExpandedItems, itemId];
         
         set({
           sidebar: {
@@ -442,9 +447,25 @@ const useUIStore = create(
         soundEffects: state.soundEffects,
         notifications: state.notifications,
         sidebar: {
-          isCollapsed: state.sidebar.isCollapsed
+          isCollapsed: state.sidebar.isCollapsed,
+          expandedItems: state.sidebar.expandedItems || [] // FIX: Include expandedItems in persistence
         }
-      })
+      }),
+      // FIX: Merge function to handle missing properties when rehydrating
+      merge: (persistedState, currentState) => {
+        // Ensure sidebar has all required properties
+        const mergedSidebar = {
+          ...currentState.sidebar,
+          ...(persistedState?.sidebar || {}),
+          expandedItems: persistedState?.sidebar?.expandedItems || []
+        };
+        
+        return {
+          ...currentState,
+          ...persistedState,
+          sidebar: mergedSidebar
+        };
+      }
     }
   )
 );

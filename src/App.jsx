@@ -1,5 +1,12 @@
-// src/App.jsx
-import React, { useEffect, useState } from 'react';
+/**
+ * Main App Component - Integrated with Deals Module
+ * Path: src/App.jsx
+ * 
+ * This preserves all your existing code and adds the deals module integration.
+ * All your themes, animations, and styles are maintained.
+ */
+
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
@@ -7,6 +14,7 @@ import { AnimatePresence } from 'framer-motion';
 // Store imports
 import useAuthStore from './store/authStore';
 import useUIStore from './store/uiStore';
+import useDealsStore from './store/dealsStore'; // ADD THIS
 
 // Layout imports
 import MainLayout from './layouts/MainLayout';
@@ -23,13 +31,29 @@ import DemoPage from './pages/DemoPage';
 // Protected Route Component
 import ProtectedRoute from './routes/ProtectedRoute';
 
+// Lazy load Deals Module pages - ADD THESE
+const DealsListPage = lazy(() => import('./features/deals/pages/DealsListPage'));
+const CreateDealPage = lazy(() => import('./features/deals/pages/CreateDealPage'));
+const DealDetailsPage = lazy(() => import('./features/deals/pages/DealDetailsPage'));
+
 // Import styles
 import './styles/index.css';
+
+// Loading component for lazy loaded pages
+const PageLoader = () => (
+  <div style={styles.pageLoadingContainer}>
+    <div style={styles.pageSpinner}>
+      <div style={styles.pageSpinnerGradient}></div>
+    </div>
+    <p style={styles.pageLoadingText}>Loading...</p>
+  </div>
+);
 
 function App() {
   const [appReady, setAppReady] = useState(false);
   const { initialize, isAuthenticated, isInitialized } = useAuthStore();
   const { theme, setTheme, updateViewport, initializeViewport } = useUIStore();
+  const { init: initDeals } = useDealsStore(); // ADD THIS
 
   // Initialize app
   useEffect(() => {
@@ -74,6 +98,13 @@ function App() {
       }
     };
   }, [initialize, setTheme, initializeViewport]);
+
+  // Initialize deals store when authenticated - ADD THIS
+  useEffect(() => {
+    if (isAuthenticated) {
+      initDeals();
+    }
+  }, [isAuthenticated, initDeals]);
 
   // Show loading screen while initializing
   if (!appReady || !isInitialized) {
@@ -121,59 +152,137 @@ function App() {
               <Route element={<MainLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
                 
-                {/* Deals Routes */}
+                {/* Deals Routes - UPDATED WITH ACTUAL COMPONENTS */}
                 <Route path="/deals">
-                  <Route index element={<div>Deals List - Coming Soon</div>} />
-                  <Route path="new" element={<div>New Deal - Coming Soon</div>} />
-                  <Route path=":dealId" element={<div>Deal Details - Coming Soon</div>} />
+                  <Route index element={
+                    <Suspense fallback={<PageLoader />}>
+                      <DealsListPage />
+                    </Suspense>
+                  } />
+                  <Route path="create" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <CreateDealPage />
+                    </Suspense>
+                  } />
+                  <Route path="new" element={<Navigate to="/deals/create" replace />} />
+                  <Route path=":dealId" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <DealDetailsPage />
+                    </Suspense>
+                  } />
+                  <Route path=":dealId/edit" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <DealDetailsPage editMode={true} />
+                    </Suspense>
+                  } />
                 </Route>
 
                 {/* Invoices Routes */}
                 <Route path="/invoices">
-                  <Route index element={<div>Invoices List - Coming Soon</div>} />
-                  <Route path="new" element={<div>New Invoice - Coming Soon</div>} />
-                  <Route path=":invoiceId" element={<div>Invoice Details - Coming Soon</div>} />
+                  <Route index element={<div style={styles.comingSoon}>
+                    <h2>Invoices List</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path="new" element={<div style={styles.comingSoon}>
+                    <h2>New Invoice</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path=":invoiceId" element={<div style={styles.comingSoon}>
+                    <h2>Invoice Details</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
                 </Route>
 
                 {/* Briefs Routes */}
                 <Route path="/briefs">
-                  <Route index element={<div>Briefs List - Coming Soon</div>} />
-                  <Route path="analyze" element={<div>Analyze Brief - Coming Soon</div>} />
-                  <Route path=":briefId" element={<div>Brief Details - Coming Soon</div>} />
+                  <Route index element={<div style={styles.comingSoon}>
+                    <h2>Briefs List</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path="analyze" element={<div style={styles.comingSoon}>
+                    <h2>Analyze Brief</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path=":briefId" element={<div style={styles.comingSoon}>
+                    <h2>Brief Details</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
                 </Route>
 
                 {/* Performance Routes */}
                 <Route path="/performance">
-                  <Route index element={<div>Performance Dashboard - Coming Soon</div>} />
-                  <Route path="analytics" element={<div>Analytics - Coming Soon</div>} />
-                  <Route path="reports" element={<div>Reports - Coming Soon</div>} />
+                  <Route index element={<div style={styles.comingSoon}>
+                    <h2>Performance Dashboard</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path="analytics" element={<div style={styles.comingSoon}>
+                    <h2>Analytics</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path="reports" element={<div style={styles.comingSoon}>
+                    <h2>Reports</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
                 </Route>
 
                 {/* Rate Cards Routes */}
                 <Route path="/rate-cards">
-                  <Route index element={<div>Rate Cards - Coming Soon</div>} />
-                  <Route path="builder" element={<div>Rate Card Builder - Coming Soon</div>} />
+                  <Route index element={<div style={styles.comingSoon}>
+                    <h2>Rate Cards</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path="builder" element={<div style={styles.comingSoon}>
+                    <h2>Rate Card Builder</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
                 </Route>
 
                 {/* Contracts Routes */}
                 <Route path="/contracts">
-                  <Route index element={<div>Contracts List - Coming Soon</div>} />
-                  <Route path="new" element={<div>New Contract - Coming Soon</div>} />
-                  <Route path=":contractId" element={<div>Contract Details - Coming Soon</div>} />
+                  <Route index element={<div style={styles.comingSoon}>
+                    <h2>Contracts List</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path="new" element={<div style={styles.comingSoon}>
+                    <h2>New Contract</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path=":contractId" element={<div style={styles.comingSoon}>
+                    <h2>Contract Details</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
                 </Route>
 
                 {/* Profile Routes */}
                 <Route path="/profile">
-                  <Route index element={<div>Profile - Coming Soon</div>} />
-                  <Route path="settings" element={<div>Settings - Coming Soon</div>} />
-                  <Route path="subscription" element={<div>Subscription - Coming Soon</div>} />
-                  <Route path="team" element={<div>Team Management - Coming Soon</div>} />
+                  <Route index element={<div style={styles.comingSoon}>
+                    <h2>Profile</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path="settings" element={<div style={styles.comingSoon}>
+                    <h2>Settings</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path="subscription" element={<div style={styles.comingSoon}>
+                    <h2>Subscription</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path="team" element={<div style={styles.comingSoon}>
+                    <h2>Team Management</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
                 </Route>
 
                 {/* Settings Routes */}
                 <Route path="/settings">
-                  <Route index element={<div>Settings - Coming Soon</div>} />
-                  <Route path="subscription" element={<div>Subscription - Coming Soon</div>} />
+                  <Route index element={<div style={styles.comingSoon}>
+                    <h2>Settings</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
+                  <Route path="subscription" element={<div style={styles.comingSoon}>
+                    <h2>Subscription</h2>
+                    <p>Coming Soon</p>
+                  </div>} />
                 </Route>
               </Route>
             </Route>
@@ -233,7 +342,7 @@ const NotFoundPage = () => {
   );
 };
 
-// Inline Styles
+// Inline Styles - ALL YOUR EXISTING STYLES PRESERVED
 const styles = {
   // Loading Screen Styles
   loadingContainer: {
@@ -328,9 +437,52 @@ const styles = {
     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
     boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
   },
+
+  // Page loader styles for lazy loaded components - ADDED
+  pageLoadingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '400px',
+    padding: '2rem',
+  },
+
+  pageSpinner: {
+    width: '40px',
+    height: '40px',
+    margin: '0 auto 1rem',
+    position: 'relative',
+  },
+
+  pageSpinnerGradient: {
+    width: '100%',
+    height: '100%',
+    border: '3px solid rgba(102, 126, 234, 0.2)',
+    borderTopColor: '#667eea',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+  },
+
+  pageLoadingText: {
+    fontSize: '0.875rem',
+    color: '#6b7280',
+  },
+
+  // Coming soon styles - ADDED
+  comingSoon: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '400px',
+    padding: '2rem',
+    textAlign: 'center',
+    color: '#6b7280',
+  },
 };
 
-// Add global keyframes for spinner
+// Add global keyframes for spinner - YOUR EXISTING CODE
 if (typeof document !== 'undefined') {
   const existingStyle = document.getElementById('app-keyframes');
   if (!existingStyle) {
