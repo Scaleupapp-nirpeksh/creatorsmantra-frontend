@@ -1,4 +1,4 @@
-// src/pages/DemoPage.jsx
+// src/pages/DemoPage.jsx - Fixed with original clean design
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Shield,
   Users,
+  User, // THIS WAS MISSING - FIXED!
   Calendar,
   Bell,
   CheckCircle,

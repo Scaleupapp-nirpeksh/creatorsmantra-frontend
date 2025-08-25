@@ -229,26 +229,27 @@ checkPhone: async (phone) => {
       // ============================================
       // OTP Operations
       // ============================================
-      sendOTP: async (phone) => {
-        try {
-          set({ isLoading: true });
-          
-          const response = await authAPI.sendOTP(phone);
-          
-          if (response.success) {
-            toast.success('OTP sent successfully!');
-            return { success: true };
-          }
-          
-          return { success: false, message: response.message };
-        } catch (error) {
-          const message = error.response?.data?.message || 'Failed to send OTP';
-          toast.error(message);
-          return { success: false, message };
-        } finally {
-          set({ isLoading: false });
-        }
-      },
+
+sendOTP: async (phone, purpose = 'registration') => {  // Add purpose parameter
+  try {
+    set({ isLoading: true });
+    
+    const response = await authAPI.sendOTP(phone, purpose);  // Pass purpose to API
+    
+    if (response.success) {
+      toast.success('OTP sent successfully!');
+      return { success: true };
+    }
+    
+    return { success: false, message: response.message };
+  } catch (error) {
+    const message = error.response?.data?.message || 'Failed to send OTP';
+    toast.error(message);
+    return { success: false, message };
+  } finally {
+    set({ isLoading: false });
+  }
+},
       
       verifyOTP: async (phone, otp) => {
         try {

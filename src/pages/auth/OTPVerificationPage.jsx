@@ -15,7 +15,7 @@ import {
 const OTPVerificationPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyOTP, sendOTP, isLoading } = useAuthStore();
+  const { verifyOTP, loginWithOTP, sendOTP, isLoading } = useAuthStore();
   
   // Get phone and purpose from navigation state
   const { phone, purpose, from } = location.state || {};
@@ -87,39 +87,43 @@ const OTPVerificationPage = () => {
     }
   };
   
-  // Handle OTP verification
-  const handleVerify = async () => {
-    const otpString = otp.join('');
-    
-    if (otpString.length !== 6) {
-      toast.error('Please enter complete OTP');
-      return;
-    }
-    
-    try {
+// Handle OTP verification
+const handleVerify = async () => {
+  const otpString = otp.join('');
+  
+  if (otpString.length !== 6) {
+    toast.error('Please enter complete OTP');
+    return;
+  }
+  
+  try {
+    if (purpose === 'login') {
+      // For login: Use loginWithOTP which verifies OTP and returns auth tokens
+      const result = await loginWithOTP(phone, otpString);
+      
+      if (result.success) {
+        toast.success('Login successful!');
+        // loginWithOTP sets isAuthenticated, so navigation will work
+        navigate(from || '/dashboard');
+      }
+    } else if (purpose === 'registration') {
+      // For registration: Just verify the OTP
       const result = await verifyOTP(phone, otpString);
       
       if (result.success) {
         toast.success('Phone number verified successfully!');
-        
-        // Navigate based on purpose
-        if (purpose === 'registration') {
-          // Go back to registration with verified phone
-          navigate('/register', {
-            state: {
-              phone: phone,
-              otpVerified: true
-            }
-          });
-        } else if (purpose === 'login') {
-          // For login, complete the login process
-          navigate('/dashboard');
-        }
+        navigate('/register', {
+          state: {
+            phone: phone,
+            otpVerified: true
+          }
+        });
       }
-    } catch (error) {
-      toast.error(error.message || 'Invalid OTP');
     }
-  };
+  } catch (error) {
+    toast.error(error.message || 'Invalid OTP');
+  }
+};
   
   // Handle resend OTP
   const handleResend = async () => {

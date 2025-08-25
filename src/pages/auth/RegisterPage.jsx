@@ -1,4 +1,4 @@
-// src/pages/auth/RegisterPage.jsx - DEBUG VERSION
+// src/pages/auth/RegisterPage.jsx - Complete Fixed Version
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -19,7 +19,8 @@ import {
   AlertCircle,
   Instagram,
   Youtube,
-  Briefcase
+  Briefcase,
+  Shield
 } from 'lucide-react';
 
 const RegisterPage = () => {
@@ -30,29 +31,19 @@ const RegisterPage = () => {
   // Check if coming from OTP verification
   const { phone: verifiedPhone, otpVerified } = location.state || {};
   
-  // Debug logging
-  console.log('RegisterPage - Location State:', location.state);
-  
   // State management - Initialize based on verification status
   const [currentStep, setCurrentStep] = useState(() => {
     const initialStep = verifiedPhone && otpVerified ? 2 : 1;
-    console.log('Initial step:', initialStep);
     return initialStep;
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [phoneChecked, setPhoneChecked] = useState(() => {
     return !!(verifiedPhone && otpVerified);
   });
   const [formData, setFormData] = useState(() => ({
     phone: verifiedPhone || ''
   }));
-  
-  // Debug: Log step changes
-  useEffect(() => {
-    console.log('Current step changed to:', currentStep);
-    console.log('Phone checked status:', phoneChecked);
-    console.log('Form data:', formData);
-  }, [currentStep, phoneChecked, formData]);
   
   // React Hook Form
   const { 
@@ -71,6 +62,7 @@ const RegisterPage = () => {
       fullName: '',
       email: '',
       password: '',
+      confirmPassword: '',
       instagram_username: '',
       instagram_followers: '',
       youtube_channel: '',
@@ -78,7 +70,7 @@ const RegisterPage = () => {
     }
   });
   
-  // Creator type options
+  // Extended Creator type options
   const creatorTypes = [
     { value: 'lifestyle', label: 'Lifestyle', icon: '🌟' },
     { value: 'fashion', label: 'Fashion', icon: '👗' },
@@ -90,14 +82,22 @@ const RegisterPage = () => {
     { value: 'comedy', label: 'Comedy', icon: '😄' },
     { value: 'education', label: 'Education', icon: '📚' },
     { value: 'business', label: 'Business', icon: '💼' },
-    { value: 'other', label: 'Other', icon: '🎨' }
+    { value: 'gaming', label: 'Gaming', icon: '🎮' },
+    { value: 'home_decor', label: 'Home Decor', icon: '🏠' },
+    { value: 'art', label: 'Art & DIY', icon: '🎨' },
+    { value: 'music', label: 'Music', icon: '🎵' },
+    { value: 'dance', label: 'Dance', icon: '💃' },
+    { value: 'parenting', label: 'Parenting', icon: '👶' },
+    { value: 'pets', label: 'Pets', icon: '🐾' },
+    { value: 'sports', label: 'Sports', icon: '⚽' },
+    { value: 'automobile', label: 'Automobile', icon: '🚗' },
+    { value: 'finance', label: 'Finance', icon: '💰' },
+    { value: 'other', label: 'Other', icon: '✨' }
   ];
   
   // Handle verified phone on component mount
   useEffect(() => {
     if (location.state?.phone && location.state?.otpVerified === true) {
-      console.log('Phone verified, moving to step 2');
-      
       // Update form value
       setValue('phone', location.state.phone);
       
@@ -118,7 +118,6 @@ const RegisterPage = () => {
   
   // Step 1: Phone Verification
   const handlePhoneVerification = async (data) => {
-    console.log('Starting phone verification for:', data.phone);
     try {
       // Check if phone exists
       const result = await checkPhone(data.phone);
@@ -128,8 +127,8 @@ const RegisterPage = () => {
         return false;
       }
       
-      // Send OTP
-      const otpResult = await sendOTP(data.phone);
+      // Send OTP with 'registration' purpose
+      const otpResult = await sendOTP(data.phone, 'registration');
       
       if (otpResult.success) {
         // Navigate to OTP verification
@@ -153,17 +152,12 @@ const RegisterPage = () => {
   
   // Step Navigation
   const handleNextStep = async () => {
-    console.log('=== Handle Next Step Called ===');
-    console.log('Current Step:', currentStep);
-    console.log('Phone Checked:', phoneChecked);
-    
     // Validate current step fields
     let fieldsToValidate = [];
     
     if (currentStep === 1) {
       fieldsToValidate = ['phone'];
       const isValid = await trigger(fieldsToValidate);
-      console.log('Step 1 validation result:', isValid);
       
       if (isValid && !phoneChecked) {
         await handlePhoneVerification(getValues());
@@ -177,52 +171,42 @@ const RegisterPage = () => {
         return;
       }
     } else if (currentStep === 2) {
-      fieldsToValidate = ['fullName', 'email', 'password'];
+      fieldsToValidate = ['fullName', 'email', 'password', 'confirmPassword'];
       const isValid = await trigger(fieldsToValidate);
-      console.log('Step 2 validation result:', isValid);
-      console.log('Step 2 field values:', {
-        fullName: getValues('fullName'),
-        email: getValues('email'),
-        password: getValues('password')
-      });
-      console.log('Step 2 validation errors:', errors);
       
       if (!isValid) {
-        console.log('Step 2 validation failed, not proceeding');
+        toast.error('Please fill all required fields correctly');
         return;
       }
     }
     
     // Save current step data
     const currentData = getValues();
-    console.log('Saving current data:', currentData);
     setFormData(prev => {
       const newData = { ...prev, ...currentData };
-      console.log('Updated form data:', newData);
       return newData;
     });
     
     // Move to next step
     if (currentStep < 3) {
       const nextStep = currentStep + 1;
-      console.log('Moving from step', currentStep, 'to step', nextStep);
       setCurrentStep(nextStep);
-    } else {
-      console.log('Already at final step');
     }
   };
   
   const handlePrevStep = () => {
     if (currentStep > 1) {
-      console.log('Going back from step', currentStep, 'to step', currentStep - 1);
       setCurrentStep(currentStep - 1);
     }
   };
   
-  // Final Registration
-  const onSubmit = async (data) => {
-    console.log('Final submission started');
-    console.log('Submit data:', data);
+  // Final Registration - Only called when explicitly clicking Complete Registration
+  const handleFinalSubmit = async (e) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    
+    // Get all form values
+    const data = getValues();
     
     try {
       // Ensure we have the phone number
@@ -231,7 +215,11 @@ const RegisterPage = () => {
         ...data
       };
       
-      console.log('Final merged data:', finalData);
+      // Validate required fields
+      if (!finalData.creatorType) {
+        toast.error('Please select a creator type');
+        return;
+      }
       
       // Prepare registration data
       const registrationData = {
@@ -261,11 +249,8 @@ const RegisterPage = () => {
       const result = await registerUser(registrationData);
       
       if (result.success) {
-        console.log('Registration successful!');
         toast.success('Registration successful! Welcome to CreatorsMantra!');
         navigate('/dashboard');
-      } else {
-        console.log('Registration failed:', result);
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -309,7 +294,7 @@ const RegisterPage = () => {
     </div>
   );
   
-  // Inline styles (keeping same as original)
+  // Inline styles
   const styles = {
     container: {
       maxWidth: '520px',
@@ -471,6 +456,11 @@ const RegisterPage = () => {
       gridTemplateColumns: 'repeat(3, 1fr)',
       gap: '0.75rem',
       marginTop: '0.5rem',
+      maxHeight: '300px',
+      overflowY: 'auto',
+      padding: '0.5rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '12px',
     },
     
     creatorTypeOption: {
@@ -481,6 +471,7 @@ const RegisterPage = () => {
       cursor: 'pointer',
       transition: 'all 0.2s ease',
       textAlign: 'center',
+      userSelect: 'none',
     },
     
     creatorTypeOptionSelected: {
@@ -494,7 +485,7 @@ const RegisterPage = () => {
     },
     
     creatorTypeLabel: {
-      fontSize: '0.75rem',
+      fontSize: '0.7rem',
       fontWeight: '500',
       color: '#374151',
     },
@@ -606,27 +597,59 @@ const RegisterPage = () => {
     benefitIcon: {
       color: '#10b981',
     },
+    
+    passwordStrength: {
+      marginTop: '0.5rem',
+      padding: '0.75rem',
+      background: '#f3f4f6',
+      borderRadius: '8px',
+    },
+    
+    passwordStrengthBar: {
+      height: '4px',
+      background: '#e5e7eb',
+      borderRadius: '2px',
+      overflow: 'hidden',
+      marginBottom: '0.5rem',
+    },
+    
+    passwordStrengthFill: {
+      height: '100%',
+      transition: 'all 0.3s ease',
+    },
+    
+    passwordRequirements: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '0.5rem',
+      marginTop: '0.5rem',
+    },
+    
+    requirement: {
+      fontSize: '0.7rem',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.25rem',
+    },
   };
   
-  // Add debug display
+  // Password strength calculator
+  const calculatePasswordStrength = (password) => {
+    if (!password) return 0;
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (password.match(/[a-z]/)) strength++;
+    if (password.match(/[A-Z]/)) strength++;
+    if (password.match(/[0-9]/)) strength++;
+    if (password.match(/[^a-zA-Z0-9]/)) strength++;
+    return (strength / 5) * 100;
+  };
+  
+  const passwordValue = watch('password');
+  const passwordStrength = calculatePasswordStrength(passwordValue);
+  
   return (
     <div style={styles.container}>
-      {/* Debug Info Box */}
-      <div style={{
-        background: '#f3f4f6',
-        padding: '1rem',
-        borderRadius: '8px',
-        marginBottom: '1rem',
-        fontSize: '0.75rem',
-        fontFamily: 'monospace'
-      }}>
-        <strong>DEBUG INFO:</strong><br />
-        Current Step: {currentStep}<br />
-        Phone Checked: {phoneChecked ? 'Yes' : 'No'}<br />
-        Phone: {formData.phone || 'Not set'}<br />
-        Is Loading: {isLoading ? 'Yes' : 'No'}
-      </div>
-      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -649,8 +672,8 @@ const RegisterPage = () => {
         {/* Progress Bar */}
         {renderProgressBar()}
         
-        {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} style={styles.form}>
+        {/* Form - REMOVED onSubmit to prevent auto-submission */}
+        <div style={styles.form}>
           <AnimatePresence mode="wait">
             {/* Step 1: Phone Verification */}
             {currentStep === 1 && (
@@ -835,9 +858,92 @@ const RegisterPage = () => {
                       {errors.password.message}
                     </span>
                   )}
-                  <p style={styles.helpText}>
-                    Must contain uppercase, lowercase, number and special character
-                  </p>
+                  
+                  {/* Password Strength Indicator */}
+                  {passwordValue && (
+                    <div style={styles.passwordStrength}>
+                      <div style={styles.passwordStrengthBar}>
+                        <div 
+                          style={{
+                            ...styles.passwordStrengthFill,
+                            width: `${passwordStrength}%`,
+                            background: passwordStrength < 40 ? '#ef4444' : 
+                                      passwordStrength < 70 ? '#f59e0b' : '#10b981'
+                          }}
+                        />
+                      </div>
+                      <div style={styles.passwordRequirements}>
+                        <span style={{
+                          ...styles.requirement,
+                          color: passwordValue.length >= 8 ? '#10b981' : '#9ca3af'
+                        }}>
+                          <CheckCircle size={12} /> 8+ characters
+                        </span>
+                        <span style={{
+                          ...styles.requirement,
+                          color: /[A-Z]/.test(passwordValue) ? '#10b981' : '#9ca3af'
+                        }}>
+                          <CheckCircle size={12} /> Uppercase
+                        </span>
+                        <span style={{
+                          ...styles.requirement,
+                          color: /[a-z]/.test(passwordValue) ? '#10b981' : '#9ca3af'
+                        }}>
+                          <CheckCircle size={12} /> Lowercase
+                        </span>
+                        <span style={{
+                          ...styles.requirement,
+                          color: /[0-9]/.test(passwordValue) ? '#10b981' : '#9ca3af'
+                        }}>
+                          <CheckCircle size={12} /> Number
+                        </span>
+                        <span style={{
+                          ...styles.requirement,
+                          color: /[@$!%*?&]/.test(passwordValue) ? '#10b981' : '#9ca3af'
+                        }}>
+                          <CheckCircle size={12} /> Special char
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>
+                    <Shield size={16} />
+                    Confirm Password
+                    <span style={styles.required}>*</span>
+                  </label>
+                  <div style={styles.inputWrapper}>
+                    <Shield size={20} style={styles.inputIcon} />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Re-enter your password"
+                      style={{
+                        ...styles.input,
+                        paddingRight: '3rem',
+                        ...(errors.confirmPassword ? styles.inputError : {})
+                      }}
+                      {...register('confirmPassword', {
+                        required: 'Please confirm your password',
+                        validate: value => 
+                          value === watch('password') || 'Passwords do not match'
+                      })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={styles.passwordToggle}
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <span style={styles.error}>
+                      <AlertCircle size={14} />
+                      {errors.confirmPassword.message}
+                    </span>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -855,13 +961,18 @@ const RegisterPage = () => {
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>
                     <Briefcase size={16} />
-                    Creator Type
+                    Select Your Content Category
                     <span style={styles.required}>*</span>
                   </label>
                   <div style={styles.creatorTypeGrid}>
                     {creatorTypes.map((type) => (
-                      <label
+                      <div
                         key={type.value}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setValue('creatorType', type.value);
+                        }}
                         style={{
                           ...styles.creatorTypeOption,
                           ...(watch('creatorType') === type.value 
@@ -869,17 +980,9 @@ const RegisterPage = () => {
                             : {})
                         }}
                       >
-                        <input
-                          type="radio"
-                          value={type.value}
-                          {...register('creatorType', {
-                            required: 'Please select your creator type'
-                          })}
-                          style={{ display: 'none' }}
-                        />
                         <div style={styles.creatorTypeIcon}>{type.icon}</div>
                         <div style={styles.creatorTypeLabel}>{type.label}</div>
-                      </label>
+                      </div>
                     ))}
                   </div>
                   {errors.creatorType && (
@@ -1006,7 +1109,8 @@ const RegisterPage = () => {
               </button>
             ) : (
               <button
-                type="submit"
+                type="button"
+                onClick={handleFinalSubmit}
                 style={{
                   ...styles.nextButton,
                   ...(isSubmitting || isLoading ? styles.buttonDisabled : {})
@@ -1027,7 +1131,7 @@ const RegisterPage = () => {
               </button>
             )}
           </div>
-        </form>
+        </div>
         
         {/* Login Link */}
         <div style={styles.loginLink}>

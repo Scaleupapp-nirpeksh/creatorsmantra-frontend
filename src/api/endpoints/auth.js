@@ -6,8 +6,8 @@ export const authAPI = {
   checkPhone: (phone) => 
     api.post('/auth/check-phone', { phone }),
   
-  sendOTP: (phone) => 
-    api.post('/auth/send-otp', { phone }),
+  sendOTP: (phone ,purpose = 'registration') => 
+    api.post('/auth/send-otp', { phone , purpose}),
   
   verifyOTP: (phone, otp) => 
     api.post('/auth/verify-otp', { 
