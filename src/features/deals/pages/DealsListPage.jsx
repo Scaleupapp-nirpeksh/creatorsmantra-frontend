@@ -76,26 +76,25 @@ const DealsListPage = () => {
   const [dragOverStage, setDragOverStage] = useState(null);
   const [showActions, setShowActions] = useState(null);
   
-  // Enhanced Pipeline stages
   const stages = [
     { 
-      id: 'lead', 
-      name: 'Leads', 
+      id: 'pitched', 
+      name: 'Pitched', 
       color: '#8B5CF6',
       bgGradient: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
       lightBg: 'rgba(139, 92, 246, 0.1)',
       icon: Target 
     },
     { 
-      id: 'pitched', 
-      name: 'Pitched', 
+      id: 'in_talks', 
+      name: 'In Talks', 
       color: '#3B82F6',
       bgGradient: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
       lightBg: 'rgba(59, 130, 246, 0.1)',
       icon: Mail 
     },
     { 
-      id: 'negotiation', 
+      id: 'negotiating', 
       name: 'Negotiating', 
       color: '#06B6D4',
       bgGradient: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)',
@@ -103,28 +102,20 @@ const DealsListPage = () => {
       icon: Activity 
     },
     { 
-      id: 'confirmed', 
-      name: 'Confirmed', 
+      id: 'live', 
+      name: 'Live', 
+      color: '#F59E0B',
+      bgGradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+      lightBg: 'rgba(245, 158, 11, 0.1)',
+      icon: Zap 
+    },
+    { 
+      id: 'completed', 
+      name: 'Completed', 
       color: '#10B981',
       bgGradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
       lightBg: 'rgba(16, 185, 129, 0.1)',
       icon: CheckCircle 
-    },
-    { 
-      id: 'content_creation', 
-      name: 'Creating', 
-      color: '#F59E0B',
-      bgGradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-      lightBg: 'rgba(245, 158, 11, 0.1)',
-      icon: Edit2 
-    },
-    { 
-      id: 'delivered', 
-      name: 'Delivered', 
-      color: '#6366F1',
-      bgGradient: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-      lightBg: 'rgba(99, 102, 241, 0.1)',
-      icon: Package 
     },
     { 
       id: 'paid', 
@@ -135,8 +126,27 @@ const DealsListPage = () => {
       icon: DollarSign 
     }
   ];
+  
+  // Optional: If you want to show cancelled/rejected deals in a separate section or filter
+  const additionalStages = [
+    { 
+      id: 'cancelled', 
+      name: 'Cancelled', 
+      color: '#EF4444',
+      bgGradient: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+      lightBg: 'rgba(239, 68, 68, 0.1)',
+      icon: XCircle 
+    },
+    { 
+      id: 'rejected', 
+      name: 'Rejected', 
+      color: '#94A3B8',
+      bgGradient: 'linear-gradient(135deg, #94A3B8 0%, #64748B 100%)',
+      lightBg: 'rgba(148, 163, 184, 0.1)',
+      icon: AlertCircle 
+    }
+  ];
 
-  // Check if deal is overdue
   const checkOverdueStatus = (deal) => {
     const now = new Date();
     const status = {
@@ -146,9 +156,10 @@ const DealsListPage = () => {
       urgency: 'normal'
     };
     
+    // Check delivery overdue (for 'live' stage)
     if (deal.timeline?.goLiveDate) {
       const goLiveDate = new Date(deal.timeline.goLiveDate);
-      if (goLiveDate < now && deal.stage !== 'delivered' && deal.stage !== 'paid') {
+      if (goLiveDate < now && deal.stage !== 'completed' && deal.stage !== 'paid') {
         status.isOverdue = true;
         status.overdueType = 'delivery';
         status.daysOverdue = Math.ceil((now - goLiveDate) / (1000 * 60 * 60 * 24));
@@ -156,6 +167,7 @@ const DealsListPage = () => {
       }
     }
     
+    // Check payment overdue (for 'completed' stage)
     if (deal.timeline?.paymentDueDate) {
       const paymentDueDate = new Date(deal.timeline.paymentDueDate);
       if (paymentDueDate < now && deal.stage !== 'paid') {
@@ -166,11 +178,23 @@ const DealsListPage = () => {
       }
     }
     
+    // Check content deadline (for 'live' stage)
     if (deal.timeline?.contentDeadline) {
       const contentDeadline = new Date(deal.timeline.contentDeadline);
       const daysUntil = Math.ceil((contentDeadline - now) / (1000 * 60 * 60 * 24));
-      if (daysUntil <= 3 && daysUntil > 0 && deal.stage === 'content_creation') {
+      if (daysUntil <= 3 && daysUntil > 0 && deal.stage === 'live') {
         status.urgency = 'warning';
+      }
+    }
+    
+    // Check response deadline (for 'pitched' stage)
+    if (deal.timeline?.responseDeadline && deal.stage === 'pitched') {
+      const responseDeadline = new Date(deal.timeline.responseDeadline);
+      if (responseDeadline < now) {
+        status.isOverdue = true;
+        status.overdueType = 'response';
+        status.daysOverdue = Math.ceil((now - responseDeadline) / (1000 * 60 * 60 * 24));
+        status.urgency = status.daysOverdue > 5 ? 'warning' : 'normal';
       }
     }
     
