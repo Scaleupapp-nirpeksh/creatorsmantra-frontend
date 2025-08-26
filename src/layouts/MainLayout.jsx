@@ -1,11 +1,6 @@
 /**
  * Main Layout Component - Updated for Deals Module
  * Path: src/layouts/MainLayout.jsx
- * 
- * Minor updates:
- * 1. Fixed deals submenu paths to match actual routes
- * 2. Added dynamic badge count from deals store
- * 3. Added deals-specific icons
  */
 
 import React, { useEffect, useState } from 'react';
@@ -39,22 +34,20 @@ import {
   Target,
   Sparkles,
   ChevronLeft,
-  Plus, // Added for New Deal
-  Kanban, // Added for Pipeline
-  List // Added for All Deals
+  Plus,
+  Kanban,
+  List
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '../store';
-import useDealsStore from '../store/dealsStore'; // ADD THIS IMPORT
+import useDealsStore from '../store/dealsStore';
 import toast from 'react-hot-toast';
 
 const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Auth Store
   const { user, subscription, logout } = useAuthStore();
   
-  // UI Store - Fixed to handle loading state properly
   const { 
     sidebar,
     toggleSidebar,
@@ -69,27 +62,20 @@ const MainLayout = () => {
     loading: loadingState = { global: false, page: false, action: false, submit: false }
   } = useUIStore();
   
-  // Data Store
   const { refreshAllData } = useDataStore();
-  
-  // Deals Store - ADD THIS
   const { deals } = useDealsStore();
   
-  // Local state
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Safely access loading states with fallback
   const isPageLoading = loadingState?.page || false;
   const isGlobalLoading = loadingState?.global || false;
   
-  // Calculate active deals count - ADD THIS
   const activeDealsCount = deals.filter(deal => 
     ['lead', 'negotiation', 'confirmed', 'content_creation'].includes(deal.stage)
   ).length;
   
-  // Menu items configuration - UPDATED DEALS SECTION
   const menuItems = [
     {
       id: 'dashboard',
@@ -103,21 +89,20 @@ const MainLayout = () => {
       label: 'Deals',
       icon: Briefcase,
       path: '/deals',
-      badge: activeDealsCount > 0 ? { count: activeDealsCount, type: 'primary' } : null, // DYNAMIC COUNT
+      badge: activeDealsCount > 0 ? { count: activeDealsCount, type: 'primary' } : null,
       subItems: [
         { 
           id: 'deals-list', 
-          label: 'Pipeline View', // RENAMED
+          label: 'Pipeline View',
           path: '/deals',
-          icon: Kanban // Added icon
+          icon: Kanban
         },
         { 
-          id: 'deals-create', // CHANGED ID
-          label: 'Create Deal', // RENAMED
-          path: '/deals/create', // FIXED PATH
-          icon: Plus // Added icon
+          id: 'deals-create',
+          label: 'Create Deal',
+          path: '/deals/create',
+          icon: Plus
         }
-        // Removed deals-pipeline as it's the same as deals-list
       ]
     },
     {
@@ -168,7 +153,6 @@ const MainLayout = () => {
     }
   ];
   
-  // Bottom menu items
   const bottomMenuItems = [
     {
       id: 'profile',
@@ -190,7 +174,6 @@ const MainLayout = () => {
     }
   ];
   
-  // Update active menu item based on current path
   useEffect(() => {
     const path = location.pathname;
     const activeItem = menuItems.find(item => 
@@ -199,14 +182,12 @@ const MainLayout = () => {
     
     setActiveMenuItem(activeItem);
     
-    // Update page title based on active item
     const item = menuItems.find(item => item.id === activeItem);
     if (item) {
       setPageTitle(item.label);
     }
   }, [location.pathname, setActiveMenuItem, setPageTitle]);
   
-  // Handle logout
   const handleLogout = async () => {
     try {
       await logout();
@@ -217,11 +198,9 @@ const MainLayout = () => {
     }
   };
   
-  // Handle search - UPDATED TO SEARCH DEALS
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // If on deals page, trigger deals search
       if (location.pathname.startsWith('/deals')) {
         const dealsStore = useDealsStore.getState();
         dealsStore.searchDeals(searchQuery);
@@ -231,12 +210,10 @@ const MainLayout = () => {
     }
   };
   
-  // Check if feature is premium and locked
   const isFeatureLocked = (item) => {
     return item.premium && (!subscription || subscription.tier === 'starter');
   };
   
-  // Render menu item - UPDATED TO HANDLE SUB-ITEM ICONS
   const renderMenuItem = (item) => {
     const Icon = item.icon;
     const isActive = sidebar.activeItem === item.id;
@@ -297,7 +274,6 @@ const MainLayout = () => {
           </div>
         </div>
         
-        {/* Sub Items - UPDATED TO SHOW ICONS */}
         {hasSubItems && isExpanded && !sidebar.isCollapsed && (
           <div style={styles.subItemsContainer}>
             {item.subItems.map(subItem => {
@@ -322,15 +298,14 @@ const MainLayout = () => {
     );
   };
   
-  // Styles - ALL YOUR EXISTING STYLES PRESERVED
   const styles = {
     container: {
       display: 'flex',
-      minHeight: '100vh',
+      height: '100vh',
       background: 'var(--color-background)',
+      overflow: 'hidden'
     },
     
-    // Sidebar Styles
     sidebar: {
       width: sidebar.isCollapsed ? '80px' : '260px',
       background: 'white',
@@ -339,11 +314,12 @@ const MainLayout = () => {
       flexDirection: 'column',
       transition: 'width 0.3s ease',
       position: viewport.isMobile ? 'fixed' : 'relative',
-      height: viewport.isMobile ? '100vh' : 'auto',
+      height: '100vh',
       zIndex: viewport.isMobile ? 100 : 1,
       transform: viewport.isMobile ? 
         (sidebar.isMobileOpen ? 'translateX(0)' : 'translateX(-100%)') : 
         'none',
+      flexShrink: 0
     },
     
     sidebarHeader: {
@@ -473,8 +449,8 @@ const MainLayout = () => {
     },
     
     subItem: {
-      display: 'flex', // CHANGED TO FLEX FOR ICON SUPPORT
-      alignItems: 'center', // ADDED
+      display: 'flex',
+      alignItems: 'center',
       padding: '0.5rem 1rem',
       fontSize: '0.813rem',
       color: 'var(--color-neutral-600)',
@@ -536,16 +512,14 @@ const MainLayout = () => {
       color: 'var(--color-neutral-600)',
     },
     
-    // Main Content Styles
     mainContent: {
       flex: 1,
       display: 'flex',
       flexDirection: 'column',
       background: 'var(--color-background)',
-      minHeight: '100vh',
+      overflow: 'hidden'
     },
     
-    // Header Styles
     header: {
       background: 'white',
       borderBottom: '1px solid var(--color-neutral-200)',
@@ -553,9 +527,7 @@ const MainLayout = () => {
       display: 'flex',
       alignItems: 'center',
       gap: '2rem',
-      position: 'sticky',
-      top: 0,
-      zIndex: 10,
+      flexShrink: 0
     },
     
     mobileMenuButton: {
@@ -626,15 +598,12 @@ const MainLayout = () => {
       fontWeight: '600',
     },
     
-    // Content Area
     content: {
       flex: 1,
-      padding: '2rem',
-      overflowY: 'auto',
-      position: 'relative',
+      overflow: 'auto',
+      position: 'relative'
     },
     
-    // Loading Overlay
     loadingOverlay: {
       position: 'absolute',
       top: 0,
@@ -657,7 +626,6 @@ const MainLayout = () => {
       animation: 'spin 1s linear infinite',
     },
     
-    // Mobile overlay
     mobileOverlay: {
       display: viewport.isMobile && sidebar.isMobileOpen ? 'block' : 'none',
       position: 'fixed',
@@ -672,27 +640,33 @@ const MainLayout = () => {
   
   return (
     <div style={styles.container}>
-      {/* Mobile Overlay */}
       <div 
         style={styles.mobileOverlay}
         onClick={() => toggleSidebar()}
       />
       
-      {/* Sidebar */}
       <aside style={styles.sidebar}>
         <div style={styles.sidebarHeader}>
           <Link to="/dashboard" style={styles.logo}>
             <div style={styles.logoIcon}>C</div>
-            <span style={styles.logoText}>CreatorsMantra</span>
+            {!sidebar.isCollapsed && (
+              <span style={styles.logoText}>CreatorsMantra</span>
+            )}
           </Link>
-          {!sidebar.isCollapsed && (
-            <button
-              onClick={() => collapseSidebar()}
-              style={styles.collapseButton}
-            >
+          
+          <button
+            onClick={() => collapseSidebar()}
+            style={{
+              ...styles.collapseButton,
+              ...(sidebar.isCollapsed ? { margin: '0 auto' } : {})
+            }}
+          >
+            {sidebar.isCollapsed ? (
+              <ChevronRight size={20} />
+            ) : (
               <ChevronLeft size={20} />
-            </button>
-          )}
+            )}
+          </button>
         </div>
         
         <div style={styles.sidebarContent}>
@@ -723,7 +697,6 @@ const MainLayout = () => {
             </div>
           </div>
           
-          {/* Logout Button */}
           {!sidebar.isCollapsed && (
             <button
               onClick={handleLogout}
@@ -740,9 +713,7 @@ const MainLayout = () => {
         </div>
       </aside>
       
-      {/* Main Content */}
       <div style={styles.mainContent}>
-        {/* Header */}
         <header style={styles.header}>
           {viewport.isMobile && (
             <button
@@ -789,21 +760,17 @@ const MainLayout = () => {
           </div>
         </header>
         
-        {/* Content Area */}
         <main style={styles.content}>
-          {/* Loading Overlay */}
           {isPageLoading && (
             <div style={styles.loadingOverlay}>
               <div style={styles.loadingSpinner} />
             </div>
           )}
           
-          {/* Page Content */}
           <Outlet />
         </main>
       </div>
       
-      {/* Add keyframes for spinner */}
       <style jsx>{`
         @keyframes spin {
           to { transform: rotate(360deg); }

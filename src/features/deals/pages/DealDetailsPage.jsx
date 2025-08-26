@@ -1,20 +1,8 @@
 /**
- * Deal Details Page - View & Edit Individual Deal
+ * Deal Details Page - Complete Redesign
  * Path: src/features/deals/pages/DealDetailsPage.jsx
  * 
- * Comprehensive deal management interface with activity tracking,
- * document management, and inline editing capabilities.
- * 
- * Features:
- * - Deal overview with key metrics
- * - Stage progression
- * - Activity timeline
- * - Document management
- * - Notes and comments
- * - Deliverables tracking
- * - Payment status
- * - Inline editing
- * - Email integration
+ * Full-featured deal management with all backend endpoints integrated
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -32,10 +20,7 @@ import {
   Mail,
   Phone,
   Globe,
-  Instagram,
   FileText,
-  Download,
-  Upload,
   Plus,
   Trash2,
   Clock,
@@ -43,177 +28,101 @@ import {
   AlertCircle,
   MessageSquare,
   Activity,
-  Link,
   Copy,
-  ExternalLink,
   ChevronRight,
-  ChevronDown,
   Send,
-  Paperclip,
-  Image,
-  File,
-  Video,
-  Hash,
-  TrendingUp,
   Package,
   CreditCard,
   Shield,
   Star,
-  Zap
+  Zap,
+  RefreshCw,
+  AlertTriangle,
+  IndianRupee,
+  Link2,
+  Hash,
+  Target,
+  TrendingUp,
+  Users,
+  Briefcase,
+  ChevronDown,
+  Upload,
+  ExternalLink,
+  Info
 } from 'lucide-react';
-import useDealsStore from '../../../store/dealsStore';
-import useAuthStore from '../../../store/authStore';
-import { toast } from 'react-hot-toast';
 import { dealsAPI } from '../../../api/endpoints/deals';
+import useAuthStore from '../../../store/authStore';
+import useUIStore from '../../../store/uiStore';
+import { toast } from 'react-hot-toast';
 
 const DealDetailsPage = () => {
   const { dealId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { 
-    currentDeal, 
-    fetchDeal, 
-    updateDeal, 
-    moveDealToStage,
-    addNote,
-    addActivity,
-    loading,
-    updating,
-    stages 
-  } = useDealsStore();
+  const { setPageLoading } = useUIStore();
   
-  // State
+  // Main state
+  const [deal, setDeal] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editedDeal, setEditedDeal] = useState({});
+  
+  // Tab state
   const [activeTab, setActiveTab] = useState('overview');
-  const [showAddNote, setShowAddNote] = useState(false);
-  const [newNote, setNewNote] = useState('');
-  const [uploadingFile, setUploadingFile] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const fileInputRef = useRef(null);
-  const [expandedSections, setExpandedSections] = useState({
-    contact: true,
-    deliverables: true,
-    payment: true,
-    documents: true
+  
+  // Communications state
+  const [communications, setCommunications] = useState([]);
+  const [showAddComm, setShowAddComm] = useState(false);
+  const [newComm, setNewComm] = useState({
+    type: 'email',
+    direction: 'outbound',
+    subject: '',
+    summary: '',
+    outcome: 'neutral',
+    nextAction: '',
+    followUpDate: ''
   });
   
-  // Fetch deal on mount
-  useEffect(() => {
-    if (dealId) {
-      fetchDeal(dealId);
-    }
-  }, [dealId]);
+  // Deliverables state
+  const [showAddDeliverable, setShowAddDeliverable] = useState(false);
+  const [newDeliverable, setNewDeliverable] = useState({
+    type: 'instagram_post',
+    quantity: 1,
+    description: '',
+    deadline: ''
+  });
+  const [editingDeliverable, setEditingDeliverable] = useState(null);
   
-  // Update edited deal when current deal changes
-  useEffect(() => {
-    if (currentDeal) {
-      setEditedDeal(currentDeal);
-    }
-  }, [currentDeal]);
+  // Quick actions dropdown
+  const [showActions, setShowActions] = useState(false);
   
-  // Handle edit mode
-  const toggleEditMode = () => {
-    if (editMode) {
-      // Save changes
-      handleSave();
-    } else {
-      setEditMode(true);
-    }
-  };
-  
-  // Handle save
-  const handleSave = async () => {
-    try {
-      await updateDeal(dealId, editedDeal);
-      setEditMode(false);
-      toast.success('Deal updated successfully');
-    } catch (error) {
-      toast.error('Failed to update deal');
-    }
-  };
-  
-  // Handle cancel edit
-  const handleCancelEdit = () => {
-    setEditedDeal(currentDeal);
-    setEditMode(false);
-  };
-  
-  // Handle field change
-  const handleFieldChange = (field, value) => {
-    setEditedDeal(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-  
-  // Handle stage change
-  const handleStageChange = async (newStage) => {
-    try {
-      await moveDealToStage(dealId, newStage);
-      toast.success('Deal stage updated');
-    } catch (error) {
-      toast.error('Failed to update stage');
-    }
-  };
-  
-  // Handle add note
-  const handleAddNote = async () => {
-    if (!newNote.trim()) return;
-    
-    try {
-      await addNote(dealId, {
-        content: newNote,
-        createdBy: user.id,
-        createdAt: new Date().toISOString()
-      });
-      setNewNote('');
-      setShowAddNote(false);
-      toast.success('Note added');
-    } catch (error) {
-      toast.error('Failed to add note');
-    }
-  };
-  
-  // Handle file upload
-  const handleFileUpload = async (files) => {
-    setUploadingFile(true);
-    
-    try {
-      const formData = new FormData();
-      Array.from(files).forEach(file => {
-        formData.append('files', file);
-      });
-      
-      await dealsAPI.uploadDocuments(dealId, formData);
-      toast.success('Files uploaded successfully');
-      fetchDeal(dealId); // Refresh to get updated documents
-    } catch (error) {
-      toast.error('Failed to upload files');
-    } finally {
-      setUploadingFile(false);
-    }
-  };
-  
-  // Toggle section
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-  
-  // Format currency
+  // Stage progression modal
+  const [showStageModal, setShowStageModal] = useState(false);
+  const [selectedStage, setSelectedStage] = useState(null);
+  const [stageNotes, setStageNotes] = useState('');
+
+  // Stages configuration
+  const stages = [
+    { id: 'pitched', name: 'Pitched', color: '#8B5CF6', icon: Target },
+    { id: 'in_talks', name: 'In Talks', color: '#3B82F6', icon: MessageSquare },
+    { id: 'negotiating', name: 'Negotiating', color: '#06B6D4', icon: Users },
+    { id: 'live', name: 'Live', color: '#F59E0B', icon: Activity },
+    { id: 'completed', name: 'Completed', color: '#10B981', icon: CheckCircle },
+    { id: 'paid', name: 'Paid', color: '#22C55E', icon: DollarSign },
+    { id: 'cancelled', name: 'Cancelled', color: '#EF4444', icon: X },
+    { id: 'rejected', name: 'Rejected', color: '#94A3B8', icon: X }
+  ];
+
+  // Format helpers
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      minimumFractionDigits: 0
     }).format(amount || 0);
   };
-  
-  // Format date
+
   const formatDate = (date) => {
     if (!date) return 'Not set';
     return new Date(date).toLocaleDateString('en-IN', {
@@ -222,65 +131,39 @@ const DealDetailsPage = () => {
       year: 'numeric'
     });
   };
-  
-  // Format time ago
-  const formatTimeAgo = (date) => {
-    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-    const intervals = {
-      year: 31536000,
-      month: 2592000,
-      week: 604800,
-      day: 86400,
-      hour: 3600,
-      minute: 60
-    };
+
+  const getStageInfo = (stageId) => {
+    return stages.find(s => s.id === stageId) || stages[0];
+  };
+
+  const calculateDealHealth = () => {
+    if (!deal) return 0;
+    let score = 100;
     
-    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
-      const interval = Math.floor(seconds / secondsInUnit);
-      if (interval >= 1) {
-        return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
-      }
+    // Check overdue timelines
+    const now = new Date();
+    if (deal.timeline?.contentDeadline && new Date(deal.timeline.contentDeadline) < now) {
+      score -= 30;
+    }
+    if (deal.timeline?.paymentDueDate && new Date(deal.timeline.paymentDueDate) < now && deal.stage !== 'paid') {
+      score -= 20;
     }
     
-    return 'Just now';
-  };
-  
-  // Get stage color
-  const getStageColor = (stageId) => {
-    const stage = stages.find(s => s.id === stageId);
-    return stage?.color || '#6366f1';
-  };
-  
-  // Calculate deal health score
-  const calculateDealHealth = () => {
-    if (!currentDeal) return 0;
+    // Check deliverables completion
+    const pendingDeliverables = deal.deliverables?.filter(d => d.status !== 'completed').length || 0;
+    score -= (pendingDeliverables * 5);
     
-    let score = 100;
-    const deadline = new Date(currentDeal.deadline);
-    const today = new Date();
-    const daysLeft = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
-    
-    if (daysLeft < 0) score -= 30;
-    else if (daysLeft < 7) score -= 15;
-    
-    if (!currentDeal.contractSigned) score -= 20;
-    if (!currentDeal.briefReceived) score -= 10;
-    
-    return Math.max(0, score);
+    return Math.max(0, Math.min(100, score));
   };
-  
-  // Get health color
-  const getHealthColor = (score) => {
-    if (score >= 80) return '#10b981';
-    if (score >= 50) return '#f59e0b';
-    return '#ef4444';
-  };
-  
-  // Styles
+
+  const currentStage = deal ? getStageInfo(deal.stage) : null;
+  const dealHealth = calculateDealHealth();
+
+  // STYLES OBJECT - MOVED BEFORE ANY USAGE
   const styles = {
     container: {
-      minHeight: '100vh',
-      backgroundColor: '#f8fafc'
+      backgroundColor: '#f8fafc',
+      minHeight: '100vh'
     },
     header: {
       backgroundColor: '#ffffff',
@@ -289,8 +172,8 @@ const DealDetailsPage = () => {
     },
     headerTop: {
       display: 'flex',
-      justifyContent: 'space-between',
       alignItems: 'center',
+      justifyContent: 'space-between',
       marginBottom: '1.5rem'
     },
     backButton: {
@@ -298,103 +181,127 @@ const DealDetailsPage = () => {
       alignItems: 'center',
       gap: '0.5rem',
       padding: '0.5rem 1rem',
-      backgroundColor: 'transparent',
+      backgroundColor: '#ffffff',
       border: '1px solid #e2e8f0',
       borderRadius: '0.5rem',
       color: '#475569',
       fontSize: '0.875rem',
-      cursor: 'pointer',
-      transition: 'all 0.2s'
+      cursor: 'pointer'
     },
-    dealTitle: {
-      fontSize: '1.75rem',
-      fontWeight: '700',
-      color: '#0f172a',
+    titleSection: {
       flex: 1,
       margin: '0 2rem'
     },
-    headerActions: {
+    title: {
+      fontSize: '1.75rem',
+      fontWeight: '700',
+      color: '#0f172a',
+      marginBottom: '0.25rem'
+    },
+    subtitle: {
+      fontSize: '0.875rem',
+      color: '#64748b',
       display: 'flex',
+      alignItems: 'center',
       gap: '1rem'
     },
-    editButton: {
+    actions: {
+      display: 'flex',
+      gap: '0.75rem',
+      position: 'relative'
+    },
+    button: {
       display: 'flex',
       alignItems: 'center',
       gap: '0.5rem',
-      padding: '0.625rem 1.25rem',
-      backgroundColor: editMode ? '#10b981' : '#6366f1',
-      color: '#ffffff',
-      border: 'none',
+      padding: '0.625rem 1rem',
       borderRadius: '0.5rem',
-      fontSize: '0.875rem',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.2s'
-    },
-    cancelButton: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.625rem 1.25rem',
-      backgroundColor: '#ffffff',
-      color: '#475569',
-      border: '1px solid #e2e8f0',
-      borderRadius: '0.5rem',
-      fontSize: '0.875rem',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.2s'
-    },
-    moreButton: {
-      padding: '0.625rem',
-      backgroundColor: '#ffffff',
-      border: '1px solid #e2e8f0',
-      borderRadius: '0.5rem',
-      color: '#475569',
-      cursor: 'pointer',
-      transition: 'all 0.2s'
-    },
-    stageSelector: {
-      display: 'flex',
-      gap: '0.5rem',
-      padding: '0.5rem',
-      backgroundColor: '#f1f5f9',
-      borderRadius: '0.5rem'
-    },
-    stageOption: {
-      padding: '0.5rem 1rem',
-      backgroundColor: 'transparent',
-      border: 'none',
-      borderRadius: '0.375rem',
       fontSize: '0.875rem',
       fontWeight: '500',
-      color: '#64748b',
       cursor: 'pointer',
-      transition: 'all 0.2s',
-      whiteSpace: 'nowrap'
+      border: 'none',
+      transition: 'all 0.2s'
     },
-    stageOptionActive: {
+    primaryButton: {
+      backgroundColor: '#6366f1',
+      color: '#ffffff'
+    },
+    secondaryButton: {
       backgroundColor: '#ffffff',
-      color: '#0f172a',
-      boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+      color: '#475569',
+      border: '1px solid #e2e8f0'
+    },
+    dangerButton: {
+      backgroundColor: '#ef4444',
+      color: '#ffffff'
+    },
+    dropdown: {
+      position: 'absolute',
+      top: '100%',
+      right: 0,
+      marginTop: '0.5rem',
+      backgroundColor: '#ffffff',
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.5rem',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      zIndex: 50,
+      minWidth: '200px'
+    },
+    dropdownItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.75rem',
+      padding: '0.625rem 1rem',
+      fontSize: '0.875rem',
+      color: '#475569',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s'
+    },
+    stageProgress: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1rem',
+      padding: '1rem 0',
+      overflowX: 'auto'
+    },
+    stageItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.5rem 1rem',
+      borderRadius: '2rem',
+      fontSize: '0.875rem',
+      fontWeight: '500',
+      cursor: 'pointer',
+      whiteSpace: 'nowrap',
+      transition: 'all 0.2s'
+    },
+    stageActive: {
+      backgroundColor: currentStage?.color || '#8B5CF6',
+      color: '#ffffff'
+    },
+    stageInactive: {
+      backgroundColor: '#f1f5f9',
+      color: '#64748b'
     },
     statsRow: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(6, 1fr)',
-      gap: '2rem',
-      padding: '1rem 0'
+      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+      gap: '1rem',
+      marginTop: '1rem'
     },
     statCard: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.25rem'
+      backgroundColor: '#ffffff',
+      padding: '1rem',
+      borderRadius: '0.5rem',
+      border: '1px solid #e2e8f0'
     },
     statLabel: {
       fontSize: '0.75rem',
       color: '#64748b',
-      fontWeight: '500',
       textTransform: 'uppercase',
-      letterSpacing: '0.05em'
+      letterSpacing: '0.05em',
+      marginBottom: '0.25rem'
     },
     statValue: {
       fontSize: '1.25rem',
@@ -404,42 +311,32 @@ const DealDetailsPage = () => {
       alignItems: 'center',
       gap: '0.5rem'
     },
-    statIcon: {
-      width: '1.25rem',
-      height: '1.25rem'
-    },
     content: {
       display: 'flex',
-      gap: '2rem',
-      padding: '2rem',
-      maxWidth: '1600px',
+      gap: '1.5rem',
+      padding: '1.5rem',
+      maxWidth: '1400px',
       margin: '0 auto'
     },
     mainColumn: {
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1.5rem'
+      flex: '1 1 65%'
     },
     sideColumn: {
-      width: '400px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1.5rem'
+      flex: '1 1 35%'
     },
     card: {
       backgroundColor: '#ffffff',
       borderRadius: '0.75rem',
       border: '1px solid #e2e8f0',
+      marginBottom: '1.5rem',
       overflow: 'hidden'
     },
     cardHeader: {
-      padding: '1.25rem 1.5rem',
+      padding: '1.25rem',
       borderBottom: '1px solid #e2e8f0',
       display: 'flex',
       justifyContent: 'space-between',
-      alignItems: 'center',
-      cursor: 'pointer'
+      alignItems: 'center'
     },
     cardTitle: {
       fontSize: '1rem',
@@ -447,26 +344,24 @@ const DealDetailsPage = () => {
       color: '#0f172a',
       display: 'flex',
       alignItems: 'center',
-      gap: '0.75rem'
+      gap: '0.5rem'
     },
     cardContent: {
-      padding: '1.5rem'
+      padding: '1.25rem'
     },
     tabs: {
       display: 'flex',
-      gap: '2rem',
-      borderBottom: '1px solid #e2e8f0',
-      padding: '0 1.5rem'
+      gap: '0.5rem',
+      padding: '0 1.25rem',
+      borderBottom: '1px solid #e2e8f0'
     },
     tab: {
-      padding: '1rem 0',
-      backgroundColor: 'transparent',
-      border: 'none',
-      borderBottom: '2px solid transparent',
+      padding: '0.875rem 0',
       fontSize: '0.875rem',
       fontWeight: '500',
       color: '#64748b',
       cursor: 'pointer',
+      borderBottom: '2px solid transparent',
       transition: 'all 0.2s'
     },
     tabActive: {
@@ -474,723 +369,787 @@ const DealDetailsPage = () => {
       borderBottomColor: '#6366f1'
     },
     field: {
-      marginBottom: '1.25rem'
+      marginBottom: '1rem'
     },
     fieldLabel: {
       fontSize: '0.75rem',
       color: '#64748b',
       fontWeight: '500',
       textTransform: 'uppercase',
-      letterSpacing: '0.05em',
-      marginBottom: '0.5rem',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem'
+      marginBottom: '0.25rem'
     },
     fieldValue: {
       fontSize: '0.9375rem',
-      color: '#0f172a',
-      fontWeight: '500'
+      color: '#0f172a'
     },
     input: {
       width: '100%',
-      padding: '0.625rem 0.875rem',
+      padding: '0.625rem',
       border: '1px solid #e2e8f0',
-      borderRadius: '0.5rem',
-      fontSize: '0.9375rem',
-      outline: 'none',
-      transition: 'all 0.2s'
+      borderRadius: '0.375rem',
+      fontSize: '0.9375rem'
     },
     textarea: {
       width: '100%',
-      padding: '0.625rem 0.875rem',
+      padding: '0.625rem',
       border: '1px solid #e2e8f0',
-      borderRadius: '0.5rem',
+      borderRadius: '0.375rem',
       fontSize: '0.9375rem',
-      outline: 'none',
-      transition: 'all 0.2s',
       minHeight: '100px',
       resize: 'vertical'
     },
-    timeline: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1rem'
-    },
-    timelineItem: {
-      display: 'flex',
-      gap: '1rem',
-      position: 'relative'
-    },
-    timelineLine: {
-      position: 'absolute',
-      left: '16px',
-      top: '32px',
-      bottom: '-16px',
-      width: '2px',
-      backgroundColor: '#e2e8f0'
-    },
-    timelineIcon: {
-      width: '32px',
-      height: '32px',
-      borderRadius: '50%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#f1f5f9',
-      flexShrink: 0,
-      zIndex: 1
-    },
-    timelineContent: {
-      flex: 1,
-      paddingBottom: '1rem'
-    },
-    timelineTitle: {
-      fontSize: '0.875rem',
-      fontWeight: '500',
-      color: '#0f172a',
-      marginBottom: '0.25rem'
-    },
-    timelineDescription: {
-      fontSize: '0.8125rem',
-      color: '#64748b',
-      lineHeight: '1.5'
-    },
-    timelineTime: {
-      fontSize: '0.75rem',
-      color: '#94a3b8',
-      marginTop: '0.25rem'
-    },
-    noteCard: {
-      padding: '1rem',
-      backgroundColor: '#f8fafc',
-      borderRadius: '0.5rem',
-      marginBottom: '0.75rem'
-    },
-    noteHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: '0.5rem'
-    },
-    noteAuthor: {
-      fontSize: '0.875rem',
-      fontWeight: '500',
-      color: '#475569'
-    },
-    noteTime: {
-      fontSize: '0.75rem',
-      color: '#94a3b8'
-    },
-    noteContent: {
-      fontSize: '0.875rem',
-      color: '#0f172a',
-      lineHeight: '1.5'
-    },
-    addNoteForm: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1rem',
-      padding: '1rem',
-      backgroundColor: '#f8fafc',
-      borderRadius: '0.5rem'
-    },
-    documentGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(2, 1fr)',
-      gap: '1rem'
-    },
-    documentCard: {
-      padding: '1rem',
-      border: '1px solid #e2e8f0',
-      borderRadius: '0.5rem',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-      cursor: 'pointer',
-      transition: 'all 0.2s'
-    },
-    documentIcon: {
-      width: '40px',
-      height: '40px',
-      borderRadius: '0.375rem',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#f1f5f9'
-    },
-    documentInfo: {
-      flex: 1
-    },
-    documentName: {
-      fontSize: '0.875rem',
-      fontWeight: '500',
-      color: '#0f172a',
-      marginBottom: '0.25rem'
-    },
-    documentSize: {
-      fontSize: '0.75rem',
-      color: '#64748b'
-    },
-    uploadArea: {
-      padding: '2rem',
-      border: '2px dashed #e2e8f0',
-      borderRadius: '0.5rem',
-      textAlign: 'center',
-      cursor: 'pointer',
-      transition: 'all 0.2s'
-    },
-    uploadAreaHover: {
-      borderColor: '#6366f1',
-      backgroundColor: '#f0f9ff'
-    },
-    deliverablesList: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.75rem'
-    },
     deliverableItem: {
       display: 'flex',
-      alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0.75rem 1rem',
-      backgroundColor: '#f8fafc',
-      borderRadius: '0.5rem'
-    },
-    deliverableInfo: {
-      display: 'flex',
       alignItems: 'center',
-      gap: '0.75rem'
+      padding: '0.75rem',
+      backgroundColor: '#f8fafc',
+      borderRadius: '0.5rem',
+      marginBottom: '0.5rem'
     },
-    deliverableIcon: {
-      width: '32px',
-      height: '32px',
-      borderRadius: '0.375rem',
+    communicationItem: {
+      padding: '1rem',
+      borderLeft: '3px solid #e2e8f0',
+      marginBottom: '1rem'
+    },
+    modal: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#ffffff'
+      zIndex: 100
     },
-    deliverableName: {
-      fontSize: '0.875rem',
-      fontWeight: '500',
-      color: '#0f172a'
+    modalContent: {
+      backgroundColor: '#ffffff',
+      borderRadius: '0.75rem',
+      padding: '1.5rem',
+      maxWidth: '500px',
+      width: '90%',
+      maxHeight: '80vh',
+      overflow: 'auto'
     },
-    deliverableQuantity: {
-      fontSize: '0.75rem',
-      color: '#64748b'
+    modalHeader: {
+      fontSize: '1.125rem',
+      fontWeight: '600',
+      marginBottom: '1rem'
     },
-    deliverableStatus: {
-      padding: '0.25rem 0.75rem',
-      borderRadius: '9999px',
+    badge: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '0.25rem',
+      padding: '0.25rem 0.625rem',
+      borderRadius: '1rem',
       fontSize: '0.75rem',
       fontWeight: '500'
     },
-    healthScore: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.75rem',
-      padding: '1rem',
-      backgroundColor: '#f8fafc',
-      borderRadius: '0.5rem',
-      marginBottom: '1rem'
-    },
     healthBar: {
-      flex: 1,
-      height: '8px',
+      height: '6px',
       backgroundColor: '#e2e8f0',
-      borderRadius: '4px',
-      overflow: 'hidden'
+      borderRadius: '3px',
+      overflow: 'hidden',
+      marginTop: '0.5rem'
     },
     healthFill: {
       height: '100%',
-      transition: 'width 0.5s ease'
+      backgroundColor: dealHealth > 70 ? '#10b981' : dealHealth > 40 ? '#f59e0b' : '#ef4444',
+      transition: 'width 0.3s ease'
     },
-    emptyState: {
-      padding: '2rem',
-      textAlign: 'center',
-      color: '#64748b'
-    },
-    loading: {
+    loadingContainer: {
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '400px',
-      fontSize: '1rem',
-      color: '#64748b'
+      gap: '1rem'
+    },
+    spinner: {
+      width: '40px',
+      height: '40px',
+      border: '3px solid #e2e8f0',
+      borderTop: '3px solid #6366f1',
+      borderRadius: '50%',
+      animation: 'spin 1s linear infinite'
+    },
+    errorContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '400px',
+      gap: '1rem'
     }
   };
-  
-  if (loading && !currentDeal) {
+
+  // Fetch deal data
+  useEffect(() => {
+    fetchDeal();
+  }, [dealId]);
+
+  const fetchDeal = async () => {
+    try {
+      setLoading(true);
+      const response = await dealsAPI.getDeal(dealId);
+      
+      if (response.data) {
+        const dealData = response.data.data || response.data;
+        setDeal(dealData);
+        setEditedDeal(dealData);
+        
+        // Fetch communications if deal loaded successfully
+        fetchCommunications();
+      }
+    } catch (error) {
+      toast.error('Failed to load deal details');
+      navigate('/deals');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCommunications = async () => {
+    try {
+      const response = await dealsAPI.getCommunications(dealId);
+      if (response.data) {
+        setCommunications(response.data.communications || []);
+      }
+    } catch (error) {
+      // Silent fail for communications
+    }
+  };
+
+  // Update deal
+  const handleSave = async () => {
+    try {
+      setUpdating(true);
+      
+      const updateData = {
+        title: editedDeal.title,
+        brand: editedDeal.brand,
+        platform: editedDeal.platform,
+        dealValue: editedDeal.dealValue,
+        timeline: editedDeal.timeline,
+        campaignRequirements: editedDeal.campaignRequirements,
+        internalNotes: editedDeal.internalNotes,
+        tags: editedDeal.tags
+      };
+      
+      await dealsAPI.updateDeal(dealId, updateData);
+      setDeal(editedDeal);
+      setEditMode(false);
+      toast.success('Deal updated successfully');
+    } catch (error) {
+      toast.error('Failed to update deal');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Stage management
+  const handleStageChange = async () => {
+    if (!selectedStage) return;
+    
+    try {
+      setUpdating(true);
+      
+      const stageData = {
+        stage: selectedStage
+      };
+      
+      // Add stage-specific data
+      if (selectedStage === 'live' && stageNotes) {
+        stageData.goLiveDate = new Date().toISOString();
+      } else if (selectedStage === 'cancelled' && stageNotes) {
+        stageData.cancellationReason = stageNotes;
+      } else if (selectedStage === 'rejected' && stageNotes) {
+        stageData.rejectionReason = stageNotes;
+      } else if (selectedStage === 'negotiating' && stageNotes) {
+        stageData.negotiationNotes = stageNotes;
+      }
+      
+      await dealsAPI.updateDealStage(dealId, selectedStage, stageNotes);
+      
+      // Update local state
+      setDeal({ ...deal, stage: selectedStage });
+      setShowStageModal(false);
+      setSelectedStage(null);
+      setStageNotes('');
+      
+      toast.success('Deal stage updated');
+      fetchDeal(); // Refresh to get updated timeline
+    } catch (error) {
+      toast.error('Failed to update stage');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Add communication
+  const handleAddCommunication = async () => {
+    if (!newComm.summary.trim()) {
+      toast.error('Please add a summary');
+      return;
+    }
+    
+    try {
+      setUpdating(true);
+      await dealsAPI.addCommunication(dealId, newComm);
+      
+      // Reset form and refresh
+      setNewComm({
+        type: 'email',
+        direction: 'outbound',
+        subject: '',
+        summary: '',
+        outcome: 'neutral',
+        nextAction: '',
+        followUpDate: ''
+      });
+      setShowAddComm(false);
+      
+      toast.success('Communication added');
+      fetchCommunications();
+    } catch (error) {
+      toast.error('Failed to add communication');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Add deliverable
+  const handleAddDeliverable = async () => {
+    try {
+      setUpdating(true);
+      await dealsAPI.addDeliverable(dealId, newDeliverable);
+      
+      setNewDeliverable({
+        type: 'instagram_post',
+        quantity: 1,
+        description: '',
+        deadline: ''
+      });
+      setShowAddDeliverable(false);
+      
+      toast.success('Deliverable added');
+      fetchDeal();
+    } catch (error) {
+      toast.error('Failed to add deliverable');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Update deliverable status
+  const handleUpdateDeliverable = async (deliverableId, status, additionalData = {}) => {
+    try {
+      setUpdating(true);
+      
+      const updateData = {
+        status,
+        ...additionalData
+      };
+      
+      await dealsAPI.updateDeliverable(dealId, deliverableId, updateData);
+      toast.success('Deliverable updated');
+      fetchDeal();
+    } catch (error) {
+      toast.error('Failed to update deliverable');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Quick actions
+  const handleQuickAction = async (action) => {
+    try {
+      setUpdating(true);
+      
+      switch (action) {
+        case 'duplicate':
+          await dealsAPI.performQuickAction(dealId, 'duplicate');
+          toast.success('Deal duplicated successfully');
+          navigate('/deals');
+          break;
+          
+        case 'convert_to_template':
+          await dealsAPI.performQuickAction(dealId, 'convert_to_template');
+          toast.success('Template created from deal');
+          break;
+          
+        case 'send_reminder':
+          const reminderData = {
+            subject: `Follow-up: ${deal.title}`,
+            message: 'Following up on our discussion',
+            followUpDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+          };
+          await dealsAPI.performQuickAction(dealId, 'send_reminder', reminderData);
+          toast.success('Reminder sent');
+          fetchCommunications();
+          break;
+          
+        default:
+          break;
+      }
+    } catch (error) {
+      toast.error(`Failed to ${action.replace('_', ' ')}`);
+    } finally {
+      setUpdating(false);
+      setShowActions(false);
+    }
+  };
+
+  // Loading state
+  if (loading) {
     return (
-      <div style={styles.container}>
-        <div style={styles.loading}>Loading deal details...</div>
+      <div style={styles.loadingContainer}>
+        <div style={styles.spinner} />
+        <span>Loading deal details...</span>
       </div>
     );
   }
-  
-  if (!currentDeal) {
+
+  if (!deal) {
     return (
-      <div style={styles.container}>
-        <div style={styles.loading}>Deal not found</div>
+      <div style={styles.errorContainer}>
+        <AlertCircle size={48} color="#ef4444" />
+        <h2>Deal not found</h2>
+        <button onClick={() => navigate('/deals')} style={styles.button}>
+          Back to Deals
+        </button>
       </div>
     );
   }
-  
-  const dealHealth = calculateDealHealth();
-  const healthColor = getHealthColor(dealHealth);
-  
+
   return (
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerTop}>
-          <button
-            style={styles.backButton}
-            onClick={() => navigate('/deals')}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f8fafc';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
+          <button style={styles.backButton} onClick={() => navigate('/deals')}>
             <ArrowLeft size={18} />
-            Back to Deals
+            Back
           </button>
           
-          {editMode ? (
-            <input
-              type="text"
-              value={editedDeal.title}
-              onChange={(e) => handleFieldChange('title', e.target.value)}
-              style={{ ...styles.dealTitle, ...styles.input }}
-            />
-          ) : (
-            <h1 style={styles.dealTitle}>{currentDeal.title}</h1>
-          )}
-          
-          <div style={styles.headerActions}>
-            {editMode && (
-              <button
-                style={styles.cancelButton}
-                onClick={handleCancelEdit}
-              >
-                <X size={18} />
-                Cancel
-              </button>
+          <div style={styles.titleSection}>
+            {editMode ? (
+              <input
+                type="text"
+                value={editedDeal.title}
+                onChange={(e) => setEditedDeal({ ...editedDeal, title: e.target.value })}
+                style={{ ...styles.input, fontSize: '1.75rem', fontWeight: '700' }}
+              />
+            ) : (
+              <h1 style={styles.title}>{deal.title}</h1>
             )}
-            <button
-              style={styles.editButton}
-              onClick={toggleEditMode}
-            >
-              {editMode ? (
-                <>
-                  <Save size={18} />
-                  Save Changes
-                </>
-              ) : (
-                <>
-                  <Edit2 size={18} />
-                  Edit Deal
-                </>
-              )}
-            </button>
-            <button style={styles.moreButton}>
-              <MoreVertical size={18} />
-            </button>
+            <div style={styles.subtitle}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <Building size={14} />
+                {deal.brand?.name || 'No brand'}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <Hash size={14} />
+                {deal.dealId || deal._id}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <Calendar size={14} />
+                Created {formatDate(deal.createdAt)}
+              </span>
+            </div>
+          </div>
+          
+          <div style={styles.actions}>
+            {editMode ? (
+              <>
+                <button
+                  style={{ ...styles.button, ...styles.secondaryButton }}
+                  onClick={() => {
+                    setEditedDeal(deal);
+                    setEditMode(false);
+                  }}
+                  disabled={updating}
+                >
+                  <X size={16} />
+                  Cancel
+                </button>
+                <button
+                  style={{ ...styles.button, ...styles.primaryButton }}
+                  onClick={handleSave}
+                  disabled={updating}
+                >
+                  <Save size={16} />
+                  Save
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  style={{ ...styles.button, ...styles.secondaryButton }}
+                  onClick={() => setEditMode(true)}
+                >
+                  <Edit2 size={16} />
+                  Edit
+                </button>
+                <button
+                  style={{ ...styles.button, ...styles.secondaryButton }}
+                  onClick={() => setShowActions(!showActions)}
+                >
+                  <MoreVertical size={16} />
+                  Actions
+                </button>
+                
+                {showActions && (
+                  <div style={styles.dropdown}>
+                    <div
+                      style={styles.dropdownItem}
+                      onClick={() => handleQuickAction('duplicate')}
+                    >
+                      <Copy size={16} />
+                      Duplicate Deal
+                    </div>
+                    <div
+                      style={styles.dropdownItem}
+                      onClick={() => handleQuickAction('convert_to_template')}
+                    >
+                      <FileText size={16} />
+                      Convert to Template
+                    </div>
+                    <div
+                      style={styles.dropdownItem}
+                      onClick={() => handleQuickAction('send_reminder')}
+                    >
+                      <Send size={16} />
+                      Send Reminder
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
         
-        {/* Stage Selector */}
-        <div style={styles.stageSelector}>
-          {stages.map(stage => (
-            <button
-              key={stage.id}
-              style={{
-                ...styles.stageOption,
-                ...(currentDeal.stage === stage.id ? styles.stageOptionActive : {}),
-                borderLeft: currentDeal.stage === stage.id ? `3px solid ${stage.color}` : 'none'
-              }}
-              onClick={() => handleStageChange(stage.id)}
-              disabled={!editMode}
-            >
-              {stage.name}
-            </button>
-          ))}
+        {/* Stage Progress */}
+        <div style={styles.stageProgress}>
+          {stages.filter(s => !['cancelled', 'rejected'].includes(s.id)).map(stage => {
+            const StageIcon = stage.icon;
+            const isActive = deal.stage === stage.id;
+            
+            return (
+              <div
+                key={stage.id}
+                style={{
+                  ...styles.stageItem,
+                  ...(isActive ? styles.stageActive : styles.stageInactive)
+                }}
+                onClick={() => {
+                  if (!editMode) {
+                    setSelectedStage(stage.id);
+                    setShowStageModal(true);
+                  }
+                }}
+              >
+                <StageIcon size={14} />
+                {stage.name}
+              </div>
+            );
+          })}
         </div>
         
         {/* Stats Row */}
         <div style={styles.statsRow}>
           <div style={styles.statCard}>
-            <span style={styles.statLabel}>Deal Value</span>
-            <span style={styles.statValue}>
-              <DollarSign style={styles.statIcon} color="#10b981" />
-              {formatCurrency(currentDeal.value)}
-            </span>
+            <div style={styles.statLabel}>Deal Value</div>
+            <div style={styles.statValue}>
+              <IndianRupee size={18} />
+              {formatCurrency(deal.dealValue?.amount || 0)}
+            </div>
           </div>
           
           <div style={styles.statCard}>
-            <span style={styles.statLabel}>Deadline</span>
-            <span style={styles.statValue}>
-              <Calendar style={styles.statIcon} color="#f59e0b" />
-              {formatDate(currentDeal.deadline)}
-            </span>
+            <div style={styles.statLabel}>Platform</div>
+            <div style={styles.statValue}>
+              <Globe size={18} />
+              {deal.platform || 'Not set'}
+            </div>
           </div>
           
           <div style={styles.statCard}>
-            <span style={styles.statLabel}>Days in Stage</span>
-            <span style={styles.statValue}>
-              <Clock style={styles.statIcon} color="#6366f1" />
-              {currentDeal.daysInStage || 0}
-            </span>
+            <div style={styles.statLabel}>Priority</div>
+            <div style={styles.statValue}>
+              <Zap size={18} />
+              {deal.priority || 'Medium'}
+            </div>
           </div>
           
           <div style={styles.statCard}>
-            <span style={styles.statLabel}>Deliverables</span>
-            <span style={styles.statValue}>
-              <Package style={styles.statIcon} color="#8b5cf6" />
-              {currentDeal.deliverables?.length || 0}
-            </span>
-          </div>
-          
-          <div style={styles.statCard}>
-            <span style={styles.statLabel}>Documents</span>
-            <span style={styles.statValue}>
-              <FileText style={styles.statIcon} color="#3b82f6" />
-              {currentDeal.documents?.length || 0}
-            </span>
-          </div>
-          
-          <div style={styles.statCard}>
-            <span style={styles.statLabel}>Health Score</span>
-            <span style={styles.statValue}>
-              <Shield style={styles.statIcon} color={healthColor} />
+            <div style={styles.statLabel}>Health Score</div>
+            <div style={styles.statValue}>
               {dealHealth}%
-            </span>
+            </div>
+            <div style={styles.healthBar}>
+              <div style={{ ...styles.healthFill, width: `${dealHealth}%` }} />
+            </div>
           </div>
         </div>
       </div>
       
-      {/* Content */}
+      {/* Content continues with the same structure... */}
+      {/* I'll include the rest of the JSX without changes since the structure remains the same */}
+      
       <div style={styles.content}>
-        {/* Main Column */}
         <div style={styles.mainColumn}>
-          {/* Tabs Card */}
+          {/* Tabs */}
           <div style={styles.card}>
             <div style={styles.tabs}>
-              <button
-                style={{
-                  ...styles.tab,
-                  ...(activeTab === 'overview' ? styles.tabActive : {})
-                }}
-                onClick={() => setActiveTab('overview')}
-              >
-                Overview
-              </button>
-              <button
-                style={{
-                  ...styles.tab,
-                  ...(activeTab === 'activity' ? styles.tabActive : {})
-                }}
-                onClick={() => setActiveTab('activity')}
-              >
-                Activity
-              </button>
-              <button
-                style={{
-                  ...styles.tab,
-                  ...(activeTab === 'notes' ? styles.tabActive : {})
-                }}
-                onClick={() => setActiveTab('notes')}
-              >
-                Notes
-              </button>
-              <button
-                style={{
-                  ...styles.tab,
-                  ...(activeTab === 'documents' ? styles.tabActive : {})
-                }}
-                onClick={() => setActiveTab('documents')}
-              >
-                Documents
-              </button>
+              {['overview', 'deliverables', 'communications', 'timeline'].map(tab => (
+                <div
+                  key={tab}
+                  style={{
+                    ...styles.tab,
+                    ...(activeTab === tab ? styles.tabActive : {})
+                  }}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </div>
+              ))}
             </div>
             
             <div style={styles.cardContent}>
               {/* Overview Tab */}
               {activeTab === 'overview' && (
                 <div>
-                  {/* Health Score */}
-                  <div style={styles.healthScore}>
-                    <Zap color={healthColor} size={20} />
-                    <span style={{ fontWeight: '600', color: '#0f172a' }}>
-                      Deal Health: {dealHealth}%
-                    </span>
-                    <div style={styles.healthBar}>
-                      <div
-                        style={{
-                          ...styles.healthFill,
-                          width: `${dealHealth}%`,
-                          backgroundColor: healthColor
-                        }}
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Brief */}
                   <div style={styles.field}>
-                    <div style={styles.fieldLabel}>
-                      <FileText size={14} />
-                      Campaign Brief
-                    </div>
+                    <div style={styles.fieldLabel}>Campaign Requirements</div>
                     {editMode ? (
                       <textarea
-                        value={editedDeal.brief || ''}
-                        onChange={(e) => handleFieldChange('brief', e.target.value)}
-                        placeholder="Enter campaign brief..."
+                        value={editedDeal.campaignRequirements?.brief || ''}
+                        onChange={(e) => setEditedDeal({
+                          ...editedDeal,
+                          campaignRequirements: { ...editedDeal.campaignRequirements, brief: e.target.value }
+                        })}
                         style={styles.textarea}
+                        placeholder="Enter campaign brief..."
                       />
                     ) : (
                       <div style={styles.fieldValue}>
-                        {currentDeal.brief || 'No brief provided'}
+                        {deal.campaignRequirements?.brief || 'No requirements specified'}
                       </div>
                     )}
                   </div>
                   
-                  {/* Campaign Dates */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                    <div style={styles.field}>
-                      <div style={styles.fieldLabel}>
-                        <Calendar size={14} />
-                        Campaign Start
+                  <div style={styles.field}>
+                    <div style={styles.fieldLabel}>Internal Notes</div>
+                    {editMode ? (
+                      <textarea
+                        value={editedDeal.internalNotes || ''}
+                        onChange={(e) => setEditedDeal({ ...editedDeal, internalNotes: e.target.value })}
+                        style={styles.textarea}
+                        placeholder="Add internal notes..."
+                      />
+                    ) : (
+                      <div style={styles.fieldValue}>
+                        {deal.internalNotes || 'No notes added'}
                       </div>
-                      {editMode ? (
-                        <input
-                          type="date"
-                          value={editedDeal.campaignStartDate || ''}
-                          onChange={(e) => handleFieldChange('campaignStartDate', e.target.value)}
-                          style={styles.input}
-                        />
-                      ) : (
-                        <div style={styles.fieldValue}>
-                          {formatDate(currentDeal.campaignStartDate)}
-                        </div>
-                      )}
+                    )}
+                  </div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div style={styles.field}>
+                      <div style={styles.fieldLabel}>Payment Terms</div>
+                      <div style={styles.fieldValue}>
+                        {deal.dealValue?.paymentTerms || '50_50'}
+                      </div>
                     </div>
                     
                     <div style={styles.field}>
-                      <div style={styles.fieldLabel}>
-                        <Calendar size={14} />
-                        Campaign End
+                      <div style={styles.fieldLabel}>Source</div>
+                      <div style={styles.fieldValue}>
+                        {deal.source || 'direct_outreach'}
                       </div>
-                      {editMode ? (
-                        <input
-                          type="date"
-                          value={editedDeal.campaignEndDate || ''}
-                          onChange={(e) => handleFieldChange('campaignEndDate', e.target.value)}
-                          style={styles.input}
-                        />
-                      ) : (
-                        <div style={styles.fieldValue}>
-                          {formatDate(currentDeal.campaignEndDate)}
-                        </div>
-                      )}
                     </div>
                   </div>
+                </div>
+              )}
+              
+              {/* Deliverables Tab */}
+              {activeTab === 'deliverables' && (
+                <div>
+                  <button
+                    style={{ ...styles.button, ...styles.primaryButton, marginBottom: '1rem' }}
+                    onClick={() => setShowAddDeliverable(true)}
+                  >
+                    <Plus size={16} />
+                    Add Deliverable
+                  </button>
                   
-                  {/* Internal Notes */}
-                  <div style={styles.field}>
-                    <div style={styles.fieldLabel}>
-                      <MessageSquare size={14} />
-                      Internal Notes
+                  {deal.deliverables?.map((deliverable, index) => (
+                    <div key={index} style={styles.deliverableItem}>
+                      <div>
+                        <div style={{ fontWeight: '600' }}>{deliverable.type}</div>
+                        <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                          Qty: {deliverable.quantity} | {deliverable.description}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <select
+                          value={deliverable.status}
+                          onChange={(e) => {
+                            const status = e.target.value;
+                            if (status === 'submitted') {
+                              const url = prompt('Enter submission URL:');
+                              if (url) {
+                                handleUpdateDeliverable(deliverable._id, status, { submissionUrl: url });
+                              }
+                            } else if (status === 'revision_required') {
+                              const notes = prompt('Enter revision notes:');
+                              if (notes) {
+                                handleUpdateDeliverable(deliverable._id, status, { revisionNotes: notes });
+                              }
+                            } else {
+                              handleUpdateDeliverable(deliverable._id, status);
+                            }
+                          }}
+                          style={{ ...styles.input, width: 'auto' }}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="submitted">Submitted</option>
+                          <option value="approved">Approved</option>
+                          <option value="revision_required">Revision Required</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                      </div>
                     </div>
+                  ))}
+                  
+                  {(!deal.deliverables || deal.deliverables.length === 0) && (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                      No deliverables added
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Communications Tab */}
+              {activeTab === 'communications' && (
+                <div>
+                  <button
+                    style={{ ...styles.button, ...styles.primaryButton, marginBottom: '1rem' }}
+                    onClick={() => setShowAddComm(true)}
+                  >
+                    <Plus size={16} />
+                    Add Communication
+                  </button>
+                  
+                  {communications.map((comm, index) => (
+                    <div key={index} style={styles.communicationItem}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <span style={{ fontWeight: '600' }}>{comm.subject || comm.type}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          {formatDate(comm.createdAt)}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                        {comm.summary}
+                      </div>
+                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: '#64748b' }}>
+                        <span>{comm.type}</span>
+                        <span>{comm.direction}</span>
+                        <span>{comm.outcome}</span>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {communications.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                      No communications recorded
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Timeline Tab */}
+              {activeTab === 'timeline' && (
+                <div>
+                  <div style={styles.field}>
+                    <div style={styles.fieldLabel}>Response Deadline</div>
                     {editMode ? (
-                      <textarea
-                        value={editedDeal.notes || ''}
-                        onChange={(e) => handleFieldChange('notes', e.target.value)}
-                        placeholder="Add internal notes..."
-                        style={styles.textarea}
+                      <input
+                        type="date"
+                        value={editedDeal.timeline?.responseDeadline?.split('T')[0] || ''}
+                        onChange={(e) => setEditedDeal({
+                          ...editedDeal,
+                          timeline: { ...editedDeal.timeline, responseDeadline: e.target.value }
+                        })}
+                        style={styles.input}
                       />
                     ) : (
                       <div style={styles.fieldValue}>
-                        {currentDeal.notes || 'No notes added'}
+                        {formatDate(deal.timeline?.responseDeadline)}
                       </div>
                     )}
                   </div>
-                </div>
-              )}
-              
-              {/* Activity Tab */}
-              {activeTab === 'activity' && (
-                <div style={styles.timeline}>
-                  {currentDeal.activity && currentDeal.activity.length > 0 ? (
-                    currentDeal.activity.map((activity, index) => (
-                      <div key={index} style={styles.timelineItem}>
-                        {index < currentDeal.activity.length - 1 && (
-                          <div style={styles.timelineLine} />
-                        )}
-                        <div style={{
-                          ...styles.timelineIcon,
-                          backgroundColor: activity.type === 'stage_change' ? '#e0e7ff' : '#f1f5f9'
-                        }}>
-                          <Activity size={14} color={activity.type === 'stage_change' ? '#6366f1' : '#64748b'} />
-                        </div>
-                        <div style={styles.timelineContent}>
-                          <div style={styles.timelineTitle}>{activity.title}</div>
-                          <div style={styles.timelineDescription}>{activity.description}</div>
-                          <div style={styles.timelineTime}>{formatTimeAgo(activity.timestamp)}</div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div style={styles.emptyState}>
-                      <Activity size={32} color="#cbd5e1" />
-                      <p>No activity yet</p>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Notes Tab */}
-              {activeTab === 'notes' && (
-                <div>
-                  {showAddNote ? (
-                    <div style={styles.addNoteForm}>
-                      <textarea
-                        value={newNote}
-                        onChange={(e) => setNewNote(e.target.value)}
-                        placeholder="Add your note..."
-                        style={styles.textarea}
-                        autoFocus
-                      />
-                      <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                        <button
-                          style={styles.cancelButton}
-                          onClick={() => {
-                            setShowAddNote(false);
-                            setNewNote('');
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          style={styles.editButton}
-                          onClick={handleAddNote}
-                        >
-                          <Plus size={16} />
-                          Add Note
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      style={{
-                        ...styles.editButton,
-                        marginBottom: '1rem',
-                        backgroundColor: '#f0f9ff',
-                        color: '#3b82f6'
-                      }}
-                      onClick={() => setShowAddNote(true)}
-                    >
-                      <Plus size={16} />
-                      Add Note
-                    </button>
-                  )}
                   
-                  {currentDeal.notes && currentDeal.notes.length > 0 ? (
-                    currentDeal.notes.map((note, index) => (
-                      <div key={index} style={styles.noteCard}>
-                        <div style={styles.noteHeader}>
-                          <div style={styles.noteAuthor}>{note.author || 'You'}</div>
-                          <div style={styles.noteTime}>{formatTimeAgo(note.createdAt)}</div>
-                        </div>
-                        <div style={styles.noteContent}>{note.content}</div>
+                  <div style={styles.field}>
+                    <div style={styles.fieldLabel}>Content Deadline</div>
+                    {editMode ? (
+                      <input
+                        type="date"
+                        value={editedDeal.timeline?.contentDeadline?.split('T')[0] || ''}
+                        onChange={(e) => setEditedDeal({
+                          ...editedDeal,
+                          timeline: { ...editedDeal.timeline, contentDeadline: e.target.value }
+                        })}
+                        style={styles.input}
+                      />
+                    ) : (
+                      <div style={styles.fieldValue}>
+                        {formatDate(deal.timeline?.contentDeadline)}
                       </div>
-                    ))
-                  ) : (
-                    !showAddNote && (
-                      <div style={styles.emptyState}>
-                        <MessageSquare size={32} color="#cbd5e1" />
-                        <p>No notes yet</p>
-                      </div>
-                    )
-                  )}
-                </div>
-              )}
-              
-              {/* Documents Tab */}
-              {activeTab === 'documents' && (
-                <div>
-                  <div
-                    style={{
-                      ...styles.uploadArea,
-                      ...(uploadingFile ? styles.uploadAreaHover : {})
-                    }}
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.style.borderColor = '#6366f1';
-                      e.currentTarget.style.backgroundColor = '#f0f9ff';
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      handleFileUpload(e.dataTransfer.files);
-                    }}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      style={{ display: 'none' }}
-                      onChange={(e) => handleFileUpload(e.target.files)}
-                    />
-                    <Upload size={32} color="#94a3b8" />
-                    <p style={{ margin: '0.5rem 0', color: '#475569' }}>
-                      {uploadingFile ? 'Uploading...' : 'Click to upload or drag and drop'}
-                    </p>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                      PDF, DOC, XLS, Images up to 10MB
-                    </p>
+                    )}
                   </div>
                   
-                  {currentDeal.documents && currentDeal.documents.length > 0 ? (
-                    <div style={{ ...styles.documentGrid, marginTop: '1.5rem' }}>
-                      {currentDeal.documents.map((doc, index) => (
-                        <div
-                          key={index}
-                          style={styles.documentCard}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f8fafc';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
-                        >
-                          <div style={styles.documentIcon}>
-                            <FileText size={20} color="#6366f1" />
-                          </div>
-                          <div style={styles.documentInfo}>
-                            <div style={styles.documentName}>{doc.name}</div>
-                            <div style={styles.documentSize}>{doc.size}</div>
-                          </div>
-                          <Download size={16} color="#64748b" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ ...styles.emptyState, marginTop: '1.5rem' }}>
-                      <FileText size={32} color="#cbd5e1" />
-                      <p>No documents uploaded</p>
-                    </div>
-                  )}
+                  <div style={styles.field}>
+                    <div style={styles.fieldLabel}>Go Live Date</div>
+                    {editMode ? (
+                      <input
+                        type="date"
+                        value={editedDeal.timeline?.goLiveDate?.split('T')[0] || ''}
+                        onChange={(e) => setEditedDeal({
+                          ...editedDeal,
+                          timeline: { ...editedDeal.timeline, goLiveDate: e.target.value }
+                        })}
+                        style={styles.input}
+                      />
+                    ) : (
+                      <div style={styles.fieldValue}>
+                        {formatDate(deal.timeline?.goLiveDate)}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div style={styles.field}>
+                    <div style={styles.fieldLabel}>Payment Due Date</div>
+                    {editMode ? (
+                      <input
+                        type="date"
+                        value={editedDeal.timeline?.paymentDueDate?.split('T')[0] || ''}
+                        onChange={(e) => setEditedDeal({
+                          ...editedDeal,
+                          timeline: { ...editedDeal.timeline, paymentDueDate: e.target.value }
+                        })}
+                        style={styles.input}
+                      />
+                    ) : (
+                      <div style={styles.fieldValue}>
+                        {formatDate(deal.timeline?.paymentDueDate)}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1199,202 +1158,334 @@ const DealDetailsPage = () => {
         
         {/* Side Column */}
         <div style={styles.sideColumn}>
-          {/* Contact Details */}
+          {/* Brand Details */}
           <div style={styles.card}>
-            <div
-              style={styles.cardHeader}
-              onClick={() => toggleSection('contact')}
-            >
+            <div style={styles.cardHeader}>
               <div style={styles.cardTitle}>
-                <User size={18} />
-                Contact Details
+                <Building size={18} />
+                Brand Details
               </div>
-              {expandedSections.contact ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
             </div>
-            
-            {expandedSections.contact && (
-              <div style={styles.cardContent}>
-                <div style={styles.field}>
-                  <div style={styles.fieldLabel}>
-                    <Building size={14} />
-                    Brand
-                  </div>
-                  <div style={styles.fieldValue}>
-                    {currentDeal.brandName || 'Not specified'}
-                  </div>
-                </div>
-                
-                <div style={styles.field}>
-                  <div style={styles.fieldLabel}>
-                    <User size={14} />
-                    Contact Name
-                  </div>
-                  <div style={styles.fieldValue}>
-                    {currentDeal.contactName || 'Not specified'}
-                  </div>
-                </div>
-                
-                <div style={styles.field}>
-                  <div style={styles.fieldLabel}>
-                    <Mail size={14} />
-                    Email
-                  </div>
-                  <div style={styles.fieldValue}>
-                    {currentDeal.contactEmail ? (
-                      <a href={`mailto:${currentDeal.contactEmail}`} style={{ color: '#6366f1' }}>
-                        {currentDeal.contactEmail}
-                      </a>
-                    ) : (
-                      'Not specified'
-                    )}
-                  </div>
-                </div>
-                
-                <div style={styles.field}>
-                  <div style={styles.fieldLabel}>
-                    <Phone size={14} />
-                    Phone
-                  </div>
-                  <div style={styles.fieldValue}>
-                    {currentDeal.contactPhone || 'Not specified'}
-                  </div>
-                </div>
-                
-                <div style={styles.field}>
-                  <div style={styles.fieldLabel}>
-                    <Instagram size={14} />
-                    Instagram
-                  </div>
-                  <div style={styles.fieldValue}>
-                    {currentDeal.brandInstagram || 'Not specified'}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Deliverables */}
-          <div style={styles.card}>
-            <div
-              style={styles.cardHeader}
-              onClick={() => toggleSection('deliverables')}
-            >
-              <div style={styles.cardTitle}>
-                <Package size={18} />
-                Deliverables
-              </div>
-              {expandedSections.deliverables ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-            </div>
-            
-            {expandedSections.deliverables && (
-              <div style={styles.cardContent}>
-                {currentDeal.deliverables && currentDeal.deliverables.length > 0 ? (
-                  <div style={styles.deliverablesList}>
-                    {currentDeal.deliverables.map((deliverable, index) => (
-                      <div key={index} style={styles.deliverableItem}>
-                        <div style={styles.deliverableInfo}>
-                          <div style={{
-                            ...styles.deliverableIcon,
-                            backgroundColor: deliverable.completed ? '#dcfce7' : '#fef3c7'
-                          }}>
-                            {deliverable.completed ? (
-                              <CheckCircle size={16} color="#22c55e" />
-                            ) : (
-                              <Clock size={16} color="#f59e0b" />
-                            )}
-                          </div>
-                          <div>
-                            <div style={styles.deliverableName}>
-                              {deliverable.type || deliverable}
-                            </div>
-                            <div style={styles.deliverableQuantity}>
-                              Qty: {deliverable.quantity || 1}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{
-                          ...styles.deliverableStatus,
-                          backgroundColor: deliverable.completed ? '#dcfce7' : '#fef3c7',
-                          color: deliverable.completed ? '#15803d' : '#a16207'
-                        }}>
-                          {deliverable.completed ? 'Completed' : 'Pending'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+            <div style={styles.cardContent}>
+              <div style={styles.field}>
+                <div style={styles.fieldLabel}>Brand Name</div>
+                {editMode ? (
+                  <input
+                    value={editedDeal.brand?.name || ''}
+                    onChange={(e) => setEditedDeal({
+                      ...editedDeal,
+                      brand: { ...editedDeal.brand, name: e.target.value }
+                    })}
+                    style={styles.input}
+                  />
                 ) : (
-                  <div style={styles.emptyState}>
-                    <Package size={32} color="#cbd5e1" />
-                    <p>No deliverables added</p>
+                  <div style={styles.fieldValue}>{deal.brand?.name || 'Not specified'}</div>
+                )}
+              </div>
+              
+              <div style={styles.field}>
+                <div style={styles.fieldLabel}>Contact Person</div>
+                {editMode ? (
+                  <input
+                    value={editedDeal.brand?.contactPerson?.name || ''}
+                    onChange={(e) => setEditedDeal({
+                      ...editedDeal,
+                      brand: {
+                        ...editedDeal.brand,
+                        contactPerson: { ...editedDeal.brand?.contactPerson, name: e.target.value }
+                      }
+                    })}
+                    style={styles.input}
+                  />
+                ) : (
+                  <div style={styles.fieldValue}>
+                    {deal.brand?.contactPerson?.name || 'Not specified'}
                   </div>
                 )}
               </div>
-            )}
+              
+              <div style={styles.field}>
+                <div style={styles.fieldLabel}>Email</div>
+                <div style={styles.fieldValue}>
+                  {deal.brand?.contactPerson?.email || 'Not specified'}
+                </div>
+              </div>
+              
+              <div style={styles.field}>
+                <div style={styles.fieldLabel}>Phone</div>
+                <div style={styles.fieldValue}>
+                  {deal.brand?.contactPerson?.phone || 'Not specified'}
+                </div>
+              </div>
+            </div>
           </div>
           
           {/* Payment Details */}
           <div style={styles.card}>
-            <div
-              style={styles.cardHeader}
-              onClick={() => toggleSection('payment')}
-            >
+            <div style={styles.cardHeader}>
               <div style={styles.cardTitle}>
                 <CreditCard size={18} />
                 Payment Details
               </div>
-              {expandedSections.payment ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
             </div>
-            
-            {expandedSections.payment && (
-              <div style={styles.cardContent}>
-                <div style={styles.field}>
-                  <div style={styles.fieldLabel}>Payment Terms</div>
+            <div style={styles.cardContent}>
+              <div style={styles.field}>
+                <div style={styles.fieldLabel}>Deal Value</div>
+                {editMode ? (
+                  <input
+                    type="number"
+                    value={editedDeal.dealValue?.amount || 0}
+                    onChange={(e) => setEditedDeal({
+                      ...editedDeal,
+                      dealValue: { ...editedDeal.dealValue, amount: parseFloat(e.target.value) }
+                    })}
+                    style={styles.input}
+                  />
+                ) : (
                   <div style={styles.fieldValue}>
-                    {currentDeal.paymentTerms || 'Net 30 Days'}
+                    {formatCurrency(deal.dealValue?.amount || 0)}
                   </div>
-                </div>
-                
-                <div style={styles.field}>
-                  <div style={styles.fieldLabel}>Payment Method</div>
-                  <div style={styles.fieldValue}>
-                    {currentDeal.paymentMethod || 'Bank Transfer'}
-                  </div>
-                </div>
-                
-                <div style={styles.field}>
-                  <div style={styles.fieldLabel}>GST Applicable</div>
-                  <div style={styles.fieldValue}>
-                    {currentDeal.gstApplicable ? 'Yes' : 'No'}
-                  </div>
-                </div>
-                
-                <div style={styles.field}>
-                  <div style={styles.fieldLabel}>Advance Payment</div>
-                  <div style={styles.fieldValue}>
-                    {currentDeal.advancePercentage || 0}%
-                  </div>
-                </div>
-                
-                <div style={styles.field}>
-                  <div style={styles.fieldLabel}>Payment Status</div>
-                  <div style={{
-                    ...styles.fieldValue,
-                    padding: '0.25rem 0.75rem',
-                    backgroundColor: currentDeal.paymentStatus === 'paid' ? '#dcfce7' : '#fef3c7',
-                    color: currentDeal.paymentStatus === 'paid' ? '#15803d' : '#a16207',
-                    borderRadius: '9999px',
-                    display: 'inline-block',
-                    fontSize: '0.8125rem',
-                    fontWeight: '600'
-                  }}>
-                    {currentDeal.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
-                  </div>
+                )}
+              </div>
+              
+              <div style={styles.field}>
+                <div style={styles.fieldLabel}>GST Applicable</div>
+                <div style={styles.fieldValue}>
+                  {deal.dealValue?.gstApplicable ? 'Yes' : 'No'}
                 </div>
               </div>
-            )}
+              
+              <div style={styles.field}>
+                <div style={styles.fieldLabel}>TDS Applicable</div>
+                <div style={styles.fieldValue}>
+                  {deal.dealValue?.tdsApplicable ? 'Yes' : 'No'}
+                </div>
+              </div>
+              
+              <div style={styles.field}>
+                <div style={styles.fieldLabel}>Final Amount</div>
+                <div style={styles.fieldValue}>
+                  {formatCurrency(deal.dealValue?.finalAmount || deal.dealValue?.amount || 0)}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+      
+      {/* Stage Change Modal */}
+      {showStageModal && (
+        <div style={styles.modal}>
+          <div style={styles.modalContent}>
+            <h3 style={styles.modalHeader}>Update Deal Stage</h3>
+            
+            <div style={styles.field}>
+              <div style={styles.fieldLabel}>New Stage</div>
+              <div style={{ ...styles.badge, backgroundColor: getStageInfo(selectedStage).color, color: '#ffffff' }}>
+                {getStageInfo(selectedStage).name}
+              </div>
+            </div>
+            
+            <div style={styles.field}>
+              <div style={styles.fieldLabel}>Notes (Optional)</div>
+              <textarea
+                value={stageNotes}
+                onChange={(e) => setStageNotes(e.target.value)}
+                style={styles.textarea}
+                placeholder="Add notes about this stage change..."
+              />
+            </div>
+            
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button
+                style={{ ...styles.button, ...styles.secondaryButton }}
+                onClick={() => {
+                  setShowStageModal(false);
+                  setSelectedStage(null);
+                  setStageNotes('');
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                style={{ ...styles.button, ...styles.primaryButton }}
+                onClick={handleStageChange}
+                disabled={updating}
+              >
+                Update Stage
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Add Communication Modal */}
+      {showAddComm && (
+        <div style={styles.modal}>
+          <div style={styles.modalContent}>
+            <h3 style={styles.modalHeader}>Add Communication</h3>
+            
+            <div style={styles.field}>
+              <div style={styles.fieldLabel}>Type</div>
+              <select
+                value={newComm.type}
+                onChange={(e) => setNewComm({ ...newComm, type: e.target.value })}
+                style={styles.input}
+              >
+                <option value="email">Email</option>
+                <option value="call">Call</option>
+                <option value="meeting">Meeting</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="instagram_dm">Instagram DM</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            
+            <div style={styles.field}>
+              <div style={styles.fieldLabel}>Direction</div>
+              <select
+                value={newComm.direction}
+                onChange={(e) => setNewComm({ ...newComm, direction: e.target.value })}
+                style={styles.input}
+              >
+                <option value="inbound">Inbound</option>
+                <option value="outbound">Outbound</option>
+              </select>
+            </div>
+            
+            <div style={styles.field}>
+              <div style={styles.fieldLabel}>Subject</div>
+              <input
+                value={newComm.subject}
+                onChange={(e) => setNewComm({ ...newComm, subject: e.target.value })}
+                style={styles.input}
+                placeholder="Communication subject..."
+              />
+            </div>
+            
+            <div style={styles.field}>
+              <div style={styles.fieldLabel}>Summary</div>
+              <textarea
+                value={newComm.summary}
+                onChange={(e) => setNewComm({ ...newComm, summary: e.target.value })}
+                style={styles.textarea}
+                placeholder="Communication summary..."
+                required
+              />
+            </div>
+            
+            <div style={styles.field}>
+              <div style={styles.fieldLabel}>Outcome</div>
+              <select
+                value={newComm.outcome}
+                onChange={(e) => setNewComm({ ...newComm, outcome: e.target.value })}
+                style={styles.input}
+              >
+                <option value="positive">Positive</option>
+                <option value="neutral">Neutral</option>
+                <option value="negative">Negative</option>
+                <option value="follow_up_required">Follow-up Required</option>
+              </select>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button
+                style={{ ...styles.button, ...styles.secondaryButton }}
+                onClick={() => setShowAddComm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                style={{ ...styles.button, ...styles.primaryButton }}
+                onClick={handleAddCommunication}
+                disabled={updating}
+              >
+                Add Communication
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Add Deliverable Modal */}
+      {showAddDeliverable && (
+        <div style={styles.modal}>
+          <div style={styles.modalContent}>
+            <h3 style={styles.modalHeader}>Add Deliverable</h3>
+            
+            <div style={styles.field}>
+              <div style={styles.fieldLabel}>Type</div>
+              <select
+                value={newDeliverable.type}
+                onChange={(e) => setNewDeliverable({ ...newDeliverable, type: e.target.value })}
+                style={styles.input}
+              >
+                <option value="instagram_post">Instagram Post</option>
+                <option value="instagram_reel">Instagram Reel</option>
+                <option value="instagram_story">Instagram Story</option>
+                <option value="youtube_video">YouTube Video</option>
+                <option value="youtube_short">YouTube Short</option>
+                <option value="blog_post">Blog Post</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            
+            <div style={styles.field}>
+              <div style={styles.fieldLabel}>Quantity</div>
+              <input
+                type="number"
+                min="1"
+                value={newDeliverable.quantity}
+                onChange={(e) => setNewDeliverable({ ...newDeliverable, quantity: parseInt(e.target.value) })}
+                style={styles.input}
+              />
+            </div>
+            
+            <div style={styles.field}>
+              <div style={styles.fieldLabel}>Description</div>
+              <textarea
+                value={newDeliverable.description}
+                onChange={(e) => setNewDeliverable({ ...newDeliverable, description: e.target.value })}
+                style={styles.textarea}
+                placeholder="Deliverable description..."
+              />
+            </div>
+            
+            <div style={styles.field}>
+              <div style={styles.fieldLabel}>Deadline</div>
+              <input
+                type="date"
+                value={newDeliverable.deadline}
+                onChange={(e) => setNewDeliverable({ ...newDeliverable, deadline: e.target.value })}
+                style={styles.input}
+              />
+            </div>
+            
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button
+                style={{ ...styles.button, ...styles.secondaryButton }}
+                onClick={() => setShowAddDeliverable(false)}
+              >
+                Cancel
+              </button>
+              <button
+                style={{ ...styles.button, ...styles.primaryButton }}
+                onClick={handleAddDeliverable}
+                disabled={updating}
+              >
+                Add Deliverable
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
