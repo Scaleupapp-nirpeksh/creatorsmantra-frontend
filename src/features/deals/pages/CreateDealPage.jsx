@@ -1,8 +1,9 @@
 /**
- * Create Deal Page - New Deal Form
+ * Create Deal Page - Enhanced Deal Creation Form
  * Path: src/features/deals/pages/CreateDealPage.jsx
  * 
- * FIXED VERSION with proper data structure and pricing preview
+ * Complete implementation with GST/TDS integration and additional optional fields
+ * All features use existing backend endpoints only
  */
 
 import React, { useState, useEffect } from 'react';
@@ -35,7 +36,13 @@ import {
   ChevronDown,
   Share2,
   Calculator,
-  Info
+  Info,
+  Shield,
+  Target,
+  Tag,
+  Briefcase,
+  AlertTriangle,
+  ChevronUp
 } from 'lucide-react';
 import useDealsStore from '../../../store/dealsStore';
 import useAuthStore from '../../../store/authStore';
@@ -46,20 +53,32 @@ const CreateDealPage = () => {
   const { createDeal, creating, stages } = useDealsStore();
   const { user } = useAuthStore();
   
-  // Form steps
+  // Form steps - increased to 5
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 5;
   
-  // Form data - UPDATED with platform field
+  // Expanded sections visibility
+  const [expandedSections, setExpandedSections] = useState({
+    contract: false,
+    performance: false,
+    usageRights: false,
+    exclusivity: false
+  });
+  
+  // Form data with all optional fields from backend model
   const [formData, setFormData] = useState({
     // Step 1 - Basic Info
     title: '',
     brandName: '',
     brandWebsite: '',
+    brandIndustry: 'other',
+    brandCompanySize: 'startup',
     platform: 'instagram',
-    stage: 'pitched', // Changed from 'lead' to match backend
+    stage: 'pitched',
     value: '',
     currency: 'INR',
+    source: 'direct_outreach',
+    referralSource: '',
     
     // Step 2 - Contact Details
     contactName: '',
@@ -80,22 +99,66 @@ const CreateDealPage = () => {
     notes: '',
     
     // Step 4 - Payment & Terms
-    paymentTerms: '50_50', // Changed to valid option
+    paymentTerms: '50_50',
+    customPaymentTerms: '',
     paymentMethod: 'bank_transfer',
     gstApplicable: true,
     gstNumber: '',
-    tdsApplicable: false, // Added TDS field
-    advancePercentage: 0,
+    tdsApplicable: false,
+    advancePercentage: 50,
     milestones: [],
-    contractRequired: true,
-    exclusivityRequired: false,
-    usageRights: 'limited',
     
-    // Additional
-    tags: [],
+    // Contract Details (Optional)
+    contractRequired: false,
+    contractKeyTerms: {
+      exclusivity: '',
+      deliverables: '',
+      timeline: '',
+      payment: '',
+      usageRights: '',
+      cancellation: ''
+    },
+    
+    // Usage Rights (Optional)
+    exclusivityRequired: false,
+    exclusivityDuration: 30,
+    exclusivityCategories: [],
+    usageRights: 'limited',
+    usageRightsDuration: '3_months',
+    usageRightsPlatforms: [],
+    usageRightsGeography: 'india',
+    whiteLabel: false,
+    
+    // Performance Targets (Optional)
+    performanceTracked: false,
+    performanceTargets: {
+      minViews: '',
+      minLikes: '',
+      minComments: '',
+      minShares: '',
+      minSaves: '',
+      ctr: '',
+      engagementRate: ''
+    },
+    
+    // Content Guidelines (Optional)
+    contentGuidelines: {
+      mustInclude: [],
+      mustAvoid: [],
+      tone: '',
+      style: ''
+    },
+    
+    // Step 5 - Additional Details
     priority: 'medium',
+    tags: [],
+    internalNotes: '',
     attachments: []
   });
+  
+  // Templates state
+  const [templates, setTemplates] = useState([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   
   // Validation errors
   const [errors, setErrors] = useState({});
@@ -105,29 +168,42 @@ const CreateDealPage = () => {
   const [lastSaved, setLastSaved] = useState(null);
   const [saving, setSaving] = useState(false);
   
+  // Deal health score
+  const [dealHealth, setDealHealth] = useState({ score: 100, issues: [] });
+  
   // Platform options
   const platformOptions = [
     { value: 'instagram', label: 'Instagram', icon: Instagram },
     { value: 'youtube', label: 'YouTube', icon: Youtube },
     { value: 'twitter', label: 'Twitter/X', icon: Hash },
     { value: 'linkedin', label: 'LinkedIn', icon: Link },
+    { value: 'facebook', label: 'Facebook', icon: Share2 },
+    { value: 'snapchat', label: 'Snapchat', icon: Package },
     { value: 'multiple', label: 'Multiple Platforms', icon: Share2 }
   ];
   
-  // Deliverable types
+  // Deliverable types from backend
   const deliverableTypes = [
-    { value: 'instagram_post', label: 'Instagram Post', icon: Instagram },
-    { value: 'instagram_reel', label: 'Instagram Reel', icon: Instagram },
-    { value: 'instagram_story', label: 'Instagram Story', icon: Instagram },
-    { value: 'youtube_video', label: 'YouTube Video', icon: Youtube },
-    { value: 'youtube_short', label: 'YouTube Short', icon: Youtube },
-    { value: 'blog_post', label: 'Blog Post', icon: FileText },
-    { value: 'twitter_post', label: 'Tweet/X Post', icon: Hash },
-    { value: 'linkedin_post', label: 'LinkedIn Post', icon: Link },
-    { value: 'other', label: 'Custom', icon: Package }
+    { value: 'instagram_post', label: 'Instagram Post' },
+    { value: 'instagram_reel', label: 'Instagram Reel' },
+    { value: 'instagram_story', label: 'Instagram Story' },
+    { value: 'instagram_igtv', label: 'Instagram IGTV' },
+    { value: 'youtube_video', label: 'YouTube Video' },
+    { value: 'youtube_short', label: 'YouTube Short' },
+    { value: 'linkedin_post', label: 'LinkedIn Post' },
+    { value: 'linkedin_article', label: 'LinkedIn Article' },
+    { value: 'twitter_post', label: 'Tweet/X Post' },
+    { value: 'twitter_thread', label: 'Thread' },
+    { value: 'facebook_post', label: 'Facebook Post' },
+    { value: 'facebook_reel', label: 'Facebook Reel' },
+    { value: 'blog_post', label: 'Blog Post' },
+    { value: 'product_unboxing', label: 'Product Unboxing' },
+    { value: 'brand_collaboration', label: 'Brand Collaboration' },
+    { value: 'event_coverage', label: 'Event Coverage' },
+    { value: 'other', label: 'Custom' }
   ];
   
-  // Payment terms options - FIXED to match backend validation
+  // Payment terms options
   const paymentTermsOptions = [
     { value: 'full_advance', label: '100% Advance' },
     { value: '50_50', label: '50% Advance, 50% on Completion' },
@@ -136,6 +212,56 @@ const CreateDealPage = () => {
     { value: 'net_30', label: 'Net 30 Days' },
     { value: 'net_15', label: 'Net 15 Days' },
     { value: 'custom', label: 'Custom Terms' }
+  ];
+  
+  // Deal source options
+  const sourceOptions = [
+    { value: 'direct_outreach', label: 'Direct Outreach' },
+    { value: 'brand_inquiry', label: 'Brand Inquiry' },
+    { value: 'referral', label: 'Referral' },
+    { value: 'social_media', label: 'Social Media' },
+    { value: 'email_campaign', label: 'Email Campaign' },
+    { value: 'networking', label: 'Networking' },
+    { value: 'repeat_client', label: 'Repeat Client' },
+    { value: 'other', label: 'Other' }
+  ];
+  
+  // Industry options
+  const industryOptions = [
+    { value: 'fashion', label: 'Fashion' },
+    { value: 'beauty', label: 'Beauty' },
+    { value: 'lifestyle', label: 'Lifestyle' },
+    { value: 'tech', label: 'Technology' },
+    { value: 'food', label: 'Food & Beverage' },
+    { value: 'travel', label: 'Travel' },
+    { value: 'fitness', label: 'Fitness' },
+    { value: 'finance', label: 'Finance' },
+    { value: 'education', label: 'Education' },
+    { value: 'entertainment', label: 'Entertainment' },
+    { value: 'gaming', label: 'Gaming' },
+    { value: 'automotive', label: 'Automotive' },
+    { value: 'real_estate', label: 'Real Estate' },
+    { value: 'healthcare', label: 'Healthcare' },
+    { value: 'home_decor', label: 'Home & Decor' },
+    { value: 'other', label: 'Other' }
+  ];
+  
+  // Company size options
+  const companySizeOptions = [
+    { value: 'startup', label: 'Startup (1-10)' },
+    { value: 'small', label: 'Small (11-50)' },
+    { value: 'medium', label: 'Medium (51-200)' },
+    { value: 'large', label: 'Large (201-1000)' },
+    { value: 'enterprise', label: 'Enterprise (1000+)' }
+  ];
+  
+  // Content tone options
+  const toneOptions = [
+    { value: 'professional', label: 'Professional' },
+    { value: 'casual', label: 'Casual' },
+    { value: 'humorous', label: 'Humorous' },
+    { value: 'educational', label: 'Educational' },
+    { value: 'inspirational', label: 'Inspirational' }
   ];
   
   // Calculate pricing with GST and TDS
@@ -147,7 +273,6 @@ const CreateDealPage = () => {
     const amountWithGST = baseAmount + gstAmount;
     
     // TDS calculation (10% on base amount for individuals, 2% for companies)
-    // Using 10% for individual creators
     const tdsAmount = formData.tdsApplicable ? baseAmount * 0.10 : 0;
     
     // Final amount creator receives
@@ -162,7 +287,106 @@ const CreateDealPage = () => {
     };
   };
   
-  // Fix website URL by adding https:// if missing
+  // Calculate deal health score
+  const calculateDealHealth = () => {
+    let score = 100;
+    const issues = [];
+    
+    // Basic requirements
+    if (!formData.brandWebsite) {
+      score -= 5;
+      issues.push('Add brand website for better credibility');
+    }
+    
+    if (!formData.brief) {
+      score -= 10;
+      issues.push('Add campaign brief for clarity');
+    }
+    
+    // Timeline checks
+    if (formData.deadline) {
+      const daysToDeadline = Math.ceil(
+        (new Date(formData.deadline) - new Date()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysToDeadline < 7) {
+        score -= 15;
+        issues.push('Very tight deadline - consider negotiating');
+      }
+    }
+    
+    // Financial checks
+    if (!formData.contractRequired) {
+      score -= 10;
+      issues.push('Consider requiring a contract for protection');
+    }
+    
+    if (formData.paymentTerms === 'on_delivery' || formData.paymentTerms === 'net_30') {
+      score -= 10;
+      issues.push('No advance payment - higher risk');
+    }
+    
+    // Add points for good practices
+    if (formData.paymentTerms.includes('advance')) score += 5;
+    if (formData.performanceTracked) score += 5;
+    if (formData.exclusivityRequired) score += 10;
+    if (formData.tags.length > 0) score += 5;
+    
+    return {
+      score: Math.max(0, Math.min(100, score)),
+      issues
+    };
+  };
+  
+  // Update deal health when form changes
+  useEffect(() => {
+    const health = calculateDealHealth();
+    setDealHealth(health);
+  }, [formData]);
+  
+  // Load templates on mount
+  useEffect(() => {
+    const loadTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const response = await dealsAPI.getTemplates();
+        if (response.data && response.data.templates) {
+          setTemplates(response.data.templates);
+        }
+      } catch (error) {
+        console.error('Failed to load templates:', error);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+    
+    loadTemplates();
+  }, []);
+  
+  // Apply template
+  const applyTemplate = async (templateId) => {
+    if (!templateId) return;
+    
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+    
+    // Merge template data with current form
+    setFormData(prev => ({
+      ...prev,
+      platform: template.template.platform || prev.platform,
+      deliverables: template.template.deliverables || prev.deliverables,
+      value: template.template.defaultValue || prev.value,
+      paymentTerms: template.template.paymentTerms || prev.paymentTerms,
+      ...template.template.campaignRequirements && {
+        exclusivityRequired: template.template.campaignRequirements.exclusivity?.required || false,
+        exclusivityDuration: template.template.campaignRequirements.exclusivity?.duration || 30,
+        contentGuidelines: template.template.campaignRequirements.contentGuidelines || prev.contentGuidelines
+      }
+    }));
+    
+    toast.success('Template applied successfully');
+  };
+  
+  // Fix website URL
   const fixWebsiteUrl = (url) => {
     if (!url) return '';
     if (url.match(/^https?:\/\//)) return url;
@@ -181,6 +405,17 @@ const CreateDealPage = () => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+  
+  // Handle nested object changes
+  const handleNestedChange = (parent, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [parent]: {
+        ...prev[parent],
+        [field]: value
+      }
+    }));
   };
   
   // Handle deliverable change
@@ -215,6 +450,20 @@ const CreateDealPage = () => {
     }));
   };
   
+  // Handle array field changes (tags, must include, etc.)
+  const handleArrayFieldChange = (field, value, action = 'add') => {
+    setFormData(prev => {
+      const current = prev[field] || [];
+      if (action === 'add' && value && !current.includes(value)) {
+        return { ...prev, [field]: [...current, value] };
+      } else if (action === 'remove') {
+        return { ...prev, [field]: current.filter(item => item !== value) };
+      }
+      return prev;
+    });
+  };
+  
+  // Validate step
   const validateStep = (step) => {
     const newErrors = {};
     
@@ -262,7 +511,13 @@ const CreateDealPage = () => {
         break;
         
       case 4:
-        // Payment validation - removed GST number requirement
+        if (formData.paymentTerms === 'custom' && !formData.customPaymentTerms) {
+          newErrors.customPaymentTerms = 'Please specify custom payment terms';
+        }
+        break;
+        
+      case 5:
+        // No required fields in step 5
         break;
     }
     
@@ -300,27 +555,35 @@ const CreateDealPage = () => {
     }
   };
   
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+     // Only submit if we're on the last step
+  if (currentStep !== totalSteps) {
+    handleNextStep();
+    return;
+  }
+
     if (!validateStep(currentStep)) {
       return;
     }
     
     try {
-      // Format deliverables properly for backend
+      const pricing = calculatePricing();
+      
+      // Format deliverables
       const formattedDeliverables = formData.deliverables.map(d => ({
         type: d.type,
         quantity: parseInt(d.quantity) || 1,
         description: d.description || 'Content creation',
-        // Fix: Only set deadline if it exists, otherwise use formData.deadline or omit
         ...(d.deadline || formData.deadline ? {
           deadline: new Date(d.deadline || formData.deadline).toISOString()
         } : {}),
         status: 'pending'
       }));
       
-      // Calculate payment due date (30 days from deadline if not set)
+      // Calculate payment due date
       const paymentDueDate = formData.deadline 
         ? new Date(new Date(formData.deadline).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
         : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
@@ -340,24 +603,27 @@ const CreateDealPage = () => {
             designation: formData.contactDesignation || ''
           },
           website: fixWebsiteUrl(formData.brandWebsite),
-          industry: formData.brandCategory || 'other',
-          companySize: 'startup'
+          industry: formData.brandIndustry || 'other',
+          companySize: formData.brandCompanySize || 'startup'
         },
         
-        // DealValue as object structure
+        // DealValue as object with calculated amounts
         dealValue: {
           amount: parseFloat(formData.value) || 0,
           currency: formData.currency || 'INR',
           paymentTerms: formData.paymentTerms || '50_50',
           customPaymentTerms: formData.paymentTerms === 'custom' ? formData.customPaymentTerms : '',
           gstApplicable: Boolean(formData.gstApplicable),
-          tdsApplicable: Boolean(formData.tdsApplicable)
+          tdsApplicable: Boolean(formData.tdsApplicable),
+          gstAmount: pricing.gstAmount,
+          tdsAmount: pricing.tdsAmount,
+          finalAmount: pricing.finalAmount
         },
         
         platform: formData.platform,
         stage: 'pitched',
         
-        // Timeline as object with proper dates - handle nulls properly
+        // Timeline
         timeline: {
           responseDeadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
           contentDeadline: formData.campaignEndDate ? new Date(formData.campaignEndDate).toISOString() : null,
@@ -368,16 +634,58 @@ const CreateDealPage = () => {
         // Deliverables
         deliverables: formattedDeliverables,
         
-        // Campaign requirements
+        // Campaign requirements (combining all optional fields)
         campaignRequirements: {
+          exclusivity: formData.exclusivityRequired ? {
+            required: true,
+            duration: formData.exclusivityDuration || 30,
+            categories: formData.exclusivityCategories || []
+          } : undefined,
+          
+          contentGuidelines: (formData.contentGuidelines.mustInclude?.length > 0 || 
+                              formData.contentGuidelines.mustAvoid?.length > 0) ? {
+            mustInclude: formData.contentGuidelines.mustInclude || [],
+            mustAvoid: formData.contentGuidelines.mustAvoid || [],
+            tone: formData.contentGuidelines.tone || undefined,
+            style: formData.contentGuidelines.style || undefined
+          } : undefined,
+          
+          usageRights: {
+            duration: formData.usageRightsDuration || '3_months',
+            platforms: formData.usageRightsPlatforms || [],
+            geography: formData.usageRightsGeography || 'india',
+            whiteLabel: Boolean(formData.whiteLabel)
+          },
+          
+          performanceTargets: formData.performanceTracked ? {
+            minViews: formData.performanceTargets.minViews ? parseInt(formData.performanceTargets.minViews) : undefined,
+            minLikes: formData.performanceTargets.minLikes ? parseInt(formData.performanceTargets.minLikes) : undefined,
+            minComments: formData.performanceTargets.minComments ? parseInt(formData.performanceTargets.minComments) : undefined,
+            minShares: formData.performanceTargets.minShares ? parseInt(formData.performanceTargets.minShares) : undefined,
+            minSaves: formData.performanceTargets.minSaves ? parseInt(formData.performanceTargets.minSaves) : undefined,
+            ctr: formData.performanceTargets.ctr ? parseFloat(formData.performanceTargets.ctr) : undefined,
+            engagementRate: formData.performanceTargets.engagementRate ? parseFloat(formData.performanceTargets.engagementRate) : undefined
+          } : undefined,
+          
           brief: formData.brief || ''
         },
         
+        // Contract
+        contract: formData.contractRequired ? {
+          isRequired: true,
+          status: 'pending',
+          keyTerms: formData.contractKeyTerms
+        } : {
+          isRequired: false,
+          status: 'not_required'
+        },
+        
         // Other fields
-        source: 'direct_outreach',
+        source: formData.source || 'direct_outreach',
+        referralSource: formData.source === 'referral' ? formData.referralSource : undefined,
         priority: formData.priority || 'medium',
         tags: formData.tags || [],
-        internalNotes: formData.notes || ''
+        internalNotes: formData.internalNotes || ''
       };
       
       console.log('Submitting deal data:', dealData);
@@ -416,21 +724,17 @@ const CreateDealPage = () => {
     const draft = localStorage.getItem('deal_draft');
     if (draft) {
       const parsed = JSON.parse(draft);
-      // Ensure platform field exists in loaded draft
-      if (!parsed.platform) {
-        parsed.platform = 'instagram';
-      }
-      // Ensure deliverables have descriptions
-      if (parsed.deliverables) {
-        parsed.deliverables = parsed.deliverables.map(d => ({
-          ...d,
-          description: d.description || 'Content creation'
-        }));
-      }
       setFormData(parsed);
-      toast.success('Draft loaded from previous session');
     }
   }, []);
+  
+  // Toggle expanded section
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
   
   // Format currency
   const formatCurrency = (value) => {
@@ -440,6 +744,13 @@ const CreateDealPage = () => {
       currency: formData.currency,
       minimumFractionDigits: 0
     }).format(value);
+  };
+  
+  // Get health score color
+  const getHealthColor = (score) => {
+    if (score >= 80) return '#10b981';
+    if (score >= 60) return '#f59e0b';
+    return '#ef4444';
   };
   
   // Styles
@@ -480,6 +791,14 @@ const CreateDealPage = () => {
       gap: '0.5rem',
       fontSize: '0.875rem',
       color: '#64748b'
+    },
+    templateSelector: {
+      maxWidth: '800px',
+      margin: '0 auto 2rem',
+      padding: '1rem',
+      backgroundColor: '#ffffff',
+      borderRadius: '0.75rem',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
     },
     progressBar: {
       maxWidth: '1200px',
@@ -667,6 +986,29 @@ const CreateDealPage = () => {
       cursor: 'pointer',
       transition: 'all 0.2s'
     },
+    optionalSection: {
+      marginTop: '2rem',
+      padding: '1rem',
+      backgroundColor: '#f8fafc',
+      borderRadius: '0.75rem',
+      border: '1px solid #e2e8f0'
+    },
+    sectionToggle: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      cursor: 'pointer',
+      padding: '0.5rem',
+      marginBottom: '1rem'
+    },
+    sectionTitle: {
+      fontSize: '1rem',
+      fontWeight: '600',
+      color: '#475569',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem'
+    },
     footerActions: {
       display: 'flex',
       justifyContent: 'space-between',
@@ -707,7 +1049,6 @@ const CreateDealPage = () => {
       backgroundColor: '#94a3b8',
       cursor: 'not-allowed'
     },
-    // New styles for pricing preview
     pricingPreview: {
       backgroundColor: '#f0f9ff',
       border: '1px solid #3b82f6',
@@ -747,12 +1088,46 @@ const CreateDealPage = () => {
       fontWeight: '700',
       color: '#059669'
     },
-    infoTooltip: {
+    healthScore: {
+      padding: '1rem',
+      backgroundColor: '#f0fdf4',
+      border: '1px solid #10b981',
+      borderRadius: '0.75rem',
+      marginBottom: '1.5rem'
+    },
+    healthScoreHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '0.5rem'
+    },
+    healthScoreValue: {
+      fontSize: '1.5rem',
+      fontWeight: '700'
+    },
+    healthScoreIssues: {
+      fontSize: '0.875rem',
+      color: '#475569',
+      marginTop: '0.5rem'
+    },
+    tagInput: {
+      display: 'flex',
+      gap: '0.5rem',
+      alignItems: 'center'
+    },
+    tag: {
       display: 'inline-flex',
       alignItems: 'center',
       gap: '0.25rem',
-      fontSize: '0.75rem',
-      color: '#64748b'
+      padding: '0.25rem 0.75rem',
+      backgroundColor: '#e0e7ff',
+      color: '#4f46e5',
+      borderRadius: '9999px',
+      fontSize: '0.875rem'
+    },
+    tagRemove: {
+      cursor: 'pointer',
+      padding: '0.125rem'
     }
   };
   
@@ -766,12 +1141,6 @@ const CreateDealPage = () => {
         <button
           style={styles.backButton}
           onClick={() => navigate('/deals')}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f8fafc';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
         >
           <ArrowLeft size={18} />
           Back to Deals
@@ -793,6 +1162,28 @@ const CreateDealPage = () => {
           ) : null}
         </div>
       </div>
+      
+      {/* Template Selector */}
+      {currentStep === 1 && templates.length > 0 && (
+        <div style={styles.templateSelector}>
+          <label style={{ ...styles.label, marginBottom: '0.5rem' }}>
+            <FileText size={16} />
+            Start from a template (Optional)
+          </label>
+          <select
+            onChange={(e) => applyTemplate(e.target.value)}
+            style={styles.select}
+            disabled={loadingTemplates}
+          >
+            <option value="">-- Select a template --</option>
+            {templates.map(template => (
+              <option key={template.id} value={template.id}>
+                {template.name} - {template.category}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       
       {/* Progress Bar */}
       <div style={styles.progressBar}>
@@ -838,13 +1229,58 @@ const CreateDealPage = () => {
         <div style={styles.progressStep}>
           <div style={{
             ...styles.progressCircle,
-            ...(currentStep >= 4 ? styles.progressCircleActive : {})
+            ...(currentStep >= 4 ? styles.progressCircleActive : {}),
+            ...(currentStep > 4 ? styles.progressCircleCompleted : {})
           }}>
-            4
+            {currentStep > 4 ? <Check size={18} /> : '4'}
           </div>
           <span style={styles.progressLabel}>Payment</span>
         </div>
+        
+        <div style={styles.progressStep}>
+          <div style={{
+            ...styles.progressCircle,
+            ...(currentStep >= 5 ? styles.progressCircleActive : {})
+          }}>
+            5
+          </div>
+          <span style={styles.progressLabel}>Additional</span>
+        </div>
       </div>
+      
+      {/* Deal Health Score */}
+      {dealHealth.score < 100 && (
+        <div style={{
+          ...styles.healthScore,
+          backgroundColor: dealHealth.score >= 80 ? '#f0fdf4' : dealHealth.score >= 60 ? '#fef3c7' : '#fee2e2',
+          borderColor: getHealthColor(dealHealth.score),
+          maxWidth: '800px',
+          margin: '0 auto 2rem'
+        }}>
+          <div style={styles.healthScoreHeader}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Shield size={20} style={{ color: getHealthColor(dealHealth.score) }} />
+              <span style={{ fontWeight: '600' }}>Deal Health Score</span>
+            </div>
+            <span style={{
+              ...styles.healthScoreValue,
+              color: getHealthColor(dealHealth.score)
+            }}>
+              {dealHealth.score}%
+            </span>
+          </div>
+          {dealHealth.issues.length > 0 && (
+            <div style={styles.healthScoreIssues}>
+              <strong>Suggestions:</strong>
+              <ul style={{ margin: '0.5rem 0 0 1.5rem' }}>
+                {dealHealth.issues.slice(0, 3).map((issue, i) => (
+                  <li key={i}>{issue}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
       
       {/* Form */}
       <div style={styles.formContainer}>
@@ -915,9 +1351,42 @@ const CreateDealPage = () => {
                     placeholder="www.brand.com"
                     style={styles.input}
                   />
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                    Enter with or without https://
-                  </span>
+                </div>
+                
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
+                    Industry
+                  </label>
+                  <select
+                    name="brandIndustry"
+                    value={formData.brandIndustry}
+                    onChange={handleChange}
+                    style={styles.select}
+                  >
+                    {industryOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
+                    Company Size
+                  </label>
+                  <select
+                    name="brandCompanySize"
+                    value={formData.brandCompanySize}
+                    onChange={handleChange}
+                    style={styles.select}
+                  >
+                    {companySizeOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div style={styles.formGroup}>
@@ -950,22 +1419,38 @@ const CreateDealPage = () => {
                 
                 <div style={styles.formGroup}>
                   <label style={styles.label}>
-                    Pipeline Stage
+                    <Briefcase size={16} />
+                    Deal Source
                   </label>
                   <select
-                    name="stage"
-                    value={formData.stage}
+                    name="source"
+                    value={formData.source}
                     onChange={handleChange}
                     style={styles.select}
                   >
-                    <option value="pitched">Pitched</option>
-                    <option value="in_talks">In Talks</option>
-                    <option value="negotiating">Negotiating</option>
-                    <option value="live">Live</option>
-                    <option value="completed">Completed</option>
-                    <option value="paid">Paid</option>
+                    {sourceOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
+                
+                {formData.source === 'referral' && (
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>
+                      Referral Source
+                    </label>
+                    <input
+                      type="text"
+                      name="referralSource"
+                      value={formData.referralSource}
+                      onChange={handleChange}
+                      placeholder="Who referred this deal?"
+                      style={styles.input}
+                    />
+                  </div>
+                )}
                 
                 <div style={styles.formGroup}>
                   <label style={styles.label}>
@@ -994,6 +1479,22 @@ const CreateDealPage = () => {
                       {formatCurrency(formData.value)}
                     </span>
                   )}
+                </div>
+                
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
+                    Currency
+                  </label>
+                  <select
+                    name="currency"
+                    value={formData.currency}
+                    onChange={handleChange}
+                    style={styles.select}
+                  >
+                    <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                  </select>
                 </div>
               </div>
             </>
@@ -1145,12 +1646,6 @@ const CreateDealPage = () => {
                           type="button"
                           onClick={() => removeDeliverable(index)}
                           style={styles.removeButton}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#fca5a5';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = '#fee2e2';
-                          }}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -1201,12 +1696,6 @@ const CreateDealPage = () => {
                   type="button"
                   onClick={addDeliverable}
                   style={styles.addButton}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#dbeafe';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f0f9ff';
-                  }}
                 >
                   <Plus size={16} />
                   Add Deliverable
@@ -1296,19 +1785,89 @@ const CreateDealPage = () => {
                     style={styles.textarea}
                   />
                 </div>
-                
-                <div style={{ ...styles.formGroup, ...styles.formGroupFull }}>
-                  <label style={styles.label}>
-                    Internal Notes
-                  </label>
-                  <textarea
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleChange}
-                    placeholder="Any internal notes or reminders..."
-                    style={styles.textarea}
-                  />
+              </div>
+              
+              {/* Optional: Performance Targets */}
+              <div style={styles.optionalSection}>
+                <div 
+                  style={styles.sectionToggle}
+                  onClick={() => toggleSection('performance')}
+                >
+                  <div style={styles.sectionTitle}>
+                    <Target size={18} />
+                    Performance Targets (Optional)
+                  </div>
+                  {expandedSections.performance ? 
+                    <ChevronUp size={18} /> : 
+                    <ChevronDown size={18} />
+                  }
                 </div>
+                
+                {expandedSections.performance && (
+                  <>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={styles.label}>
+                        <input
+                          type="checkbox"
+                          name="performanceTracked"
+                          checked={formData.performanceTracked}
+                          onChange={handleChange}
+                          style={{ marginRight: '0.5rem' }}
+                        />
+                        Track Performance Metrics
+                      </label>
+                    </div>
+                    
+                    {formData.performanceTracked && (
+                      <div style={styles.formGrid}>
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Min Views</label>
+                          <input
+                            type="number"
+                            value={formData.performanceTargets.minViews}
+                            onChange={(e) => handleNestedChange('performanceTargets', 'minViews', e.target.value)}
+                            placeholder="10000"
+                            style={styles.input}
+                          />
+                        </div>
+                        
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Min Likes</label>
+                          <input
+                            type="number"
+                            value={formData.performanceTargets.minLikes}
+                            onChange={(e) => handleNestedChange('performanceTargets', 'minLikes', e.target.value)}
+                            placeholder="500"
+                            style={styles.input}
+                          />
+                        </div>
+                        
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Min Comments</label>
+                          <input
+                            type="number"
+                            value={formData.performanceTargets.minComments}
+                            onChange={(e) => handleNestedChange('performanceTargets', 'minComments', e.target.value)}
+                            placeholder="50"
+                            style={styles.input}
+                          />
+                        </div>
+                        
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Engagement Rate (%)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={formData.performanceTargets.engagementRate}
+                            onChange={(e) => handleNestedChange('performanceTargets', 'engagementRate', e.target.value)}
+                            placeholder="3.5"
+                            style={styles.input}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </>
           )}
@@ -1338,6 +1897,25 @@ const CreateDealPage = () => {
                   </select>
                 </div>
                 
+                {formData.paymentTerms === 'custom' && (
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>
+                      Custom Payment Terms <span style={styles.required}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="customPaymentTerms"
+                      value={formData.customPaymentTerms}
+                      onChange={handleChange}
+                      placeholder="Describe custom payment terms"
+                      style={{
+                        ...styles.input,
+                        ...(errors.customPaymentTerms ? styles.inputError : {})
+                      }}
+                    />
+                  </div>
+                )}
+                
                 <div style={styles.formGroup}>
                   <label style={styles.label}>
                     Payment Method
@@ -1357,38 +1935,20 @@ const CreateDealPage = () => {
                   </select>
                 </div>
                 
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    Advance Payment (%)
-                  </label>
-                  <input
-                    type="number"
-                    name="advancePercentage"
-                    value={formData.advancePercentage}
-                    onChange={handleChange}
-                    min="0"
-                    max="100"
-                    placeholder="0"
-                    style={styles.input}
-                  />
-                </div>
-                
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    Usage Rights
-                  </label>
-                  <select
-                    name="usageRights"
-                    value={formData.usageRights}
-                    onChange={handleChange}
-                    style={styles.select}
-                  >
-                    <option value="limited">Limited (Campaign Only)</option>
-                    <option value="extended">Extended (6 months)</option>
-                    <option value="perpetual">Perpetual</option>
-                    <option value="custom">Custom Terms</option>
-                  </select>
-                </div>
+                {(formData.paymentTerms === '50_50' || formData.paymentTerms === '30_70') && (
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>
+                      Advance Percentage (%)
+                    </label>
+                    <input
+                      type="number"
+                      name="advancePercentage"
+                      value={formData.paymentTerms === '50_50' ? 50 : 30}
+                      disabled
+                      style={styles.input}
+                    />
+                  </div>
+                )}
                 
                 <div style={styles.formGroup}>
                   <label style={styles.label}>
@@ -1413,9 +1973,8 @@ const CreateDealPage = () => {
                       style={{ marginRight: '0.5rem' }}
                     />
                     TDS Applicable (10%)
-                    <span style={styles.infoTooltip}>
-                      <Info size={12} />
-                      For individuals/HUF
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      {' '}(For individuals/HUF)
                     </span>
                   </label>
                 </div>
@@ -1435,32 +1994,6 @@ const CreateDealPage = () => {
                     />
                   </div>
                 )}
-                
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    <input
-                      type="checkbox"
-                      name="contractRequired"
-                      checked={formData.contractRequired}
-                      onChange={handleChange}
-                      style={{ marginRight: '0.5rem' }}
-                    />
-                    Contract Required
-                  </label>
-                </div>
-                
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    <input
-                      type="checkbox"
-                      name="exclusivityRequired"
-                      checked={formData.exclusivityRequired}
-                      onChange={handleChange}
-                      style={{ marginRight: '0.5rem' }}
-                    />
-                    Exclusivity Required
-                  </label>
-                </div>
               </div>
               
               {/* Pricing Preview */}
@@ -1523,71 +2056,308 @@ const CreateDealPage = () => {
                   </div>
                 </div>
               )}
+              
+              {/* Optional: Contract Details */}
+              <div style={styles.optionalSection}>
+                <div 
+                  style={styles.sectionToggle}
+                  onClick={() => toggleSection('contract')}
+                >
+                  <div style={styles.sectionTitle}>
+                    <Shield size={18} />
+                    Contract Details (Optional)
+                  </div>
+                  {expandedSections.contract ? 
+                    <ChevronUp size={18} /> : 
+                    <ChevronDown size={18} />
+                  }
+                </div>
+                
+                {expandedSections.contract && (
+                  <>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={styles.label}>
+                        <input
+                          type="checkbox"
+                          name="contractRequired"
+                          checked={formData.contractRequired}
+                          onChange={handleChange}
+                          style={{ marginRight: '0.5rem' }}
+                        />
+                        Contract Required
+                      </label>
+                    </div>
+                    
+                    {formData.contractRequired && (
+                      <div style={styles.formGrid}>
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Exclusivity Terms</label>
+                          <input
+                            type="text"
+                            value={formData.contractKeyTerms.exclusivity}
+                            onChange={(e) => handleNestedChange('contractKeyTerms', 'exclusivity', e.target.value)}
+                            placeholder="e.g., No competitor brands for 30 days"
+                            style={styles.input}
+                          />
+                        </div>
+                        
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Cancellation Policy</label>
+                          <input
+                            type="text"
+                            value={formData.contractKeyTerms.cancellation}
+                            onChange={(e) => handleNestedChange('contractKeyTerms', 'cancellation', e.target.value)}
+                            placeholder="e.g., 7 days notice required"
+                            style={styles.input}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              
+              {/* Optional: Usage Rights */}
+              <div style={styles.optionalSection}>
+                <div 
+                  style={styles.sectionToggle}
+                  onClick={() => toggleSection('usageRights')}
+                >
+                  <div style={styles.sectionTitle}>
+                    <Link size={18} />
+                    Usage Rights (Optional)
+                  </div>
+                  {expandedSections.usageRights ? 
+                    <ChevronUp size={18} /> : 
+                    <ChevronDown size={18} />
+                  }
+                </div>
+                
+                {expandedSections.usageRights && (
+                  <div style={styles.formGrid}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Usage Duration</label>
+                      <select
+                        name="usageRightsDuration"
+                        value={formData.usageRightsDuration}
+                        onChange={handleChange}
+                        style={styles.select}
+                      >
+                        <option value="1_month">1 Month</option>
+                        <option value="3_months">3 Months</option>
+                        <option value="6_months">6 Months</option>
+                        <option value="1_year">1 Year</option>
+                        <option value="lifetime">Lifetime</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                    </div>
+                    
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Geographic Scope</label>
+                      <select
+                        name="usageRightsGeography"
+                        value={formData.usageRightsGeography}
+                        onChange={handleChange}
+                        style={styles.select}
+                      >
+                        <option value="india">India Only</option>
+                        <option value="global">Global</option>
+                        <option value="specific_regions">Specific Regions</option>
+                      </select>
+                    </div>
+                    
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>
+                        <input
+                          type="checkbox"
+                          name="whiteLabel"
+                          checked={formData.whiteLabel}
+                          onChange={handleChange}
+                          style={{ marginRight: '0.5rem' }}
+                        />
+                        White Label Content
+                      </label>
+                    </div>
+                    
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>
+                        <input
+                          type="checkbox"
+                          name="exclusivityRequired"
+                          checked={formData.exclusivityRequired}
+                          onChange={handleChange}
+                          style={{ marginRight: '0.5rem' }}
+                        />
+                        Exclusivity Required
+                      </label>
+                    </div>
+                    
+                    {formData.exclusivityRequired && (
+                      <div style={styles.formGroup}>
+                        <label style={styles.label}>Exclusivity Duration (days)</label>
+                        <input
+                          type="number"
+                          name="exclusivityDuration"
+                          value={formData.exclusivityDuration}
+                          onChange={handleChange}
+                          placeholder="30"
+                          style={styles.input}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          
+          {/* Step 5: Additional Details */}
+          {currentStep === 5 && (
+            <>
+              <h2 style={styles.stepTitle}>Additional Details</h2>
+              
+              <div style={styles.formGrid}>
+                <div style={{ ...styles.formGroup, ...styles.formGroupFull }}>
+                  <label style={styles.label}>
+                    <Tag size={16} />
+                    Tags (Press Enter to add)
+                  </label>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    {formData.tags.map((tag, index) => (
+                      <span key={index} style={styles.tag}>
+                        {tag}
+                        <X
+                          size={14}
+                          style={styles.tagRemove}
+                          onClick={() => handleArrayFieldChange('tags', tag, 'remove')}
+                        />
+                      </span>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Add tags..."
+                    style={styles.input}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const value = e.target.value.trim();
+                        if (value) {
+                          handleArrayFieldChange('tags', value, 'add');
+                          e.target.value = '';
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                
+                <div style={{ ...styles.formGroup, ...styles.formGroupFull }}>
+                  <label style={styles.label}>
+                    Internal Notes
+                  </label>
+                  <textarea
+                    name="internalNotes"
+                    value={formData.internalNotes}
+                    onChange={handleChange}
+                    placeholder="Any internal notes or reminders..."
+                    style={styles.textarea}
+                  />
+                </div>
+              </div>
+              
+              {/* Optional: Content Guidelines */}
+              <div style={styles.optionalSection}>
+                <div 
+                  style={styles.sectionToggle}
+                  onClick={() => toggleSection('guidelines')}
+                >
+                  <div style={styles.sectionTitle}>
+                    <FileText size={18} />
+                    Content Guidelines (Optional)
+                  </div>
+                  {expandedSections.guidelines ? 
+                    <ChevronUp size={18} /> : 
+                    <ChevronDown size={18} />
+                  }
+                </div>
+                
+                {expandedSections.guidelines && (
+                  <div style={styles.formGrid}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Content Tone</label>
+                      <select
+                        value={formData.contentGuidelines.tone}
+                        onChange={(e) => handleNestedChange('contentGuidelines', 'tone', e.target.value)}
+                        style={styles.select}
+                      >
+                        <option value="">Select Tone</option>
+                        {toneOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Content Style</label>
+                      <input
+                        type="text"
+                        value={formData.contentGuidelines.style}
+                        onChange={(e) => handleNestedChange('contentGuidelines', 'style', e.target.value)}
+                        placeholder="e.g., Minimalist, Vibrant"
+                        style={styles.input}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
           )}
           
           {/* Footer Actions */}
-          <div style={styles.footerActions}>
-            <div>
-              {currentStep > 1 && (
-                <button
-                  type="button"
-                  onClick={handlePreviousStep}
-                  style={styles.secondaryButton}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f8fafc';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                  }}
-                >
-                  <ArrowLeft size={18} />
-                  Previous
-                </button>
-              )}
-            </div>
-            
-            <div>
-              {currentStep < totalSteps ? (
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  style={styles.primaryButton}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#4f46e5';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#6366f1';
-                  }}
-                >
-                  Next
-                  <ArrowRight size={18} />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={creating}
-                  style={{
-                    ...styles.primaryButton,
-                    ...(creating ? styles.primaryButtonDisabled : {})
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!creating) {
-                      e.currentTarget.style.backgroundColor = '#4f46e5';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!creating) {
-                      e.currentTarget.style.backgroundColor = '#6366f1';
-                    }
-                  }}
-                >
-                  <Save size={18} />
-                  {creating ? 'Creating...' : 'Create Deal'}
-                </button>
-              )}
-            </div>
-          </div>
+         
+
+{/* Footer Actions */}
+<div style={styles.footerActions}>
+  <div>
+    {currentStep > 1 && (
+      <button
+        type="button"  // Explicitly set type="button"
+        onClick={handlePreviousStep}
+        style={styles.secondaryButton}
+      >
+        <ArrowLeft size={18} />
+        Previous
+      </button>
+    )}
+  </div>
+  
+  <div>
+    {currentStep < totalSteps ? (
+      <button
+        type="button"  // Explicitly set type="button" to prevent form submission
+        onClick={handleNextStep}
+        style={styles.primaryButton}
+      >
+        Next
+        <ArrowRight size={18} />
+      </button>
+    ) : (
+      <button
+        type="submit"  // Only this should be type="submit"
+        disabled={creating}
+        style={{
+          ...styles.primaryButton,
+          ...(creating ? styles.primaryButtonDisabled : {})
+        }}
+      >
+        <Save size={18} />
+        {creating ? 'Creating...' : 'Create Deal'}
+      </button>
+    )}
+  </div>
+</div>
         </form>
       </div>
     </div>

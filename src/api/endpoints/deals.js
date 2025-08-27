@@ -41,50 +41,59 @@ export const dealsAPI = {
   getDeal: (dealId) => 
     api.get(`/deals/${dealId}`),
   
-  // Update existing deal - FIXED TO USE CORRECT FIELD NAMES
-  updateDeal: (dealId, data) => {
-    // Clean update data with correct field mapping
-    const cleanData = {};
-    
-    // Map fields with correct names
-    if (data.title !== undefined) cleanData.title = data.title;
-    if (data.brand !== undefined) cleanData.brand = data.brand; // NOT brandName
-    if (data.dealValue !== undefined) cleanData.dealValue = parseFloat(data.dealValue); // NOT value
-    if (data.platform !== undefined) cleanData.platform = data.platform;
-    if (data.stage !== undefined) cleanData.stage = data.stage;
-    
-    // Handle all other fields
-    const directCopyFields = [
-      'brandWebsite', 'brandCategory', 'brandInstagram',
-      'contactName', 'contactEmail', 'contactPhone', 'contactDesignation',
-      'deadline', 'campaignStartDate', 'campaignEndDate',
-      'brief', 'notes', 'paymentTerms', 'paymentMethod',
-      'gstApplicable', 'gstNumber', 'advancePercentage',
-      'priority', 'status', 'tags',
-      'contractRequired', 'exclusivityRequired', 'usageRights',
-      'currency', 'deliverables'
-    ];
-    
-    directCopyFields.forEach(field => {
-      if (data[field] !== undefined) {
-        cleanData[field] = data[field];
-      }
-    });
-    
-    // Special handling for deliverables
-    if (data.deliverables) {
-      cleanData.deliverables = data.deliverables.map(d => ({
-        type: d.type,
-        quantity: parseInt(d.quantity) || 1,
-        description: d.description || 'Content creation',
-        status: d.status || 'pending',
-        ...(d.deadline && { deadline: d.deadline })
-      }));
-    }
-    
-    return api.put(`/deals/${dealId}`, cleanData);
-  },
+  // Update existing deal - FIXED TO HANDLE dealValue AS OBJECT
+updateDeal: (dealId, data) => {
+  // Clean update data with correct field mapping
+  const cleanData = {};
   
+  // Map fields with correct names
+  if (data.title !== undefined) cleanData.title = data.title;
+  if (data.brand !== undefined) cleanData.brand = data.brand;
+  
+  // Handle dealValue as an object, not a number
+  if (data.dealValue !== undefined) {
+    cleanData.dealValue = data.dealValue; // Pass the object as-is
+  }
+  
+  if (data.platform !== undefined) cleanData.platform = data.platform;
+  if (data.stage !== undefined) cleanData.stage = data.stage;
+  
+  // Handle timeline as an object
+  if (data.timeline !== undefined) cleanData.timeline = data.timeline;
+  if (data.campaignRequirements !== undefined) cleanData.campaignRequirements = data.campaignRequirements;
+  if (data.internalNotes !== undefined) cleanData.internalNotes = data.internalNotes;
+  
+  // Handle all other fields
+  const directCopyFields = [
+    'brandWebsite', 'brandCategory', 'brandInstagram',
+    'contactName', 'contactEmail', 'contactPhone', 'contactDesignation',
+    'deadline', 'campaignStartDate', 'campaignEndDate',
+    'brief', 'notes', 'paymentTerms', 'paymentMethod',
+    'gstApplicable', 'gstNumber', 'advancePercentage',
+    'priority', 'status', 'tags',
+    'contractRequired', 'exclusivityRequired', 'usageRights',
+    'currency', 'deliverables'
+  ];
+  
+  directCopyFields.forEach(field => {
+    if (data[field] !== undefined) {
+      cleanData[field] = data[field];
+    }
+  });
+  
+  // Special handling for deliverables
+  if (data.deliverables) {
+    cleanData.deliverables = data.deliverables.map(d => ({
+      type: d.type,
+      quantity: parseInt(d.quantity) || 1,
+      description: d.description || 'Content creation',
+      status: d.status || 'pending',
+      ...(d.deadline && { deadline: d.deadline })
+    }));
+  }
+  
+  return api.put(`/deals/${dealId}`, cleanData);
+},
   // Delete deal
   deleteDeal: (dealId) => 
     api.delete(`/deals/${dealId}`),
@@ -122,10 +131,12 @@ export const dealsAPI = {
   addDeliverable: (dealId, data) => 
     api.post(`/deals/${dealId}/deliverables`, data),
   
-  // Update deliverable
-  updateDeliverable: (dealId, deliverableId, data) => 
-    api.put(`/deals/${dealId}/deliverables/${deliverableId}`, data),
-  
+  updateDeliverable: (dealId, deliverableId, data) => {
+    return api.put(`/deals/${dealId}/deliverables/${deliverableId}`, {
+      _id: deliverableId,  // Try 'id' instead of 'deliverableId'
+      ...data
+    });
+  },
   // ==================== Quick Actions ====================
   
   // Perform quick action on deal

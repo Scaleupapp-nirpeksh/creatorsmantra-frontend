@@ -281,7 +281,7 @@ const DealsListPage = () => {
         setDeals(updatedDeals);
         
         await dealsAPI.updateDealStage(draggedDeal._id, stageId);
-        toast.success('Deal moved successfully');
+       // toast.success('Deal moved successfully');
         fetchStats();
       } catch (error) {
         toast.error('Failed to move deal');
@@ -952,7 +952,7 @@ const DealsListPage = () => {
         </div>
         
         <div style={styles.dealValue}>
-          {formatCurrency(deal.dealValue?.amount || 0)}
+          {formatCurrency(deal.dealValue?.finalAmount || 0)}
         </div>
         
         <div style={styles.dealMeta}>
@@ -1143,8 +1143,8 @@ const DealsListPage = () => {
                 ...styles.statChange,
                 color: '#10b981'
               }}>
-                <TrendingUp size={12} />
-                Pipeline value
+                
+                Exc. GST and TDS
               </div>
             </div>
           </div>

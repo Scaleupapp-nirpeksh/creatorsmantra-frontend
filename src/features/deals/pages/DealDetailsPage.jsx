@@ -4,6 +4,7 @@
  * 
  * - Fix: dealValue always an object (sanitized), no NaN
  * - Fix: communications validation (summary>=5, nextAction required, followUpDate valid date)
+ * - Fix: Proper state management for editing to prevent data loss
  * - Removed: attachments/documents section completely
  */
 
@@ -119,8 +120,20 @@ const DealDetailsPage = () => {
   };
 
   const ensureDealValueObject = (dv) => {
-    // If dv is already an object, sanitize its fields; if it's a number or NaN, wrap it.
-    if (dv && typeof dv === 'object' && !Array.isArray(dv)) {
+    // Handle null, undefined, or any falsy value
+    if (!dv) {
+      return {
+        currency: 'INR',
+        amount: 0,
+        paymentTerms: '50_50',
+        gstApplicable: false,
+        tdsApplicable: false,
+        finalAmount: 0
+      };
+    }
+    
+    // If dv is already an object, sanitize its fields
+    if (typeof dv === 'object' && !Array.isArray(dv)) {
       const amount = sanitizeNumber(dv.amount, 0);
       const finalAmount = sanitizeNumber(dv.finalAmount ?? amount, amount);
       return {
@@ -132,6 +145,8 @@ const DealDetailsPage = () => {
         finalAmount
       };
     }
+    
+    // If it's a number or string, convert to object
     const amount = sanitizeNumber(dv, 0);
     return {
       currency: 'INR',
@@ -226,9 +241,13 @@ const DealDetailsPage = () => {
       if (response?.data) {
         const dealData = response.data.data || response.data;
         // Ensure dealValue is an object on load (prevents controlled input NaN flip)
-        const normalized = { ...dealData, dealValue: ensureDealValueObject(dealData.dealValue) };
+        const normalized = { 
+          ...dealData, 
+          dealValue: ensureDealValueObject(dealData.dealValue) 
+        };
         setDeal(normalized);
-        setEditedDeal(normalized);
+        // Create a deep copy for editing
+        setEditedDeal(JSON.parse(JSON.stringify(normalized)));
         fetchCommunications();
       }
     } catch (error) {
@@ -248,29 +267,61 @@ const DealDetailsPage = () => {
     }
   };
 
+  // Handle entering edit mode
+  const handleEditMode = () => {
+    // Make a fresh deep copy of the current deal state
+    setEditedDeal(JSON.parse(JSON.stringify(deal)));
+    setEditMode(true);
+  };
+
+  // Handle canceling edit
+  const handleCancel = () => {
+    // Reset to original deal data
+    setEditedDeal(JSON.parse(JSON.stringify(deal)));
+    setEditMode(false);
+  };
+
   // Save (ensures dealValue object + sanitized numbers)
   const handleSave = async () => {
     try {
       setUpdating(true);
 
+      // Ensure dealValue is always an object
       const safeDealValue = ensureDealValueObject(editedDeal.dealValue);
 
+      // Merge edited fields with original deal to ensure no data is lost
       const updateData = {
-        title: editedDeal.title,
-        brand: editedDeal.brand,
-        platform: editedDeal.platform,
+        title: editedDeal.title || deal.title,
+        brand: {
+          ...deal.brand,  // Start with original brand data
+          ...editedDeal.brand,  // Override with edited values
+        },
+        platform: editedDeal.platform || deal.platform,
         dealValue: safeDealValue,
-        timeline: editedDeal.timeline,
-        campaignRequirements: editedDeal.campaignRequirements,
-        internalNotes: editedDeal.internalNotes,
-        tags: editedDeal.tags
+        timeline: editedDeal.timeline || deal.timeline || {},
+        campaignRequirements: editedDeal.campaignRequirements || deal.campaignRequirements || {},
+        internalNotes: editedDeal.internalNotes !== undefined ? editedDeal.internalNotes : deal.internalNotes,
+        tags: editedDeal.tags || deal.tags || []
       };
 
-      await dealsAPI.updateDeal(dealId, updateData);
-      setDeal({ ...editedDeal, dealValue: safeDealValue });
-      setEditMode(false);
-      toast.success('Deal updated');
+      console.log('Sending update:', updateData); // Debug log
+
+      const response = await dealsAPI.updateDeal(dealId, updateData);
+      
+      if (response?.data) {
+        // Update local state with the response data
+        const updatedDeal = response.data.data || response.data;
+        const normalized = { 
+          ...updatedDeal, 
+          dealValue: ensureDealValueObject(updatedDeal.dealValue) 
+        };
+        setDeal(normalized);
+        setEditedDeal(normalized);
+        setEditMode(false);
+       // toast.success('Deal updated');
+      }
     } catch (err) {
+      console.error('Update error:', err);
       toast.error('Failed to update deal');
     } finally {
       setUpdating(false);
@@ -287,7 +338,7 @@ const DealDetailsPage = () => {
       setShowStageModal(false);
       setSelectedStage(null);
       setStageNotes('');
-      toast.success('Deal stage updated');
+     // toast.success('Deal stage updated');
       fetchDeal();
     } catch {
       toast.error('Failed to update stage');
@@ -303,12 +354,12 @@ const DealDetailsPage = () => {
       switch (action) {
         case 'duplicate':
           await dealsAPI.performQuickAction(dealId, 'duplicate');
-          toast.success('Deal duplicated');
+         // toast.success('Deal duplicated');
           navigate('/deals');
           break;
         case 'convert_to_template':
           await dealsAPI.performQuickAction(dealId, 'convert_to_template');
-          toast.success('Template created');
+         // toast.success('Template created');
           break;
         case 'send_reminder': {
           const payload = {
@@ -317,7 +368,7 @@ const DealDetailsPage = () => {
             followUpDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
           };
           await dealsAPI.performQuickAction(dealId, 'send_reminder', payload);
-          toast.success('Reminder sent');
+        //  toast.success('Reminder sent');
           fetchCommunications();
           break;
         }
@@ -369,7 +420,7 @@ const DealDetailsPage = () => {
         followUpDate: next3DaysISO
       });
       setShowAddComm(false);
-      toast.success('Communication added');
+     // toast.success('Communication added');
       fetchCommunications();
     } catch {
       toast.error('Failed to add communication');
@@ -383,7 +434,7 @@ const DealDetailsPage = () => {
     try {
       setUpdating(true);
       await dealsAPI.updateDeliverable(dealId, deliverableId, { status, ...additionalData });
-      toast.success('Deliverable updated');
+     // toast.success('Deliverable updated');
       fetchDeal();
     } catch {
       toast.error('Failed to update deliverable');
@@ -427,7 +478,7 @@ const DealDetailsPage = () => {
               <input
                 type="text"
                 value={editedDeal.title || ''}
-                onChange={(e) => setEditedDeal({ ...editedDeal, title: e.target.value })}
+                onChange={(e) => setEditedDeal(prev => ({ ...prev, title: e.target.value }))}
                 style={{ ...styles.input, fontSize: '1.75rem', fontWeight: 700 }}
               />
             ) : (
@@ -451,7 +502,7 @@ const DealDetailsPage = () => {
               <>
                 <button
                   style={{ ...styles.button, ...styles.secondaryButton }}
-                  onClick={() => { setEditedDeal(deal); setEditMode(false); }}
+                  onClick={handleCancel}
                   disabled={updating}
                 >
                   <X size={16} /> Cancel
@@ -468,16 +519,11 @@ const DealDetailsPage = () => {
               <>
                 <button
                   style={{ ...styles.button, ...styles.secondaryButton }}
-                  onClick={() => setEditMode(true)}
+                  onClick={handleEditMode}
                 >
                   <Edit2 size={16} /> Edit
                 </button>
-                <button
-                  style={{ ...styles.button, ...styles.secondaryButton }}
-                  onClick={() => setShowActions((v) => !v)}
-                >
-                  <MoreVertical size={16} /> Actions
-                </button>
+               
 
                 {showActions && (
                   <div style={styles.dropdown}>
@@ -531,8 +577,8 @@ const DealDetailsPage = () => {
         {/* Stats */}
         <div style={styles.statsRow}>
           <div style={styles.statCard}>
-            <div style={styles.statLabel}>Deal Value</div>
-            <div style={styles.statValue}><IndianRupee size={18} />{formatCurrency(deal.dealValue?.amount)}</div>
+            <div style={styles.statLabel}>Final Amount</div>
+            <div style={styles.statValue}><IndianRupee size={18} />{formatCurrency(deal.dealValue?.finalAmount)}</div>
           </div>
           <div style={styles.statCard}>
             <div style={styles.statLabel}>Platform</div>
@@ -578,10 +624,13 @@ const DealDetailsPage = () => {
                     {editMode ? (
                       <textarea
                         value={editedDeal.campaignRequirements?.brief || ''}
-                        onChange={(e) => setEditedDeal({
-                          ...editedDeal,
-                          campaignRequirements: { ...editedDeal.campaignRequirements, brief: e.target.value }
-                        })}
+                        onChange={(e) => setEditedDeal(prev => ({
+                          ...prev,
+                          campaignRequirements: { 
+                            ...prev.campaignRequirements, 
+                            brief: e.target.value 
+                          }
+                        }))}
                         style={styles.textarea}
                         placeholder="Enter campaign brief..."
                       />
@@ -597,7 +646,7 @@ const DealDetailsPage = () => {
                     {editMode ? (
                       <textarea
                         value={editedDeal.internalNotes || ''}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, internalNotes: e.target.value })}
+                        onChange={(e) => setEditedDeal(prev => ({ ...prev, internalNotes: e.target.value }))}
                         style={styles.textarea}
                         placeholder="Add internal notes..."
                       />
@@ -706,7 +755,13 @@ const DealDetailsPage = () => {
                       <input
                         type="date"
                         value={editedDeal.timeline?.responseDeadline?.split?.('T')?.[0] || ''}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, timeline: { ...editedDeal.timeline, responseDeadline: e.target.value } })}
+                        onChange={(e) => setEditedDeal(prev => ({ 
+                          ...prev, 
+                          timeline: { 
+                            ...prev.timeline, 
+                            responseDeadline: e.target.value 
+                          } 
+                        }))}
                         style={styles.input}
                       />
                     ) : (
@@ -720,7 +775,13 @@ const DealDetailsPage = () => {
                       <input
                         type="date"
                         value={editedDeal.timeline?.contentDeadline?.split?.('T')?.[0] || ''}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, timeline: { ...editedDeal.timeline, contentDeadline: e.target.value } })}
+                        onChange={(e) => setEditedDeal(prev => ({ 
+                          ...prev, 
+                          timeline: { 
+                            ...prev.timeline, 
+                            contentDeadline: e.target.value 
+                          } 
+                        }))}
                         style={styles.input}
                       />
                     ) : (
@@ -734,7 +795,13 @@ const DealDetailsPage = () => {
                       <input
                         type="date"
                         value={editedDeal.timeline?.goLiveDate?.split?.('T')?.[0] || ''}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, timeline: { ...editedDeal.timeline, goLiveDate: e.target.value } })}
+                        onChange={(e) => setEditedDeal(prev => ({ 
+                          ...prev, 
+                          timeline: { 
+                            ...prev.timeline, 
+                            goLiveDate: e.target.value 
+                          } 
+                        }))}
                         style={styles.input}
                       />
                     ) : (
@@ -748,7 +815,13 @@ const DealDetailsPage = () => {
                       <input
                         type="date"
                         value={editedDeal.timeline?.paymentDueDate?.split?.('T')?.[0] || ''}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, timeline: { ...editedDeal.timeline, paymentDueDate: e.target.value } })}
+                        onChange={(e) => setEditedDeal(prev => ({ 
+                          ...prev, 
+                          timeline: { 
+                            ...prev.timeline, 
+                            paymentDueDate: e.target.value 
+                          } 
+                        }))}
                         style={styles.input}
                       />
                     ) : (
@@ -774,7 +847,14 @@ const DealDetailsPage = () => {
                 {editMode ? (
                   <input
                     value={editedDeal.brand?.name || ''}
-                    onChange={(e) => setEditedDeal({ ...editedDeal, brand: { ...editedDeal.brand, name: e.target.value } })}
+                    onChange={(e) => setEditedDeal(prev => ({ 
+                      ...prev, 
+                      brand: { 
+                        ...deal.brand,  // Preserve original brand data
+                        ...prev.brand,  // Keep any previous edits
+                        name: e.target.value  // Update the name
+                      } 
+                    }))}
                     style={styles.input}
                   />
                 ) : (
@@ -788,13 +868,18 @@ const DealDetailsPage = () => {
                   <input
                     value={editedDeal.brand?.contactPerson?.name || ''}
                     onChange={(e) =>
-                      setEditedDeal({
-                        ...editedDeal,
+                      setEditedDeal(prev => ({
+                        ...prev,
                         brand: {
-                          ...editedDeal.brand,
-                          contactPerson: { ...editedDeal.brand?.contactPerson, name: e.target.value }
+                          ...deal.brand,
+                          ...prev.brand,
+                          contactPerson: { 
+                            ...deal.brand?.contactPerson,
+                            ...prev.brand?.contactPerson,
+                            name: e.target.value 
+                          }
                         }
-                      })
+                      }))
                     }
                     style={styles.input}
                   />
@@ -827,20 +912,24 @@ const DealDetailsPage = () => {
                   <input
                     type="number"
                     value={editedDeal.dealValue?.amount ?? 0}
-                    onChange={(e) =>
-                      setEditedDeal({
-                        ...editedDeal,
+                    onChange={(e) => {
+                      const newAmount = sanitizeNumber(e.target.value, 0);
+                      const currentDealValue = ensureDealValueObject(editedDeal.dealValue);
+                      const newFinalAmount = sanitizeNumber(
+                        (currentDealValue.gstApplicable ? newAmount * 1.18 : newAmount) -
+                        (currentDealValue.tdsApplicable ? newAmount * 0.10 : 0),
+                        newAmount
+                      );
+                      
+                      setEditedDeal(prev => ({
+                        ...prev,
                         dealValue: {
-                          ...ensureDealValueObject(editedDeal.dealValue),
-                          amount: sanitizeNumber(e.target.value, 0),
-                          finalAmount: sanitizeNumber(
-                            (ensureDealValueObject(editedDeal.dealValue).gstApplicable ? sanitizeNumber(e.target.value, 0) * 1.18 : sanitizeNumber(e.target.value, 0)) -
-                            (ensureDealValueObject(editedDeal.dealValue).tdsApplicable ? sanitizeNumber(e.target.value, 0) * 0.10 : 0),
-                            sanitizeNumber(e.target.value, 0)
-                          )
+                          ...currentDealValue,
+                          amount: newAmount,
+                          finalAmount: newFinalAmount
                         }
-                      })
-                    }
+                      }));
+                    }}
                     style={styles.input}
                   />
                 ) : (
@@ -855,12 +944,25 @@ const DealDetailsPage = () => {
                     <input
                       type="checkbox"
                       checked={Boolean(editedDeal.dealValue?.gstApplicable)}
-                      onChange={(e) =>
-                        setEditedDeal({
-                          ...editedDeal,
-                          dealValue: { ...ensureDealValueObject(editedDeal.dealValue), gstApplicable: e.target.checked }
-                        })
-                      }
+                      onChange={(e) => {
+                        const currentDealValue = ensureDealValueObject(editedDeal.dealValue);
+                        const baseAmount = currentDealValue.amount;
+                        const newGstApplicable = e.target.checked;
+                        const newFinalAmount = sanitizeNumber(
+                          (newGstApplicable ? baseAmount * 1.18 : baseAmount) -
+                          (currentDealValue.tdsApplicable ? baseAmount * 0.10 : 0),
+                          baseAmount
+                        );
+                        
+                        setEditedDeal(prev => ({
+                          ...prev,
+                          dealValue: { 
+                            ...currentDealValue,
+                            gstApplicable: newGstApplicable,
+                            finalAmount: newFinalAmount
+                          }
+                        }));
+                      }}
                     />
                     <span>{editedDeal.dealValue?.gstApplicable ? 'Yes (18%)' : 'No'}</span>
                   </label>
@@ -876,12 +978,25 @@ const DealDetailsPage = () => {
                     <input
                       type="checkbox"
                       checked={Boolean(editedDeal.dealValue?.tdsApplicable)}
-                      onChange={(e) =>
-                        setEditedDeal({
-                          ...editedDeal,
-                          dealValue: { ...ensureDealValueObject(editedDeal.dealValue), tdsApplicable: e.target.checked }
-                        })
-                      }
+                      onChange={(e) => {
+                        const currentDealValue = ensureDealValueObject(editedDeal.dealValue);
+                        const baseAmount = currentDealValue.amount;
+                        const newTdsApplicable = e.target.checked;
+                        const newFinalAmount = sanitizeNumber(
+                          (currentDealValue.gstApplicable ? baseAmount * 1.18 : baseAmount) -
+                          (newTdsApplicable ? baseAmount * 0.10 : 0),
+                          baseAmount
+                        );
+                        
+                        setEditedDeal(prev => ({
+                          ...prev,
+                          dealValue: { 
+                            ...currentDealValue,
+                            tdsApplicable: newTdsApplicable,
+                            finalAmount: newFinalAmount
+                          }
+                        }));
+                      }}
                     />
                     <span>{editedDeal.dealValue?.tdsApplicable ? 'Yes (10%)' : 'No'}</span>
                   </label>
@@ -896,10 +1011,13 @@ const DealDetailsPage = () => {
                   <select
                     value={editedDeal.dealValue?.paymentTerms || '50_50'}
                     onChange={(e) =>
-                      setEditedDeal({
-                        ...editedDeal,
-                        dealValue: { ...ensureDealValueObject(editedDeal.dealValue), paymentTerms: e.target.value }
-                      })
+                      setEditedDeal(prev => ({
+                        ...prev,
+                        dealValue: { 
+                          ...ensureDealValueObject(prev.dealValue), 
+                          paymentTerms: e.target.value 
+                        }
+                      }))
                     }
                     style={styles.input}
                   >

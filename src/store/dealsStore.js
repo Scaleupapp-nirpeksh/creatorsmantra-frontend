@@ -276,6 +276,7 @@ const useDealsStore = create((set, get) => ({
       let newDeal;
       if (response.data) {
         if (response.data.data) {
+          // This is the correct path based on your backend response
           newDeal = response.data.data;
         } else if (response.data.deal) {
           newDeal = response.data.deal;
@@ -288,12 +289,12 @@ const useDealsStore = create((set, get) => ({
       
       console.log('New deal created:', newDeal);
       
-      // Update local state only if we have a valid deal object
-      if (newDeal && (newDeal.id || newDeal._id)) {
+      // CHANGE 1: Check for dealId as well (your backend uses dealId, not just id)
+      if (newDeal && (newDeal.dealId || newDeal._id || newDeal.id)) {
         const deals = [newDeal, ...get().deals];
         const dealsByStage = { ...get().dealsByStage };
         
-        const stageId = newDeal.stage || 'lead';
+        const stageId = newDeal.stage || 'pitched'; // CHANGE 2: Default should be 'pitched' not 'lead'
         if (!dealsByStage[stageId]) {
           dealsByStage[stageId] = [];
         }
@@ -305,19 +306,23 @@ const useDealsStore = create((set, get) => ({
           creating: false
         });
         
-        toast.success('Deal created successfully');
-        
         // Refresh analytics in background
         setTimeout(() => {
           get().fetchAnalytics();
         }, 1000);
         
-        return newDeal;
+        // CHANGE 3: Return proper structure for navigation
+        return {
+          id: newDeal._id,  // MongoDB ID for navigation
+          _id: newDeal._id,
+          dealId: newDeal.dealId, // Custom deal ID
+          ...newDeal
+        };
       } else {
         throw new Error('Invalid deal response from server');
       }
       
-    } catch (error) {
+    }  catch (error) {
       console.error('Error creating deal:', error);
       console.error('Full error response:', error.response?.data);
       
@@ -430,7 +435,7 @@ const useDealsStore = create((set, get) => ({
         updating: false
       });
       
-      toast.success('Deal updated successfully');
+     // toast.success('Deal updated successfully');
       
       // Refresh analytics if value or stage changed
       if (originalDeal.value !== updatedDeal.value || 
@@ -498,7 +503,7 @@ const useDealsStore = create((set, get) => ({
         timestamp: new Date().toISOString()
       });
       
-      toast.success('Deal moved successfully');
+     // toast.success('Deal moved successfully');
       
       // Refresh analytics
       get().fetchAnalytics();
@@ -546,7 +551,7 @@ const useDealsStore = create((set, get) => ({
       await dealsAPI.deleteDeal(dealId);
       
       set({ deleting: false });
-      toast.success('Deal deleted successfully');
+     // toast.success('Deal deleted successfully');
       
       // Refresh analytics
       get().fetchAnalytics();
