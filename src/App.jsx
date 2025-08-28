@@ -14,7 +14,8 @@ import { AnimatePresence } from 'framer-motion';
 // Store imports
 import useAuthStore from './store/authStore';
 import useUIStore from './store/uiStore';
-import useDealsStore from './store/dealsStore'; // ADD THIS
+import useDealsStore from './store/dealsStore'; 
+import useInvoiceStore from './store/invoiceStore';
 
 // Layout imports
 import MainLayout from './layouts/MainLayout';
@@ -35,6 +36,13 @@ import ProtectedRoute from './routes/ProtectedRoute';
 const DealsListPage = lazy(() => import('./features/deals/pages/DealsListPage'));
 const CreateDealPage = lazy(() => import('./features/deals/pages/CreateDealPage'));
 const DealDetailsPage = lazy(() => import('./features/deals/pages/DealDetailsPage'));
+const InvoiceDashboard = lazy(() => import('./features/invoices/pages/InvoiceDashboard'));
+const CreateInvoice = lazy(() => import('./features/invoices/pages/CreateInvoice'));
+const InvoiceDetails = lazy(() => import('./features/invoices/pages/InvoiceDetails'));
+const EditInvoice = lazy(() => import('./features/invoices/pages/EditInvoice'));
+const TaxSettings = lazy(() => import('./features/invoices/pages/TaxSettings'));
+const InvoiceAnalytics = lazy(() => import('./features/invoices/pages/InvoiceAnalytics'));
+const ConsolidatedInvoiceWizard = lazy(() => import('./features/invoices/pages/ConsolidatedInvoiceWizard'));
 
 // Import styles
 import './styles/index.css';
@@ -53,7 +61,9 @@ function App() {
   const [appReady, setAppReady] = useState(false);
   const { initialize, isAuthenticated, isInitialized } = useAuthStore();
   const { theme, setTheme, updateViewport, initializeViewport } = useUIStore();
-  const { init: initDeals } = useDealsStore(); // ADD THIS
+  const { init: initDeals } = useDealsStore(); 
+  const { init: initInvoices } = useInvoiceStore();
+
 
   // Initialize app
   useEffect(() => {
@@ -105,6 +115,12 @@ function App() {
       initDeals();
     }
   }, [isAuthenticated, initDeals]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      initInvoices();
+    }
+  }, [isAuthenticated, initInvoices]);
 
   // Show loading screen while initializing
   if (!appReady || !isInitialized) {
@@ -178,20 +194,55 @@ function App() {
                 </Route>
 
                 {/* Invoices Routes */}
-                <Route path="/invoices">
-                  <Route index element={<div style={styles.comingSoon}>
-                    <h2>Invoices List</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path="new" element={<div style={styles.comingSoon}>
-                    <h2>New Invoice</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path=":invoiceId" element={<div style={styles.comingSoon}>
-                    <h2>Invoice Details</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                </Route>
+<Route path="/invoices">
+  <Route index element={
+    <Suspense fallback={<PageLoader />}>
+      <InvoiceDashboard />
+    </Suspense>
+  } />
+  <Route path="create" element={
+    <Suspense fallback={<PageLoader />}>
+      <CreateInvoice />
+    </Suspense>
+  } />
+  <Route path="create-consolidated" element={
+    <Suspense fallback={<PageLoader />}>
+      <ConsolidatedInvoiceWizard />
+    </Suspense>
+  } />
+  <Route path="analytics" element={
+    <Suspense fallback={<PageLoader />}>
+      <InvoiceAnalytics />
+    </Suspense>
+  } />
+  <Route path=":invoiceId" element={
+    <Suspense fallback={<PageLoader />}>
+      <InvoiceDetails />
+    </Suspense>
+  } />
+  <Route path=":invoiceId/edit" element={
+    <Suspense fallback={<PageLoader />}>
+      <EditInvoice />
+    </Suspense>
+  } />
+</Route>
+
+{/* Settings Routes - Update to include tax settings */}
+<Route path="/settings">
+  <Route index element={<div style={styles.comingSoon}>
+    <h2>Settings</h2>
+    <p>Coming Soon</p>
+  </div>} />
+  <Route path="tax-preferences" element={
+    <Suspense fallback={<PageLoader />}>
+      <TaxSettings />
+    </Suspense>
+  } />
+  <Route path="subscription" element={<div style={styles.comingSoon}>
+    <h2>Subscription</h2>
+    <p>Coming Soon</p>
+  </div>} />
+</Route>
 
                 {/* Briefs Routes */}
                 <Route path="/briefs">

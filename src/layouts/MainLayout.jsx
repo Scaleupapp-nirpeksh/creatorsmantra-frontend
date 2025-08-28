@@ -1,5 +1,5 @@
 /**
- * Main Layout Component - Updated for Deals Module
+ * Main Layout Component - Updated for Deals & Invoice Modules
  * Path: src/layouts/MainLayout.jsx
  */
 
@@ -36,10 +36,16 @@ import {
   ChevronLeft,
   Plus,
   Kanban,
-  List
+  List,
+  Receipt,
+  Calculator,
+  IndianRupee,
+  FileSpreadsheet,
+  PieChart
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '../store';
 import useDealsStore from '../store/dealsStore';
+import useInvoiceStore from '../store/invoiceStore'; // ADD THIS
 import toast from 'react-hot-toast';
 
 const MainLayout = () => {
@@ -64,6 +70,7 @@ const MainLayout = () => {
   
   const { refreshAllData } = useDataStore();
   const { deals } = useDealsStore();
+  const { invoices, dashboard } = useInvoiceStore(); // ADD THIS
   
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -75,6 +82,13 @@ const MainLayout = () => {
   const activeDealsCount = deals.filter(deal => 
     ['lead', 'negotiation', 'confirmed', 'content_creation'].includes(deal.stage)
   ).length;
+  
+  // ADD THIS - Calculate pending invoices count
+  const pendingInvoicesCount = invoices.filter(invoice => 
+    ['sent', 'viewed', 'partially_paid'].includes(invoice.status)
+  ).length;
+  
+  const overdueInvoicesCount = dashboard?.overdueInvoices || 0;
   
   const menuItems = [
     {
@@ -110,11 +124,36 @@ const MainLayout = () => {
       label: 'Invoices',
       icon: FileText,
       path: '/invoices',
-      badge: { count: 2, type: 'warning' },
+      badge: overdueInvoicesCount > 0 ? 
+        { count: overdueInvoicesCount, type: 'warning' } : 
+        pendingInvoicesCount > 0 ? 
+        { count: pendingInvoicesCount, type: 'primary' } : null,
       subItems: [
-        { id: 'invoices-list', label: 'All Invoices', path: '/invoices' },
-        { id: 'invoices-pending', label: 'Pending', path: '/invoices/pending' },
-        { id: 'invoices-new', label: 'Create Invoice', path: '/invoices/new' }
+        { 
+          id: 'invoices-list', 
+          label: 'All Invoices', 
+          path: '/invoices',
+          icon: List
+        },
+        { 
+          id: 'invoices-create', 
+          label: 'Create Invoice', 
+          path: '/invoices/create',
+          icon: Plus
+        },
+        { 
+          id: 'invoices-consolidated', 
+          label: 'Consolidated Invoice', 
+          path: '/invoices/create-consolidated',
+          icon: FileSpreadsheet,
+          premium: subscription?.tier === 'starter' // Only for Pro/Elite
+        },
+        { 
+          id: 'invoices-analytics', 
+          label: 'Analytics', 
+          path: '/invoices/analytics',
+          icon: PieChart
+        }
       ]
     },
     {
@@ -164,7 +203,26 @@ const MainLayout = () => {
       id: 'settings',
       label: 'Settings',
       icon: Settings,
-      path: '/settings'
+      path: '/settings',
+      subItems: [
+        { 
+          id: 'settings-general', 
+          label: 'General', 
+          path: '/settings' 
+        },
+        { 
+          id: 'settings-tax', 
+          label: 'Tax Preferences', 
+          path: '/settings/tax-preferences',
+          icon: Calculator
+        },
+        { 
+          id: 'settings-subscription', 
+          label: 'Subscription', 
+          path: '/settings/subscription',
+          icon: CreditCard
+        }
+      ]
     },
     {
       id: 'help',
@@ -204,6 +262,10 @@ const MainLayout = () => {
       if (location.pathname.startsWith('/deals')) {
         const dealsStore = useDealsStore.getState();
         dealsStore.searchDeals(searchQuery);
+      } else if (location.pathname.startsWith('/invoices')) {
+        // ADD THIS - Search invoices
+        const invoiceStore = useInvoiceStore.getState();
+        invoiceStore.setFilters({ clientName: searchQuery });
       } else {
         navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
       }
@@ -278,17 +340,28 @@ const MainLayout = () => {
           <div style={styles.subItemsContainer}>
             {item.subItems.map(subItem => {
               const SubIcon = subItem.icon;
+              const isSubItemLocked = isFeatureLocked(subItem);
               return (
                 <Link
                   key={subItem.id}
-                  to={subItem.path}
+                  to={!isSubItemLocked ? subItem.path : '#'}
+                  onClick={(e) => {
+                    if (isSubItemLocked) {
+                      e.preventDefault();
+                      openModal('upgradePlan');
+                    }
+                  }}
                   style={{
                     ...styles.subItem,
-                    ...(location.pathname === subItem.path ? styles.subItemActive : {})
+                    ...(location.pathname === subItem.path ? styles.subItemActive : {}),
+                    ...(isSubItemLocked ? styles.subItemLocked : {})
                   }}
                 >
                   {SubIcon && <SubIcon size={14} style={{ marginRight: '0.5rem' }} />}
                   {subItem.label}
+                  {subItem.premium && (
+                    <Zap size={12} color="var(--color-warning)" style={{ marginLeft: 'auto' }} />
+                  )}
                 </Link>
               );
             })}
@@ -464,6 +537,11 @@ const MainLayout = () => {
       background: 'rgba(102, 126, 234, 0.05)',
       color: 'var(--color-primary-600)',
       fontWeight: '500',
+    },
+    
+    subItemLocked: {
+      opacity: 0.6,
+      cursor: 'not-allowed',
     },
     
     sidebarFooter: {
@@ -748,7 +826,9 @@ const MainLayout = () => {
               style={styles.iconButton}
             >
               <Bell size={20} />
-              <span style={styles.notificationBadge}>3</span>
+              {overdueInvoicesCount > 0 && (
+                <span style={styles.notificationBadge}>{overdueInvoicesCount}</span>
+              )}
             </button>
             
             <button

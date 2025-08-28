@@ -1,7 +1,8 @@
 // Central export for all API endpoints
+//src/api/endpoints/index.js
 export { authAPI } from './auth';
 export { dealsAPI } from './deals';
-export { invoicesAPI } from './invoices';
+export { invoicesAPI, invoiceHelpers } from './invoices'; 
 export { briefsAPI } from './briefs';
 export { analyticsAPI } from './analytics';
 export { performanceAPI } from './performance';
