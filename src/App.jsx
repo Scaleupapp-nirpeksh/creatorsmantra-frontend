@@ -1,8 +1,8 @@
 /**
- * Main App Component - Integrated with Deals Module
+ * Main App Component - Integrated with Deals and Scripts Modules
  * Path: src/App.jsx
- * 
- * This preserves all your existing code and adds the deals module integration.
+ * * This preserves all your existing code and adds the scripts module integration,
+ * while removing the briefs module.
  * All your themes, animations, and styles are maintained.
  */
 
@@ -16,6 +16,8 @@ import useAuthStore from './store/authStore';
 import useUIStore from './store/uiStore';
 import useDealsStore from './store/dealsStore'; 
 import useInvoiceStore from './store/invoiceStore';
+import useScriptsStore from './store/scriptsStore'; // ADD THIS
+// import useBriefStore from './store/briefStore'; // REMOVE THIS
 
 // Layout imports
 import MainLayout from './layouts/MainLayout';
@@ -32,7 +34,7 @@ import DemoPage from './pages/DemoPage';
 // Protected Route Component
 import ProtectedRoute from './routes/ProtectedRoute';
 
-// Lazy load Deals Module pages - ADD THESE
+// Lazy load Module pages
 const DealsListPage = lazy(() => import('./features/deals/pages/DealsListPage'));
 const CreateDealPage = lazy(() => import('./features/deals/pages/CreateDealPage'));
 const DealDetailsPage = lazy(() => import('./features/deals/pages/DealDetailsPage'));
@@ -43,6 +45,18 @@ const EditInvoice = lazy(() => import('./features/invoices/pages/EditInvoice'));
 const TaxSettings = lazy(() => import('./features/invoices/pages/TaxSettings'));
 const InvoiceAnalytics = lazy(() => import('./features/invoices/pages/InvoiceAnalytics'));
 const ConsolidatedInvoiceWizard = lazy(() => import('./features/invoices/pages/ConsolidatedInvoiceWizard'));
+
+// const BriefsDashboardPage = lazy(() => import('./features/briefs/pages/BriefsDashboardPage')); // REMOVE THIS
+// const CreateBriefPage = lazy(() => import('./features/briefs/pages/CreateBriefPage')); // REMOVE THIS
+// const BriefDetailsPage = lazy(() => import('./features/briefs/pages/BriefDetailsPage')); // REMOVE THIS
+// const BriefEditorPage = lazy(() => import('./features/briefs/pages/BriefEditorPage')); // REMOVE THIS
+
+// ADD SCRIPT PAGES HERE
+const ScriptsPriorityDashboard = lazy(() => import('./features/scripts/pages/ScriptsPriorityDashboard'));
+const ScriptCreationWizard = lazy(() => import('./features/scripts/pages/ScriptCreationWizard'));
+const ScriptDetailsEditor = lazy(() => import('./features/scripts/pages/ScriptDetailsEditor'));
+const ScriptAnalyticsPerformance = lazy(() => import('./features/scripts/pages/ScriptAnalyticsPerformance'));
+
 
 // Import styles
 import './styles/index.css';
@@ -63,6 +77,8 @@ function App() {
   const { theme, setTheme, updateViewport, initializeViewport } = useUIStore();
   const { init: initDeals } = useDealsStore(); 
   const { init: initInvoices } = useInvoiceStore();
+  const { initialize: initScripts } = useScriptsStore(); // ADD THIS
+  // const { init: initBriefs } = useBriefStore(); // REMOVE THIS
 
 
   // Initialize app
@@ -109,18 +125,15 @@ function App() {
     };
   }, [initialize, setTheme, initializeViewport]);
 
-  // Initialize deals store when authenticated - ADD THIS
+  // Initialize stores when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       initDeals();
-    }
-  }, [isAuthenticated, initDeals]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
       initInvoices();
+      initScripts(); // ADD THIS
+      // initBriefs(); // REMOVE THIS
     }
-  }, [isAuthenticated, initInvoices]);
+  }, [isAuthenticated, initDeals, initInvoices, initScripts]); // UPDATE DEPENDENCIES
 
   // Show loading screen while initializing
   if (!appReady || !isInitialized) {
@@ -168,7 +181,7 @@ function App() {
               <Route element={<MainLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
                 
-                {/* Deals Routes - UPDATED WITH ACTUAL COMPONENTS */}
+                {/* Deals Routes */}
                 <Route path="/deals">
                   <Route index element={
                     <Suspense fallback={<PageLoader />}>
@@ -194,71 +207,97 @@ function App() {
                 </Route>
 
                 {/* Invoices Routes */}
-<Route path="/invoices">
-  <Route index element={
-    <Suspense fallback={<PageLoader />}>
-      <InvoiceDashboard />
-    </Suspense>
-  } />
-  <Route path="create" element={
-    <Suspense fallback={<PageLoader />}>
-      <CreateInvoice />
-    </Suspense>
-  } />
-  <Route path="create-consolidated" element={
-    <Suspense fallback={<PageLoader />}>
-      <ConsolidatedInvoiceWizard />
-    </Suspense>
-  } />
-  <Route path="analytics" element={
-    <Suspense fallback={<PageLoader />}>
-      <InvoiceAnalytics />
-    </Suspense>
-  } />
-  <Route path=":invoiceId" element={
-    <Suspense fallback={<PageLoader />}>
-      <InvoiceDetails />
-    </Suspense>
-  } />
-  <Route path=":invoiceId/edit" element={
-    <Suspense fallback={<PageLoader />}>
-      <EditInvoice />
-    </Suspense>
-  } />
-</Route>
-
-{/* Settings Routes - Update to include tax settings */}
-<Route path="/settings">
-  <Route index element={<div style={styles.comingSoon}>
-    <h2>Settings</h2>
-    <p>Coming Soon</p>
-  </div>} />
-  <Route path="tax-preferences" element={
-    <Suspense fallback={<PageLoader />}>
-      <TaxSettings />
-    </Suspense>
-  } />
-  <Route path="subscription" element={<div style={styles.comingSoon}>
-    <h2>Subscription</h2>
-    <p>Coming Soon</p>
-  </div>} />
-</Route>
-
-                {/* Briefs Routes */}
-                <Route path="/briefs">
-                  <Route index element={<div style={styles.comingSoon}>
-                    <h2>Briefs List</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path="analyze" element={<div style={styles.comingSoon}>
-                    <h2>Analyze Brief</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path=":briefId" element={<div style={styles.comingSoon}>
-                    <h2>Brief Details</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
+                <Route path="/invoices">
+                  <Route index element={
+                    <Suspense fallback={<PageLoader />}>
+                      <InvoiceDashboard />
+                    </Suspense>
+                  } />
+                  <Route path="create" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <CreateInvoice />
+                    </Suspense>
+                  } />
+                  <Route path="create-consolidated" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ConsolidatedInvoiceWizard />
+                    </Suspense>
+                  } />
+                  <Route path="analytics" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <InvoiceAnalytics />
+                    </Suspense>
+                  } />
+                  <Route path=":invoiceId" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <InvoiceDetails />
+                    </Suspense>
+                  } />
+                  <Route path=":invoiceId/edit" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <EditInvoice />
+                    </Suspense>
+                  } />
                 </Route>
+
+                {/* Scripts Routes - ADD THIS SECTION */}
+                <Route path="/scripts">
+                  <Route index element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ScriptsPriorityDashboard />
+                    </Suspense>
+                  } />
+                  <Route path="create" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ScriptCreationWizard />
+                    </Suspense>
+                  } />
+                   <Route path="analytics" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ScriptAnalyticsPerformance />
+                    </Suspense>
+                  } />
+                  <Route path=":scriptId" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ScriptDetailsEditor />
+                    </Suspense>
+                  } />
+                  <Route path=":scriptId/edit" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ScriptDetailsEditor editMode={true} />
+                    </Suspense>
+                  } />
+                </Route>
+
+                {/* Briefs Routes - REMOVED */}
+                {/* <Route path="/briefs">
+                  <Route index element={
+                    <Suspense fallback={<PageLoader />}>
+                      <BriefsDashboardPage />
+                    </Suspense>
+                  } />
+                  <Route path="create" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <CreateBriefPage />
+                    </Suspense>
+                  } />
+                  <Route path=":briefId" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <BriefDetailsPage />
+                    </Suspense>
+                  } />
+                  <Route path=":briefId/edit" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <BriefEditorPage />
+                    </Suspense>
+                  } />
+                  <Route path=":briefId/convert" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <BriefDetailsPage convertMode={true} />
+                    </Suspense>
+                  } />
+                </Route>
+                */}
 
                 {/* Performance Routes */}
                 <Route path="/performance">
@@ -330,6 +369,11 @@ function App() {
                     <h2>Settings</h2>
                     <p>Coming Soon</p>
                   </div>} />
+                  <Route path="tax-preferences" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <TaxSettings />
+                    </Suspense>
+                  } />
                   <Route path="subscription" element={<div style={styles.comingSoon}>
                     <h2>Subscription</h2>
                     <p>Coming Soon</p>
@@ -393,7 +437,7 @@ const NotFoundPage = () => {
   );
 };
 
-// Inline Styles - ALL YOUR EXISTING STYLES PRESERVED
+// Inline Styles
 const styles = {
   // Loading Screen Styles
   loadingContainer: {
@@ -489,7 +533,7 @@ const styles = {
     boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
   },
 
-  // Page loader styles for lazy loaded components - ADDED
+  // Page loader styles for lazy loaded components
   pageLoadingContainer: {
     display: 'flex',
     flexDirection: 'column',
@@ -520,7 +564,7 @@ const styles = {
     color: '#6b7280',
   },
 
-  // Coming soon styles - ADDED
+  // Coming soon styles
   comingSoon: {
     display: 'flex',
     flexDirection: 'column',
@@ -533,7 +577,7 @@ const styles = {
   },
 };
 
-// Add global keyframes for spinner - YOUR EXISTING CODE
+// Add global keyframes for spinner
 if (typeof document !== 'undefined') {
   const existingStyle = document.getElementById('app-keyframes');
   if (!existingStyle) {

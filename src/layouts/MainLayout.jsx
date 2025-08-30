@@ -1,5 +1,5 @@
 /**
- * Main Layout Component - Updated for Deals & Invoice Modules
+ * Main Layout Component - Complete with Deals, Invoice & Scripts Modules
  * Path: src/layouts/MainLayout.jsx
  */
 
@@ -41,11 +41,14 @@ import {
   Calculator,
   IndianRupee,
   FileSpreadsheet,
-  PieChart
+  PieChart,
+  Brain,
+  MessageSquare
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '../store';
 import useDealsStore from '../store/dealsStore';
-import useInvoiceStore from '../store/invoiceStore'; // ADD THIS
+import useInvoiceStore from '../store/invoiceStore';
+import useScriptsStore from '../store/scriptsStore';
 import toast from 'react-hot-toast';
 
 const MainLayout = () => {
@@ -70,7 +73,8 @@ const MainLayout = () => {
   
   const { refreshAllData } = useDataStore();
   const { deals } = useDealsStore();
-  const { invoices, dashboard } = useInvoiceStore(); // ADD THIS
+  const { invoices, dashboard } = useInvoiceStore();
+  const { scripts = [] } = useScriptsStore();
   
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -83,12 +87,19 @@ const MainLayout = () => {
     ['lead', 'negotiation', 'confirmed', 'content_creation'].includes(deal.stage)
   ).length;
   
-  // ADD THIS - Calculate pending invoices count
   const pendingInvoicesCount = invoices.filter(invoice => 
     ['sent', 'viewed', 'partially_paid'].includes(invoice.status)
   ).length;
   
   const overdueInvoicesCount = dashboard?.overdueInvoices || 0;
+
+  // Calculate scripts count needing attention
+  const scriptsNeedingAttentionCount = scripts.filter(script => 
+    script.aiGeneration?.status === 'failed' || script.status === 'draft'
+  ).length;
+
+  // Total notification count (removing briefs references)
+  const totalNotificationCount = overdueInvoicesCount + scriptsNeedingAttentionCount;
   
   const menuItems = [
     {
@@ -146,12 +157,40 @@ const MainLayout = () => {
           label: 'Consolidated Invoice', 
           path: '/invoices/create-consolidated',
           icon: FileSpreadsheet,
-          premium: subscription?.tier === 'starter' // Only for Pro/Elite
+          premium: subscription?.tier === 'starter'
         },
         { 
           id: 'invoices-analytics', 
           label: 'Analytics', 
           path: '/invoices/analytics',
+          icon: PieChart
+        }
+      ]
+    },
+    {
+      id: 'scripts',
+      label: 'Scripts',
+      icon: MessageSquare,
+      path: '/scripts',
+      badge: scriptsNeedingAttentionCount > 0 ? { count: scriptsNeedingAttentionCount, type: 'primary' } : null,
+      premium: true,
+      subItems: [
+        { 
+          id: 'scripts-dashboard', 
+          label: 'Dashboard', 
+          path: '/scripts',
+          icon: List
+        },
+        { 
+          id: 'scripts-create', 
+          label: 'Create Script', 
+          path: '/scripts/create',
+          icon: Plus
+        },
+        { 
+          id: 'scripts-analytics', 
+          label: 'Analytics', 
+          path: '/scripts/analytics',
           icon: PieChart
         }
       ]
@@ -163,32 +202,32 @@ const MainLayout = () => {
       path: '/performance',
       badge: null,
       subItems: [
-        { id: 'performance-overview', label: 'Overview', path: '/performance' },
-        { id: 'performance-analytics', label: 'Analytics', path: '/performance/analytics' },
-        { id: 'performance-reports', label: 'Reports', path: '/performance/reports' }
+        { id: 'performance-overview', label: 'Overview', path: '/performance', icon: BarChart3 },
+        { id: 'performance-analytics', label: 'Analytics', path: '/performance/analytics', icon: PieChart },
+        { id: 'performance-reports', label: 'Reports', path: '/performance/reports', icon: FileText }
       ]
-    },
-    {
-      id: 'briefs',
-      label: 'Briefs',
-      icon: Sparkles,
-      path: '/briefs',
-      badge: { count: 1, type: 'success' },
-      premium: true
     },
     {
       id: 'rate-cards',
       label: 'Rate Cards',
       icon: CreditCard,
       path: '/rate-cards',
-      premium: true
+      premium: true,
+      subItems: [
+        { id: 'rate-cards-list', label: 'All Rate Cards', path: '/rate-cards', icon: List },
+        { id: 'rate-cards-builder', label: 'Builder', path: '/rate-cards/builder', icon: Plus }
+      ]
     },
     {
       id: 'contracts',
       label: 'Contracts',
       icon: Shield,
       path: '/contracts',
-      premium: true
+      premium: true,
+      subItems: [
+        { id: 'contracts-list', label: 'All Contracts', path: '/contracts', icon: List },
+        { id: 'contracts-new', label: 'New Contract', path: '/contracts/new', icon: Plus }
+      ]
     }
   ];
   
@@ -197,7 +236,13 @@ const MainLayout = () => {
       id: 'profile',
       label: 'Profile',
       icon: User,
-      path: '/profile'
+      path: '/profile',
+      subItems: [
+        { id: 'profile-overview', label: 'Overview', path: '/profile', icon: User },
+        { id: 'profile-settings', label: 'Settings', path: '/profile/settings', icon: Settings },
+        { id: 'profile-subscription', label: 'Subscription', path: '/profile/subscription', icon: CreditCard },
+        { id: 'profile-team', label: 'Team Management', path: '/profile/team', icon: Users }
+      ]
     },
     {
       id: 'settings',
@@ -208,7 +253,8 @@ const MainLayout = () => {
         { 
           id: 'settings-general', 
           label: 'General', 
-          path: '/settings' 
+          path: '/settings',
+          icon: Settings
         },
         { 
           id: 'settings-tax', 
@@ -234,13 +280,24 @@ const MainLayout = () => {
   
   useEffect(() => {
     const path = location.pathname;
-    const activeItem = menuItems.find(item => 
-      path.startsWith(item.path)
-    )?.id || 'dashboard';
+    let activeItem = 'dashboard';
+    
+    const allItems = [...menuItems, ...bottomMenuItems];
+    // Find the active menu item based on current path
+    const foundItem = allItems.find(item => {
+      if (path === item.path) return true;
+      if (item.path !== '/' && path.startsWith(item.path)) return true;
+      return false;
+    });
+    
+    if (foundItem) {
+      activeItem = foundItem.id;
+    }
     
     setActiveMenuItem(activeItem);
     
-    const item = menuItems.find(item => item.id === activeItem);
+    // Set page title
+    const item = allItems.find(i => i.id === activeItem);
     if (item) {
       setPageTitle(item.label);
     }
@@ -263,17 +320,26 @@ const MainLayout = () => {
         const dealsStore = useDealsStore.getState();
         dealsStore.searchDeals(searchQuery);
       } else if (location.pathname.startsWith('/invoices')) {
-        // ADD THIS - Search invoices
         const invoiceStore = useInvoiceStore.getState();
         invoiceStore.setFilters({ clientName: searchQuery });
+      } else if (location.pathname.startsWith('/scripts')) {
+        const scriptsStore = useScriptsStore.getState();
+        scriptsStore.updateFilters({ search: searchQuery });
       } else {
         navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
       }
+      setSearchQuery('');
     }
   };
   
   const isFeatureLocked = (item) => {
-    return item.premium && (!subscription || subscription.tier === 'starter');
+    const userSubscription = subscription || {
+      tier: user?.subscriptionTier,
+      status: user?.subscriptionStatus,
+      isActive: user?.subscriptionStatus === 'active'
+    };
+    
+    return item.premium && (!userSubscription || userSubscription.tier === 'starter');
   };
   
   const renderMenuItem = (item) => {
@@ -292,7 +358,7 @@ const MainLayout = () => {
               return;
             }
             
-            if (hasSubItems) {
+            if (hasSubItems && !sidebar.isCollapsed) {
               toggleMenuExpansion(item.id);
             } else {
               navigate(item.path);
@@ -341,6 +407,8 @@ const MainLayout = () => {
             {item.subItems.map(subItem => {
               const SubIcon = subItem.icon;
               const isSubItemLocked = isFeatureLocked(subItem);
+              const isSubItemActive = location.pathname === subItem.path;
+              
               return (
                 <Link
                   key={subItem.id}
@@ -353,7 +421,7 @@ const MainLayout = () => {
                   }}
                   style={{
                     ...styles.subItem,
-                    ...(location.pathname === subItem.path ? styles.subItemActive : {}),
+                    ...(isSubItemActive ? styles.subItemActive : {}),
                     ...(isSubItemLocked ? styles.subItemLocked : {})
                   }}
                 >
@@ -445,6 +513,7 @@ const MainLayout = () => {
       flex: 1,
       padding: '1rem',
       overflowY: 'auto',
+      overflowX: 'hidden',
     },
     
     menuSection: {
@@ -488,6 +557,9 @@ const MainLayout = () => {
     menuItemLabel: {
       flex: 1,
       fontSize: '0.875rem',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
     },
     
     badge: {
@@ -495,6 +567,8 @@ const MainLayout = () => {
       borderRadius: '10px',
       fontSize: '0.75rem',
       fontWeight: '600',
+      minWidth: '20px',
+      textAlign: 'center',
     },
     
     badgePrimary: {
@@ -514,11 +588,14 @@ const MainLayout = () => {
     
     chevron: {
       transition: 'transform 0.2s ease',
+      marginLeft: 'auto',
     },
     
     subItemsContainer: {
       marginLeft: sidebar.isCollapsed ? '0' : '2.5rem',
       marginTop: '0.25rem',
+      paddingLeft: '0.5rem',
+      borderLeft: '2px solid var(--color-neutral-100)',
     },
     
     subItem: {
@@ -576,6 +653,7 @@ const MainLayout = () => {
     userInfo: {
       flex: 1,
       display: sidebar.isCollapsed ? 'none' : 'block',
+      minWidth: 0,
     },
     
     userName: {
@@ -583,11 +661,17 @@ const MainLayout = () => {
       fontWeight: '600',
       color: 'var(--color-neutral-900)',
       marginBottom: '0.125rem',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
     },
     
     userRole: {
       fontSize: '0.75rem',
       color: 'var(--color-neutral-600)',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
     },
     
     mainContent: {
@@ -595,7 +679,8 @@ const MainLayout = () => {
       display: 'flex',
       flexDirection: 'column',
       background: 'var(--color-background)',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      minWidth: 0,
     },
     
     header: {
@@ -605,7 +690,8 @@ const MainLayout = () => {
       display: 'flex',
       alignItems: 'center',
       gap: '2rem',
-      flexShrink: 0
+      flexShrink: 0,
+      minHeight: '70px',
     },
     
     mobileMenuButton: {
@@ -615,6 +701,8 @@ const MainLayout = () => {
       cursor: 'pointer',
       color: 'var(--color-neutral-700)',
       display: viewport.isMobile ? 'flex' : 'none',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     
     searchBar: {
@@ -632,6 +720,7 @@ const MainLayout = () => {
       fontSize: '0.875rem',
       outline: 'none',
       transition: 'all 0.2s ease',
+      background: 'var(--color-neutral-50)',
     },
     
     searchIcon: {
@@ -658,6 +747,9 @@ const MainLayout = () => {
       color: 'var(--color-neutral-700)',
       transition: 'all 0.2s ease',
       position: 'relative',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     
     notificationBadge: {
@@ -714,6 +806,23 @@ const MainLayout = () => {
       background: 'rgba(0, 0, 0, 0.5)',
       zIndex: 99,
     },
+    
+    logoutButton: {
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.75rem',
+      padding: '0.75rem 1rem',
+      marginTop: '0.5rem',
+      background: 'transparent',
+      border: 'none',
+      borderRadius: '10px',
+      cursor: 'pointer',
+      color: 'var(--color-error)',
+      fontSize: '0.875rem',
+      transition: 'all 0.2s ease',
+      justifyContent: sidebar.isCollapsed ? 'center' : 'flex-start',
+    }
   };
   
   return (
@@ -770,24 +879,20 @@ const MainLayout = () => {
                 {user?.fullName || 'User'}
               </div>
               <div style={styles.userRole}>
-                {subscription?.tier || 'Starter'} Plan
+                {subscription?.tier ? 
+                  `${subscription.tier.charAt(0).toUpperCase()}${subscription.tier.slice(1)} Plan` : 
+                  'Starter Plan'}
               </div>
             </div>
           </div>
           
-          {!sidebar.isCollapsed && (
-            <button
-              onClick={handleLogout}
-              style={{
-                ...styles.menuItem,
-                marginTop: '0.5rem',
-                color: 'var(--color-error)',
-              }}
-            >
-              <LogOut size={20} />
-              <span style={styles.menuItemLabel}>Logout</span>
-            </button>
-          )}
+          <button
+            onClick={handleLogout}
+            style={styles.logoutButton}
+          >
+            <LogOut size={20} />
+            {!sidebar.isCollapsed && <span>Logout</span>}
+          </button>
         </div>
       </aside>
       
@@ -806,7 +911,7 @@ const MainLayout = () => {
             <Search size={18} style={styles.searchIcon} />
             <input
               type="text"
-              placeholder="Search deals, invoices, brands..."
+              placeholder="Search deals, invoices, scripts, brands..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={styles.searchInput}
@@ -817,6 +922,7 @@ const MainLayout = () => {
             <button
               onClick={() => toggleTheme()}
               style={styles.iconButton}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
               {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             </button>
@@ -824,16 +930,20 @@ const MainLayout = () => {
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               style={styles.iconButton}
+              title="Notifications"
             >
               <Bell size={20} />
-              {overdueInvoicesCount > 0 && (
-                <span style={styles.notificationBadge}>{overdueInvoicesCount}</span>
+              {totalNotificationCount > 0 && (
+                <span style={styles.notificationBadge}>
+                  {totalNotificationCount}
+                </span>
               )}
             </button>
             
             <button
               onClick={() => refreshAllData()}
               style={styles.iconButton}
+              title="Refresh data"
             >
               <TrendingUp size={20} />
             </button>
@@ -854,6 +964,46 @@ const MainLayout = () => {
       <style jsx>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        
+        .sidebar:hover .collapse-button {
+          opacity: 1;
+        }
+        
+        .menu-item:hover {
+          background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .sub-item:hover:not(.sub-item-locked) {
+          background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .icon-button:hover {
+          background: var(--color-neutral-50);
+          border-color: var(--color-neutral-300);
+        }
+        
+        .search-input:focus {
+          border-color: var(--color-primary-300);
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .user-profile:hover {
+          background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .logout-button:hover {
+          background: rgba(239, 68, 68, 0.05);
+        }
+        
+        @media (max-width: 768px) {
+          .header {
+            padding: 1rem;
+          }
+          
+          .search-bar {
+            max-width: none;
+          }
         }
       `}</style>
     </div>
