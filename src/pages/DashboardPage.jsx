@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Brain,
   BarChart3,
+  ClipboardList, // Added Icon for Rate Cards
 } from 'lucide-react';
 import {
   Line,
@@ -34,6 +35,7 @@ import useAuthStore from '../store/authStore';
 import useDataStore from '../store/dataStore';
 import useUIStore from '../store/uiStore';
 import useScriptsStore from '../store/scriptsStore';
+import useRateCardStore from '../store/ratecardStore'; // Import the new store
 import toast from 'react-hot-toast';
 
 const DashboardPage = () => {
@@ -53,6 +55,10 @@ const DashboardPage = () => {
   // Scripts store
   const { dashboardStats: scriptsStats } = useScriptsStore();
 
+  // Rate Card store
+  const fetchRateCards = useRateCardStore((state) => state.fetchRateCards);
+  const rateCards = useRateCardStore((state) => state.rateCards) || [];
+
   // UI Store - with safe access
   const viewport = useUIStore((state) => state.viewport) || { isMobile: false };
 
@@ -70,6 +76,10 @@ const DashboardPage = () => {
     try {
       if (fetchDashboardData) {
         await fetchDashboardData(timeRange);
+      }
+      // Also fetch rate card data
+      if (fetchRateCards) {
+        await fetchRateCards();
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
@@ -127,6 +137,9 @@ const DashboardPage = () => {
     avgDealValue: dashboardData?.avgDealValue || 40625,
     totalScripts: scriptsStats?.totalScripts || 0,
     scriptsGenerated: scriptsStats?.generatedScripts || 0,
+    // Add new rate card stats
+    activeRateCards: rateCards.filter((rc) => rc.status === 'active').length || 0,
+    totalRateCards: rateCards.length || 0,
   };
 
   // Recent activities
@@ -785,7 +798,38 @@ const DashboardPage = () => {
             </div>
           </div>
         </motion.div>
-
+        
+        {/* ADDED: Rate Cards Stat Card */}
+        <motion.div
+          style={styles.statCard}
+          whileHover={styles.statCardHover}
+          onClick={() => navigate('/dashboard/rate-cards')}
+        >
+          <div style={styles.statHeader}>
+            <div style={styles.statInfo}>
+              <div style={styles.statLabel}>Active Rate Cards</div>
+              <div style={styles.statValue}>{stats.activeRateCards}</div>
+              <div
+                style={{
+                  ...styles.statChange,
+                  color: '#06b6d4',
+                }}
+              >
+                <FileText size={16} />
+                out of {stats.totalRateCards} total
+              </div>
+            </div>
+            <div
+              style={{
+                ...styles.statIcon,
+                background: 'rgba(6, 182, 212, 0.1)',
+              }}
+            >
+              <ClipboardList size={24} color="#06b6d4" />
+            </div>
+          </div>
+        </motion.div>
+        
         <motion.div
           style={styles.statCard}
           whileHover={styles.statCardHover}
@@ -1040,4 +1084,4 @@ const DashboardPage = () => {
   );
 };
 
-export default DashboardPage;
+export default DashboardPage; 

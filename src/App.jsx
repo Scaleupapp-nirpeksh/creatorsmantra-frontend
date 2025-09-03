@@ -1,9 +1,8 @@
 /**
- * Main App Component - Integrated with Deals and Scripts Modules
+ * Main App Component - Integrated with Deals, Scripts, and Rate Cards Modules
  * Path: src/App.jsx
- * * This preserves all your existing code and adds the scripts module integration,
- * while removing the briefs module.
- * All your themes, animations, and styles are maintained.
+ * * This integrates all modules including the new Rate Card management system
+ * with proper routing, lazy loading, and store initialization.
  */
 
 import React, { useEffect, useState, lazy, Suspense } from 'react';
@@ -16,8 +15,8 @@ import useAuthStore from './store/authStore';
 import useUIStore from './store/uiStore';
 import useDealsStore from './store/dealsStore'; 
 import useInvoiceStore from './store/invoiceStore';
-import useScriptsStore from './store/scriptsStore'; // ADD THIS
-// import useBriefStore from './store/briefStore'; // REMOVE THIS
+import useScriptsStore from './store/scriptsStore';
+import useRateCardStore from './store/ratecardStore'; 
 
 // Layout imports
 import MainLayout from './layouts/MainLayout';
@@ -34,10 +33,12 @@ import DemoPage from './pages/DemoPage';
 // Protected Route Component
 import ProtectedRoute from './routes/ProtectedRoute';
 
-// Lazy load Module pages
+// Lazy load Deals Module pages
 const DealsListPage = lazy(() => import('./features/deals/pages/DealsListPage'));
 const CreateDealPage = lazy(() => import('./features/deals/pages/CreateDealPage'));
 const DealDetailsPage = lazy(() => import('./features/deals/pages/DealDetailsPage'));
+
+// Lazy load Invoice Module pages
 const InvoiceDashboard = lazy(() => import('./features/invoices/pages/InvoiceDashboard'));
 const CreateInvoice = lazy(() => import('./features/invoices/pages/CreateInvoice'));
 const InvoiceDetails = lazy(() => import('./features/invoices/pages/InvoiceDetails'));
@@ -46,17 +47,19 @@ const TaxSettings = lazy(() => import('./features/invoices/pages/TaxSettings'));
 const InvoiceAnalytics = lazy(() => import('./features/invoices/pages/InvoiceAnalytics'));
 const ConsolidatedInvoiceWizard = lazy(() => import('./features/invoices/pages/ConsolidatedInvoiceWizard'));
 
-// const BriefsDashboardPage = lazy(() => import('./features/briefs/pages/BriefsDashboardPage')); // REMOVE THIS
-// const CreateBriefPage = lazy(() => import('./features/briefs/pages/CreateBriefPage')); // REMOVE THIS
-// const BriefDetailsPage = lazy(() => import('./features/briefs/pages/BriefDetailsPage')); // REMOVE THIS
-// const BriefEditorPage = lazy(() => import('./features/briefs/pages/BriefEditorPage')); // REMOVE THIS
-
-// ADD SCRIPT PAGES HERE
+// Lazy load Scripts Module pages
 const ScriptsPriorityDashboard = lazy(() => import('./features/scripts/pages/ScriptsPriorityDashboard'));
 const ScriptCreationWizard = lazy(() => import('./features/scripts/pages/ScriptCreationWizard'));
 const ScriptDetailsEditor = lazy(() => import('./features/scripts/pages/ScriptDetailsEditor'));
 const ScriptAnalyticsPerformance = lazy(() => import('./features/scripts/pages/ScriptAnalyticsPerformance'));
 
+// Lazy load Rate Card Module pages - ADD THESE IMPORTS
+const RateCardDashboard = lazy(() => import('./features/rateCard/pages/RateCardDashboard'));
+const CreateRateCard = lazy(() => import('./features/rateCard/pages/CreateRateCard'));
+const EditRateCard = lazy(() => import('./features/rateCard/pages/EditRateCard'));
+const RateCardHistory = lazy(() => import('./features/rateCard/pages/RateCardHistory'));
+const RateCardAnalytics = lazy(() => import('./features/rateCard/pages/RateCardAnalytics'));
+const PublicRateCard = lazy(() => import('./features/rateCard/pages/PublicRateCard'));
 
 // Import styles
 import './styles/index.css';
@@ -77,15 +80,13 @@ function App() {
   const { theme, setTheme, updateViewport, initializeViewport } = useUIStore();
   const { init: initDeals } = useDealsStore(); 
   const { init: initInvoices } = useInvoiceStore();
-  const { initialize: initScripts } = useScriptsStore(); // ADD THIS
-  // const { init: initBriefs } = useBriefStore(); // REMOVE THIS
-
+  const { initialize: initScripts } = useScriptsStore();
+  const { clearCurrentRateCard } = useRateCardStore();
 
   // Initialize app
   useEffect(() => {
     const initApp = async () => {
       try {
-        // Initialize theme from stored preference
         const storedTheme = localStorage.getItem('cm_ui-storage');
         if (storedTheme) {
           try {
@@ -98,26 +99,18 @@ function App() {
           }
         }
         
-        // Initialize viewport
         const cleanupViewport = initializeViewport();
-        
-        // Initialize auth (check stored tokens)
         await initialize();
-        
-        // App is ready
         setAppReady(true);
-        
-        // Return cleanup function
         return cleanupViewport;
       } catch (error) {
         console.error('App initialization error:', error);
-        setAppReady(true); // Still show app even if init fails
+        setAppReady(true);
       }
     };
 
     const cleanup = initApp();
 
-    // Cleanup on unmount
     return () => {
       if (cleanup && typeof cleanup === 'function') {
         cleanup();
@@ -130,12 +123,10 @@ function App() {
     if (isAuthenticated) {
       initDeals();
       initInvoices();
-      initScripts(); // ADD THIS
-      // initBriefs(); // REMOVE THIS
+      initScripts();
     }
-  }, [isAuthenticated, initDeals, initInvoices, initScripts]); // UPDATE DEPENDENCIES
+  }, [isAuthenticated, initDeals, initInvoices, initScripts]);
 
-  // Show loading screen while initializing
   if (!appReady || !isInitialized) {
     return (
       <div style={styles.loadingContainer}>
@@ -175,6 +166,13 @@ function App() {
 
             {/* Demo Route - No authentication required */}
             <Route path="/demo" element={<DemoPage />} />
+
+            {/* Public Rate Card Route - No authentication required */}
+            <Route path="/card/:publicId" element={
+              <Suspense fallback={<PageLoader />}>
+                <PublicRateCard />
+              </Suspense>
+            } />
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
@@ -240,7 +238,7 @@ function App() {
                   } />
                 </Route>
 
-                {/* Scripts Routes - ADD THIS SECTION */}
+                {/* Scripts Routes */}
                 <Route path="/scripts">
                   <Route index element={
                     <Suspense fallback={<PageLoader />}>
@@ -269,35 +267,48 @@ function App() {
                   } />
                 </Route>
 
-                {/* Briefs Routes - REMOVED */}
-                {/* <Route path="/briefs">
+                {/* =================================================================== */}
+                {/* THE ONLY CHANGE IS HERE: Updated path to match the sidebar links */}
+                {/* =================================================================== */}
+                <Route path="/dashboard/rate-cards">
                   <Route index element={
                     <Suspense fallback={<PageLoader />}>
-                      <BriefsDashboardPage />
+                      <RateCardDashboard />
                     </Suspense>
                   } />
                   <Route path="create" element={
                     <Suspense fallback={<PageLoader />}>
-                      <CreateBriefPage />
+                      <CreateRateCard />
                     </Suspense>
                   } />
-                  <Route path=":briefId" element={
+                  <Route path="new" element={<Navigate to="/dashboard/rate-cards/create" replace />} />
+                  <Route path="builder" element={<Navigate to="/dashboard/rate-cards/create" replace />} />
+                  <Route path="analytics" element={
                     <Suspense fallback={<PageLoader />}>
-                      <BriefDetailsPage />
+                      <RateCardAnalytics />
                     </Suspense>
                   } />
-                  <Route path=":briefId/edit" element={
+                  <Route path=":rateCardId" element={
                     <Suspense fallback={<PageLoader />}>
-                      <BriefEditorPage />
+                      <EditRateCard />
                     </Suspense>
                   } />
-                  <Route path=":briefId/convert" element={
+                  <Route path=":rateCardId/edit" element={
                     <Suspense fallback={<PageLoader />}>
-                      <BriefDetailsPage convertMode={true} />
+                      <EditRateCard />
+                    </Suspense>
+                  } />
+                  <Route path=":rateCardId/history" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <RateCardHistory />
+                    </Suspense>
+                  } />
+                  <Route path=":rateCardId/analytics" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <RateCardAnalytics />
                     </Suspense>
                   } />
                 </Route>
-                */}
 
                 {/* Performance Routes */}
                 <Route path="/performance">
@@ -311,18 +322,6 @@ function App() {
                   </div>} />
                   <Route path="reports" element={<div style={styles.comingSoon}>
                     <h2>Reports</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                </Route>
-
-                {/* Rate Cards Routes */}
-                <Route path="/rate-cards">
-                  <Route index element={<div style={styles.comingSoon}>
-                    <h2>Rate Cards</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path="builder" element={<div style={styles.comingSoon}>
-                    <h2>Rate Card Builder</h2>
                     <p>Coming Soon</p>
                   </div>} />
                 </Route>

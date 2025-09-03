@@ -1,5 +1,5 @@
 /**
- * Main Layout Component - Complete with Deals, Invoice & Scripts Modules
+ * Main Layout Component - Complete with Deals, Invoice, Scripts & Rate Cards Modules
  * Path: src/layouts/MainLayout.jsx
  */
 
@@ -43,12 +43,19 @@ import {
   FileSpreadsheet,
   PieChart,
   Brain,
-  MessageSquare
+  MessageSquare,
+  Eye,
+  Share2,
+  Download,
+  QrCode,
+  Globe,
+  Edit3
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '../store';
 import useDealsStore from '../store/dealsStore';
 import useInvoiceStore from '../store/invoiceStore';
 import useScriptsStore from '../store/scriptsStore';
+import useRateCardStore from '../store/ratecardStore';
 import toast from 'react-hot-toast';
 
 const MainLayout = () => {
@@ -75,6 +82,7 @@ const MainLayout = () => {
   const { deals } = useDealsStore();
   const { invoices, dashboard } = useInvoiceStore();
   const { scripts = [] } = useScriptsStore();
+  const { rateCards } = useRateCardStore();
   
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -98,8 +106,19 @@ const MainLayout = () => {
     script.aiGeneration?.status === 'failed' || script.status === 'draft'
   ).length;
 
-  // Total notification count (removing briefs references)
-  const totalNotificationCount = overdueInvoicesCount + scriptsNeedingAttentionCount;
+  // Calculate rate card notifications
+  const draftRateCardsCount = rateCards.filter(card => 
+    card.version?.status === 'draft'
+  ).length;
+  
+  const expiredRateCardsCount = rateCards.filter(card => 
+    card.sharing?.expiresAt && new Date(card.sharing.expiresAt) < new Date()
+  ).length;
+
+  // Total notification count
+  const totalNotificationCount = overdueInvoicesCount + 
+    scriptsNeedingAttentionCount + 
+    expiredRateCardsCount;
   
   const menuItems = [
     {
@@ -195,6 +214,33 @@ const MainLayout = () => {
         }
       ]
     },
+    // Find the rate-cards menu item in your menuItems array and replace it with this:
+{
+  id: 'rate-cards',
+  label: 'Rate Cards',
+  icon: CreditCard,
+  path: '/dashboard/rate-cards',
+  badge: expiredRateCardsCount > 0 ? 
+    { count: expiredRateCardsCount, type: 'warning' } : 
+    draftRateCardsCount > 0 ? 
+    { count: draftRateCardsCount, type: 'primary' } : null,
+  premium: true,
+  subItems: [
+    { 
+      id: 'rate-cards-dashboard', 
+      label: 'My Rate Cards', 
+      path: '/dashboard/rate-cards', 
+      icon: List 
+    },
+    { 
+      id: 'rate-cards-create', 
+      label: 'Create Rate Card', 
+      path: '/dashboard/rate-cards/create', 
+      icon: Plus 
+    }
+    // Removed 'Templates' and 'Analytics' tabs
+  ]
+},
     {
       id: 'performance',
       label: 'Performance',
@@ -205,17 +251,6 @@ const MainLayout = () => {
         { id: 'performance-overview', label: 'Overview', path: '/performance', icon: BarChart3 },
         { id: 'performance-analytics', label: 'Analytics', path: '/performance/analytics', icon: PieChart },
         { id: 'performance-reports', label: 'Reports', path: '/performance/reports', icon: FileText }
-      ]
-    },
-    {
-      id: 'rate-cards',
-      label: 'Rate Cards',
-      icon: CreditCard,
-      path: '/rate-cards',
-      premium: true,
-      subItems: [
-        { id: 'rate-cards-list', label: 'All Rate Cards', path: '/rate-cards', icon: List },
-        { id: 'rate-cards-builder', label: 'Builder', path: '/rate-cards/builder', icon: Plus }
       ]
     },
     {
@@ -278,6 +313,15 @@ const MainLayout = () => {
     }
   ];
   
+  // Initialize data on component mount
+  useEffect(() => {
+    // Initialize rate card data when component mounts
+    const rateCardStore = useRateCardStore.getState();
+    if (user && rateCardStore.fetchRateCards) {
+      rateCardStore.fetchRateCards();
+    }
+  }, [user]);
+  
   useEffect(() => {
     const path = location.pathname;
     let activeItem = 'dashboard';
@@ -325,6 +369,11 @@ const MainLayout = () => {
       } else if (location.pathname.startsWith('/scripts')) {
         const scriptsStore = useScriptsStore.getState();
         scriptsStore.updateFilters({ search: searchQuery });
+      } else if (location.pathname.includes('/rate-cards')) {
+        const rateCardStore = useRateCardStore.getState();
+        if (rateCardStore.setSearchQuery) {
+          rateCardStore.setSearchQuery(searchQuery);
+        }
       } else {
         navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
       }
@@ -340,6 +389,32 @@ const MainLayout = () => {
     };
     
     return item.premium && (!userSubscription || userSubscription.tier === 'starter');
+  };
+
+  // Get quick actions based on current page
+  const getQuickActions = () => {
+    const path = location.pathname;
+    
+    if (path.startsWith('/dashboard/rate-cards')) {
+      return (
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => navigate('/dashboard/rate-cards/create')}
+            style={{
+              ...styles.iconButton,
+              background: 'var(--gradient-primary)',
+              color: 'white',
+              border: 'none'
+            }}
+            title="Create Rate Card"
+          >
+            <Plus size={18} />
+          </button>
+        </div>
+      );
+    }
+    
+    return null;
   };
   
   const renderMenuItem = (item) => {
@@ -911,7 +986,7 @@ const MainLayout = () => {
             <Search size={18} style={styles.searchIcon} />
             <input
               type="text"
-              placeholder="Search deals, invoices, scripts, brands..."
+              placeholder="Search deals, invoices, rate cards, scripts, brands..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={styles.searchInput}
@@ -919,6 +994,8 @@ const MainLayout = () => {
           </form>
           
           <div style={styles.headerActions}>
+            {getQuickActions()}
+            
             <button
               onClick={() => toggleTheme()}
               style={styles.iconButton}

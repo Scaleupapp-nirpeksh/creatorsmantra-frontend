@@ -1,12 +1,10 @@
 /**
  * Store Index - Central export for all Zustand stores
- * 
- * This file exports:
+ * * This file exports:
  * - All individual stores
  * - Store selectors for optimized re-renders
  * - Store utilities
- * 
- * File: src/store/index.js
+ * * File: src/store/index.js
  */
 
 import { useEffect } from 'react';
@@ -17,7 +15,8 @@ import useUIStore from './uiStore';
 import useDataStore from './dataStore';
 import useBriefStore from './briefStore';
 import useScriptsStore from './scriptsStore';
-import useInvoiceStore from './invoiceStore'; // ADD THIS
+import useInvoiceStore from './invoiceStore';
+import useRateCardStore from './ratecardStore';
 
 // ============================================
 // Store Selectors (for optimized re-renders)
@@ -59,7 +58,7 @@ export const uiSelectors = {
 };
 
 /**
- * Data Selectors
+ * Data Selectors (Legacy - prefer direct store usage)
  */
 export const dataSelectors = {
   // Deals
@@ -68,32 +67,27 @@ export const dataSelectors = {
   dealsLoading: (state) => state.deals.isLoading,
   dealFilters: (state) => state.deals.filters,
   dealsPagination: (state) => state.deals.pagination,
-  
+
   // Invoices (legacy - prefer using useInvoiceStore directly)
   invoices: (state) => state.invoices.list,
   invoiceById: (invoiceId) => (state) => state.invoices.byId[invoiceId],
   invoicesLoading: (state) => state.invoices.isLoading,
-  
+
   // Analytics
   analyticsDashboard: (state) => state.analytics.dashboard,
   analyticsRevenue: (state) => state.analytics.revenue,
   analyticsInsights: (state) => state.analytics.insights,
   analyticsLoading: (state) => state.analytics.isLoading,
-  
+
   // Performance
   campaigns: (state) => state.performance.campaigns,
   campaignById: (campaignId) => (state) => state.performance.byId[campaignId],
   performanceLoading: (state) => state.performance.isLoading,
-  
+
   // Contracts
   contracts: (state) => state.contracts.list,
   contractById: (contractId) => (state) => state.contracts.byId[contractId],
   contractsLoading: (state) => state.contracts.isLoading,
-  
-  // Rate Cards
-  rateCards: (state) => state.rateCards.list,
-  rateCardById: (rateCardId) => (state) => state.rateCards.byId[rateCardId],
-  rateCardsLoading: (state) => state.rateCards.isLoading
 };
 
 /**
@@ -105,40 +99,40 @@ export const briefSelectors = {
   briefById: (briefId) => (state) => state.briefs.byId[briefId],
   briefsLoading: (state) => state.briefs.isLoading,
   briefsError: (state) => state.briefs.error,
-  
+
   // Current brief
   currentBrief: (state) => state.currentBrief.data,
   currentBriefLoading: (state) => state.currentBrief.isLoading,
   currentBriefError: (state) => state.currentBrief.error,
   isCurrentBriefDirty: (state) => state.currentBrief.isDirty,
-  
+
   // Dashboard and metadata
   dashboardStats: (state) => state.dashboardStats.data,
   dashboardStatsLoading: (state) => state.dashboardStats.isLoading,
   briefMetadata: (state) => state.metadata.data,
   briefMetadataLoading: (state) => state.metadata.isLoading,
-  
+
   // Filters and pagination
   briefFilters: (state) => state.filters,
   briefPagination: (state) => state.pagination,
-  
+
   // AI extraction
   aiExtraction: (state) => state.aiExtraction,
   isAIProcessing: (state) => state.aiExtraction.isProcessing,
   aiProgress: (state) => state.aiExtraction.progress,
   aiStatus: (state) => state.aiExtraction.status,
-  
+
   // File upload
   fileUpload: (state) => state.fileUpload,
   isFileUploading: (state) => state.fileUpload.isUploading,
   uploadProgress: (state) => state.fileUpload.progress,
   uploadError: (state) => state.fileUpload.error,
-  
+
   // Clarifications
   clarifications: (state) => state.clarifications,
   clarificationEmail: (state) => state.clarifications.emailTemplate,
   isGeneratingEmail: (state) => state.clarifications.isGenerating,
-  
+
   // Deal conversion
   dealConversion: (state) => state.dealConversion,
   dealPreview: (state) => state.dealConversion.preview,
@@ -156,28 +150,28 @@ export const scriptsSelectors = {
   dashboardStats: (state) => state.dashboardStats,
   scriptMetadata: (state) => state.scriptMetadata,
   availableDeals: (state) => state.availableDeals,
-  
+
   // Pagination and filters
   pagination: (state) => state.pagination,
   filters: (state) => state.filters,
-  
+
   // Loading states
   isLoading: (state) => state.isLoading,
   isCreating: (state) => state.isCreating,
   isGenerating: (state) => state.isGenerating,
   isPolling: (state) => state.isPolling,
-  
+
   // Upload states
   uploadProgress: (state) => state.uploadProgress,
   isUploading: (state) => state.isUploading,
-  
+
   // Bulk operations
   selectedScripts: (state) => state.selectedScripts,
   bulkActionMode: (state) => state.bulkActionMode
 };
 
 /**
- * Invoice Selectors - ADD THIS SECTION
+ * Invoice Selectors
  */
 export const invoiceSelectors = {
   // Core invoice data
@@ -185,33 +179,33 @@ export const invoiceSelectors = {
   currentInvoice: (state) => state.currentInvoice,
   availableDeals: (state) => state.availableDeals,
   taxPreferences: (state) => state.taxPreferences,
-  
+
   // Analytics and dashboard
   analytics: (state) => state.analytics,
   dashboard: (state) => state.dashboard,
-  
+
   // Filters and pagination
   filters: (state) => state.filters,
   pagination: (state) => state.pagination,
-  
+
   // Loading states
   isLoading: (state) => state.isLoading,
   isGeneratingPDF: (state) => state.isGeneratingPDF,
   isInitialized: (state) => state.isInitialized,
-  
+
   // Derived selectors
   totalInvoices: (state) => state.invoices.length,
   draftInvoices: (state) => state.invoices.filter(inv => inv.status === 'draft'),
   sentInvoices: (state) => state.invoices.filter(inv => inv.status === 'sent'),
   paidInvoices: (state) => state.invoices.filter(inv => inv.status === 'paid'),
   overdueInvoices: (state) => state.invoices.filter(inv => inv.status === 'overdue'),
-  
+
   // Current invoice helpers
   hasCurrentInvoice: (state) => !!state.currentInvoice,
   currentInvoiceStatus: (state) => state.currentInvoice?.status,
   currentInvoiceAmount: (state) => state.currentInvoice?.totalAmount,
   currentInvoiceDueDate: (state) => state.currentInvoice?.invoiceSettings?.dueDate,
-  
+
   // Tax preference helpers
   hasTaxPreferences: (state) => !!state.taxPreferences,
   gstEnabled: (state) => state.taxPreferences?.enableGST,
@@ -219,6 +213,29 @@ export const invoiceSelectors = {
   defaultGstRate: (state) => state.taxPreferences?.defaultGstRate,
   defaultTdsRate: (state) => state.taxPreferences?.defaultTdsRate
 };
+
+/**
+ * Rate Card Selectors
+ */
+export const rateCardSelectors = {
+  // Core rate card data
+  rateCards: (state) => state.rateCards,
+  currentRateCard: (state) => state.currentRateCard,
+  pagination: (state) => state.pagination,
+  
+  // Features
+  aiSuggestions: (state) => state.aiSuggestions,
+  analytics: (state) => state.analytics,
+  history: (state) => state.history,
+  
+  // Loading states
+  isLoading: (state) => state.isLoading,
+  error: (state) => state.error,
+
+  // Helpers
+  hasCurrentRateCard: (state) => !!state.currentRateCard
+};
+
 
 // ============================================
 // Store Hooks (for common combinations)
@@ -244,9 +261,10 @@ export const useGlobalLoading = () => {
   const dealsLoading = useDataStore(dataSelectors.dealsLoading);
   const briefsLoading = useBriefStore(briefSelectors.briefsLoading);
   const scriptsLoading = useScriptsStore(scriptsSelectors.isLoading);
-  const invoicesLoading = useInvoiceStore(invoiceSelectors.isLoading); // ADD THIS
+  const invoicesLoading = useInvoiceStore(invoiceSelectors.isLoading);
+  const rateCardsLoading = useRateCardStore(rateCardSelectors.isLoading);
   
-  return authLoading || uiLoading || dealsLoading || briefsLoading || scriptsLoading || invoicesLoading;
+  return authLoading || uiLoading || dealsLoading || briefsLoading || scriptsLoading || invoicesLoading || rateCardsLoading;
 };
 
 /**
@@ -276,7 +294,7 @@ export const useScriptsState = () => {
 };
 
 /**
- * Use invoice state with common data - ADD THIS HOOK
+ * Use invoice state with common data
  */
 export const useInvoicesState = () => {
   const invoices = useInvoiceStore(invoiceSelectors.invoices);
@@ -289,7 +307,7 @@ export const useInvoicesState = () => {
 };
 
 /**
- * Use current invoice with all related state - ADD THIS HOOK
+ * Use current invoice with all related state
  */
 export const useCurrentInvoice = () => {
   const invoice = useInvoiceStore(invoiceSelectors.currentInvoice);
@@ -316,7 +334,7 @@ export const useCurrentInvoice = () => {
 };
 
 /**
- * Use invoice creation - ADD THIS HOOK
+ * Use invoice creation
  */
 export const useInvoiceCreation = () => {
   const availableDeals = useInvoiceStore(invoiceSelectors.availableDeals);
@@ -341,7 +359,7 @@ export const useInvoiceCreation = () => {
 };
 
 /**
- * Use tax preferences - ADD THIS HOOK
+ * Use tax preferences
  */
 export const useTaxPreferences = () => {
   const preferences = useInvoiceStore(invoiceSelectors.taxPreferences);
@@ -370,7 +388,7 @@ export const useTaxPreferences = () => {
 };
 
 /**
- * Use invoice analytics - ADD THIS HOOK
+ * Use invoice analytics
  */
 export const useInvoiceAnalytics = () => {
   const analytics = useInvoiceStore(invoiceSelectors.analytics);
@@ -391,7 +409,7 @@ export const useInvoiceAnalytics = () => {
 };
 
 /**
- * Use payment management - ADD THIS HOOK
+ * Use payment management
  */
 export const usePaymentManagement = () => {
   const currentInvoice = useInvoiceStore(invoiceSelectors.currentInvoice);
@@ -414,7 +432,7 @@ export const usePaymentManagement = () => {
 };
 
 /**
- * Use invoice filters and pagination - ADD THIS HOOK
+ * Use invoice filters and pagination
  */
 export const useInvoiceFiltering = () => {
   const filters = useInvoiceStore(invoiceSelectors.filters);
@@ -519,6 +537,64 @@ export const useScriptDealConnection = () => {
 };
 
 /**
+ * Use rate card list state with pagination.
+ */
+export const useRateCardsState = () => {
+  const rateCards = useRateCardStore(rateCardSelectors.rateCards);
+  const isLoading = useRateCardStore(rateCardSelectors.isLoading);
+  const pagination = useRateCardStore(rateCardSelectors.pagination);
+  
+  // Actions
+  const fetchRateCards = useRateCardStore(state => state.fetchRateCards);
+
+  return { rateCards, isLoading, pagination, fetchRateCards };
+};
+
+/**
+ * Use the currently active rate card and its related actions.
+ */
+export const useCurrentRateCard = () => {
+  const rateCard = useRateCardStore(rateCardSelectors.currentRateCard);
+  const isLoading = useRateCardStore(rateCardSelectors.isLoading);
+  
+  // Actions
+  const fetchRateCard = useRateCardStore(state => state.fetchRateCard);
+  const deleteRateCard = useRateCardStore(state => state.deleteRateCard);
+  const clearRateCard = useRateCardStore(state => state.clearCurrentRateCard);
+  const updateMetrics = useRateCardStore(state => state.updateMetrics);
+  const updatePricing = useRateCardStore(state => state.updatePricing);
+  const createPackage = useRateCardStore(state => state.createPackage);
+  const deletePackage = useRateCardStore(state => state.deletePackage);
+  const publishRateCard = useRateCardStore(state => state.publishRateCard);
+
+  return {
+    rateCard,
+    isLoading,
+    fetchRateCard,
+    deleteRateCard,
+    clearRateCard,
+    updateMetrics,
+    updatePricing,
+    createPackage,
+    deletePackage,
+    publishRateCard,
+  };
+};
+
+/**
+ * Use rate card creation workflow.
+ */
+export const useRateCardCreation = () => {
+  const isLoading = useRateCardStore(rateCardSelectors.isLoading);
+  const aiSuggestions = useRateCardStore(rateCardSelectors.aiSuggestions);
+
+  // Actions
+  const createRateCard = useRateCardStore(state => state.createRateCard);
+  
+  return { isLoading, aiSuggestions, createRateCard };
+};
+
+/**
  * Use mobile detection
  */
 export const useIsMobile = () => {
@@ -548,8 +624,9 @@ export const resetAllStores = () => {
   useUIStore.getState().resetUI();
   useDataStore.getState().clearAllData();
   useBriefStore.getState().reset();
-  useScriptsStore.getState().resetFilters();
-  useInvoiceStore.getState().reset(); // ADD THIS
+  useScriptsStore.getState().reset();
+  useInvoiceStore.getState().reset();
+  useRateCardStore.getState().reset();
 };
 
 /**
@@ -572,8 +649,10 @@ export const initializeStores = async () => {
   // Initialize scripts metadata
   useScriptsStore.getState().initialize();
   
-  // Initialize invoice store - ADD THIS
+  // Initialize invoice store
   await useInvoiceStore.getState().init();
+
+  // Rate card store does not have an explicit init function
 };
 
 /**
@@ -587,7 +666,8 @@ export const debugStores = () => {
     console.log('Data Store:', useDataStore.getState());
     console.log('Brief Store:', useBriefStore.getState());
     console.log('Scripts Store:', useScriptsStore.getState());
-    console.log('Invoice Store:', useInvoiceStore.getState()); // ADD THIS
+    console.log('Invoice Store:', useInvoiceStore.getState());
+    console.log('Rate Card Store:', useRateCardStore.getState());
     console.groupEnd();
   }
 };
@@ -647,7 +727,7 @@ export const subscribeToScriptGeneration = (callback) => {
 };
 
 /**
- * Subscribe to invoice changes - ADD THIS
+ * Subscribe to invoice changes
  */
 export const subscribeToInvoiceChanges = (callback) => {
   return useInvoiceStore.subscribe(
@@ -657,7 +737,7 @@ export const subscribeToInvoiceChanges = (callback) => {
 };
 
 /**
- * Subscribe to current invoice changes - ADD THIS
+ * Subscribe to current invoice changes
  */
 export const subscribeToCurrentInvoice = (callback) => {
   return useInvoiceStore.subscribe(
@@ -667,11 +747,31 @@ export const subscribeToCurrentInvoice = (callback) => {
 };
 
 /**
- * Subscribe to PDF generation progress - ADD THIS
+ * Subscribe to PDF generation progress
  */
 export const subscribeToPDFGeneration = (callback) => {
   return useInvoiceStore.subscribe(
     (state) => state.isGeneratingPDF,
+    callback
+  );
+};
+
+/**
+ * Subscribe to rate card changes
+ */
+export const subscribeToRateCardChanges = (callback) => {
+  return useRateCardStore.subscribe(
+    (state) => state.rateCards,
+    callback
+  );
+};
+
+/**
+ * Subscribe to current rate card changes
+ */
+export const subscribeToCurrentRateCard = (callback) => {
+  return useRateCardStore.subscribe(
+    (state) => state.currentRateCard,
     callback
   );
 };
@@ -697,7 +797,8 @@ export {
   useDataStore, 
   useBriefStore, 
   useScriptsStore, 
-  useInvoiceStore // ADD THIS
+  useInvoiceStore,
+  useRateCardStore
 };
 
 // Export store provider for app initialization
@@ -728,7 +829,7 @@ export const useStoreInitialization = () => {
     // Initialize scripts metadata
     useScriptsStore.getState().initialize();
     
-    // Initialize invoice store - ADD THIS
+    // Initialize invoice store
     useInvoiceStore.getState().init();
     
     // Debug stores in development
@@ -744,7 +845,7 @@ export const useStoreInitialization = () => {
 };
 
 // ============================================
-// Invoice-specific Utilities - ADD THIS SECTION
+// Workflow Initialization & Cleanup Utilities
 // ============================================
 
 /**
@@ -754,12 +855,8 @@ export const initializeInvoiceWorkflow = async () => {
   const invoiceStore = useInvoiceStore.getState();
   const authStore = useAuthStore.getState();
   
-  // Only initialize if user has invoice access
   if (authStore.canAccessFeature('invoices')) {
-    // Initialize store (loads tax preferences, dashboard, etc.)
     await invoiceStore.init();
-    
-    // Load recent invoices
     await invoiceStore.fetchInvoices();
   }
 };
@@ -768,8 +865,7 @@ export const initializeInvoiceWorkflow = async () => {
  * Clean up invoice store on logout
  */
 export const cleanupInvoiceStore = () => {
-  const invoiceStore = useInvoiceStore.getState();
-  invoiceStore.reset();
+  useInvoiceStore.getState().reset();
 };
 
 /**
@@ -777,13 +873,89 @@ export const cleanupInvoiceStore = () => {
  */
 export const initializeInvoiceCreation = async () => {
   const invoiceStore = useInvoiceStore.getState();
-  
-  // Load available deals and tax preferences
   await Promise.allSettled([
     invoiceStore.fetchAvailableDeals(),
     invoiceStore.fetchTaxPreferences()
   ]);
 };
+
+/**
+ * Initialize scripts workflow for a new user session
+ */
+export const initializeScriptsWorkflow = async () => {
+  const scriptsStore = useScriptsStore.getState();
+  const authStore = useAuthStore.getState();
+  
+  if (authStore.canAccessFeature('scripts')) {
+    await scriptsStore.initialize();
+    await scriptsStore.fetchScripts();
+  }
+};
+
+/**
+ * Clean up scripts store on logout
+ */
+export const cleanupScriptsStore = () => {
+  useScriptsStore.getState().reset();
+};
+
+/**
+ * Initialize brief workflow for a new user session
+ */
+export const initializeBriefWorkflow = async () => {
+  const briefStore = useBriefStore.getState();
+  const authStore = useAuthStore.getState();
+  
+  if (authStore.canAccessFeature('briefs')) {
+    await briefStore.fetchDashboardStats();
+    await briefStore.fetchBriefMetadata();
+    await briefStore.fetchBriefs();
+  }
+};
+
+/**
+ * Clean up brief store on logout
+ */
+export const cleanupBriefStore = () => {
+  useBriefStore.getState().reset();
+};
+
+/**
+ * Initialize rate card workflow for a new user session
+ */
+export const initializeRateCardWorkflow = async () => {
+  const rateCardStore = useRateCardStore.getState();
+  const authStore = useAuthStore.getState();
+
+  if (authStore.canAccessFeature('rateCards')) {
+    await rateCardStore.fetchRateCards();
+  }
+};
+
+/**
+ * Clean up rate card store on logout
+ */
+export const cleanupRateCardStore = () => {
+  useRateCardStore.getState().reset();
+};
+
+/**
+ * Use rate card summary statistics
+ */
+export const useRateCardSummary = () => {
+  const rateCards = useRateCardStore(state => state.rateCards);
+  
+  return {
+    totalRateCards: rateCards.length,
+    activeCount: rateCards.filter(rc => rc.status === 'active').length,
+    draftCount: rateCards.filter(rc => rc.status === 'draft').length,
+    archivedCount: rateCards.filter(rc => rc.status === 'archived').length
+  };
+};
+
+// ============================================
+// Permission & Accessor Utilities
+// ============================================
 
 /**
  * Helper to check if user can create invoices
@@ -823,79 +995,17 @@ export const useInvoiceSummary = () => {
 };
 
 // ============================================
-// Scripts-specific Utilities
-// ============================================
-
-/**
- * Initialize scripts workflow for a new user session
- */
-export const initializeScriptsWorkflow = async () => {
-  const scriptsStore = useScriptsStore.getState();
-  const authStore = useAuthStore.getState();
-  
-  // Only initialize if user has scripts access
-  if (authStore.canAccessFeature('scripts')) {
-    // Initialize store (loads metadata, stats, etc.)
-    await scriptsStore.initialize();
-    
-    // Load recent scripts
-    await scriptsStore.fetchScripts();
-  }
-};
-
-/**
- * Clean up scripts store on logout
- */
-export const cleanupScriptsStore = () => {
-  const scriptsStore = useScriptsStore.getState();
-  scriptsStore.resetFilters();
-  scriptsStore.clearCurrentScript();
-};
-
-// ============================================
-// Brief-specific Utilities
-// ============================================
-
-/**
- * Initialize brief workflow for a new user session
- */
-export const initializeBriefWorkflow = async () => {
-  const briefStore = useBriefStore.getState();
-  const authStore = useAuthStore.getState();
-  
-  // Only initialize if user has brief access
-  if (authStore.canAccessFeature('briefs')) {
-    // Load dashboard stats
-    await briefStore.fetchDashboardStats();
-    
-    // Load metadata if not cached
-    await briefStore.fetchBriefMetadata();
-    
-    // Load recent briefs
-    await briefStore.fetchBriefs();
-  }
-};
-
-/**
- * Clean up brief store on logout
- */
-export const cleanupBriefStore = () => {
-  const briefStore = useBriefStore.getState();
-  briefStore.reset();
-};
-
-// ============================================
 // Performance Monitoring (Development Only)
 // ============================================
 
 if (import.meta.env.DEV) {
-  // Monitor store updates
   let authUpdates = 0;
   let uiUpdates = 0;
   let dataUpdates = 0;
   let briefUpdates = 0;
   let scriptsUpdates = 0;
-  let invoiceUpdates = 0; // ADD THIS
+  let invoiceUpdates = 0;
+  let rateCardUpdates = 0;
   
   useAuthStore.subscribe(() => {
     authUpdates++;
@@ -922,13 +1032,16 @@ if (import.meta.env.DEV) {
     console.log(`[Scripts Store] Update #${scriptsUpdates}`);
   });
   
-  // ADD THIS
   useInvoiceStore.subscribe(() => {
     invoiceUpdates++;
     console.log(`[Invoice Store] Update #${invoiceUpdates}`);
   });
+
+  useRateCardStore.subscribe(() => {
+    rateCardUpdates++;
+    console.log(`[Rate Card Store] Update #${rateCardUpdates}`);
+  });
   
-  // Log performance stats every 30 seconds
   setInterval(() => {
     console.group('Store Performance Stats');
     console.log(`Auth Updates: ${authUpdates}`);
@@ -936,16 +1049,17 @@ if (import.meta.env.DEV) {
     console.log(`Data Updates: ${dataUpdates}`);
     console.log(`Brief Updates: ${briefUpdates}`);
     console.log(`Scripts Updates: ${scriptsUpdates}`);
-    console.log(`Invoice Updates: ${invoiceUpdates}`); // ADD THIS
+    console.log(`Invoice Updates: ${invoiceUpdates}`);
+    console.log(`Rate Card Updates: ${rateCardUpdates}`);
     console.groupEnd();
     
-    // Reset counters
     authUpdates = 0;
     uiUpdates = 0;
     dataUpdates = 0;
     briefUpdates = 0;
     scriptsUpdates = 0;
-    invoiceUpdates = 0; // ADD THIS
+    invoiceUpdates = 0;
+    rateCardUpdates = 0;
   }, 30000);
 }
 
@@ -955,27 +1069,31 @@ export default {
   useDataStore,
   useBriefStore,
   useScriptsStore,
-  useInvoiceStore, // ADD THIS
+  useInvoiceStore,
+  useRateCardStore,
   selectors: {
     auth: authSelectors,
     ui: uiSelectors,
     data: dataSelectors,
     brief: briefSelectors,
     scripts: scriptsSelectors,
-    invoice: invoiceSelectors // ADD THIS
+    invoice: invoiceSelectors,
+    rateCard: rateCardSelectors
   },
   hooks: {
     useCurrentUser,
     useGlobalLoading,
     useIsMobile,
     useTheme,
+    // Briefs
     useBriefState,
+    // Scripts
     useScriptsState,
     useCurrentScript,
     useScriptGeneration,
     useScriptVariations,
     useScriptDealConnection,
-    // Invoice hooks - ADD THESE
+    // Invoices
     useInvoicesState,
     useCurrentInvoice,
     useInvoiceCreation,
@@ -983,21 +1101,31 @@ export default {
     useInvoiceAnalytics,
     usePaymentManagement,
     useInvoiceFiltering,
-    useInvoiceSummary
+    useInvoiceSummary,
+    // Rate Cards
+    useRateCardsState,
+    useCurrentRateCard,
+    useRateCardCreation,
+    // REMOVED: useRateCardFiltering - this function was not defined
   },
   utils: {
     resetAllStores,
     initializeStores,
     debugStores,
+    // Briefs
     initializeBriefWorkflow,
     cleanupBriefStore,
+    // Scripts
     initializeScriptsWorkflow,
     cleanupScriptsStore,
-    // Invoice utilities - ADD THESE
+    // Invoices
     initializeInvoiceWorkflow,
     cleanupInvoiceStore,
     initializeInvoiceCreation,
     canCreateInvoices,
-    canAccessInvoiceAnalytics
+    canAccessInvoiceAnalytics,
+    // Rate Cards
+    initializeRateCardWorkflow,
+    cleanupRateCardStore
   }
 };

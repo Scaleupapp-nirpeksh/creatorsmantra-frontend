@@ -1,14 +1,12 @@
 /**
  * Main Routing Configuration
- * 
- * This file defines all application routes and handles:
+ * * This file defines all application routes and handles:
  * - Route definitions and nested routing
  * - Authentication guards
  * - Code splitting with lazy loading
  * - Route-based layouts
  * - Error boundaries
- * 
- * File: src/routes/index.jsx
+ * * File: src/routes/index.jsx
  */
 
 import React, { Suspense, lazy, useEffect } from 'react';
@@ -66,9 +64,19 @@ const CampaignDetailsPage = lazy(() => import('@/features/performance/pages/Camp
 const ContractsListPage = lazy(() => import('@/features/contracts/pages/ContractsListPage'));
 const ContractDetailsPage = lazy(() => import('@/features/contracts/pages/ContractDetailsPage'));
 
-// Protected Pages - Rate Cards
-const RateCardsListPage = lazy(() => import('@/features/ratecards/pages/RateCardsListPage'));
-const RateCardBuilderPage = lazy(() => import('@/features/ratecards/pages/RateCardBuilderPage'));
+// =======================================================================
+// FIX #1: Corrected import paths from 'ratecards' to 'rateCard'
+// =======================================================================
+const RateCardDashboard = lazy(() => import('@/features/rateCard/pages/RateCardDashboard'));
+const CreateRateCard = lazy(() => import('@/features/rateCard/pages/CreateRateCard'));
+const EditRateCard = lazy(() => import('@/features/rateCard/pages/EditRateCard'));
+const RateCardHistory = lazy(() => import('@/features/rateCard/pages/RateCardHistory'));
+const RateCardAnalytics = lazy(() => import('@/features/rateCard/pages/RateCardAnalytics'));
+const PublicRateCard = lazy(() => import('@/features/rateCard/pages/PublicRateCard'));
+
+// Legacy Rate Card Components (for backward compatibility) - Also corrected
+const RateCardsListPage = lazy(() => import('@/features/rateCard/pages/RateCardsListPage'));
+const RateCardBuilderPage = lazy(() => import('@/features/rateCard/pages/RateCardBuilderPage'));
 
 // Protected Pages - Settings
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'));
@@ -81,7 +89,7 @@ const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 const UnauthorizedPage = lazy(() => import('@/pages/UnauthorizedPage'));
 const ServerErrorPage = lazy(() => import('@/pages/ServerErrorPage'));
 
-// Layouts (to be created next)
+// Layouts
 const MainLayout = lazy(() => import('@/layouts/MainLayout'));
 const AuthLayout = lazy(() => import('@/layouts/AuthLayout'));
 const MinimalLayout = lazy(() => import('@/layouts/MinimalLayout'));
@@ -147,7 +155,6 @@ const ProtectedRoute = ({ children, requiredPermissions = [], requiredSubscripti
     if (!isInitialized) return;
 
     if (!isAuthenticated) {
-      // Save the attempted location for redirect after login
       const from = location.pathname + location.search;
       sessionStorage.setItem('redirectAfterLogin', from);
       
@@ -156,7 +163,6 @@ const ProtectedRoute = ({ children, requiredPermissions = [], requiredSubscripti
       return;
     }
 
-    // Check permissions
     if (requiredPermissions.length > 0) {
       const hasAllPermissions = requiredPermissions.every(permission => 
         hasPermission(permission)
@@ -169,7 +175,6 @@ const ProtectedRoute = ({ children, requiredPermissions = [], requiredSubscripti
       }
     }
 
-    // Check subscription
     if (requiredSubscription.length > 0) {
       if (!hasSubscription(requiredSubscription)) {
         toast.error('Please upgrade your subscription to access this feature');
@@ -210,7 +215,6 @@ const PublicRoute = ({ children }) => {
     if (!isInitialized) return;
 
     if (isAuthenticated) {
-      // Get redirect URL from session storage
       const redirectTo = sessionStorage.getItem('redirectAfterLogin') || '/dashboard';
       sessionStorage.removeItem('redirectAfterLogin');
       navigate(redirectTo, { replace: true });
@@ -280,9 +284,22 @@ const router = createBrowserRouter([
     ]
   },
 
-  // Protected Routes with Main Layout
+  // Public Rate Card Route (No authentication required)
   {
-    path: '/dashboard',
+    path: '/card/:publicId',
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <PublicRateCard />
+      </Suspense>
+    )
+  },
+
+  // =======================================================================
+  // FIX #2: Combined all authenticated routes under a single MainLayout
+  // to ensure proper nesting and route matching.
+  // =======================================================================
+  {
+    path: '/',
     element: (
       <ProtectedRoute>
         <Suspense fallback={<PageLoader />}>
@@ -292,221 +309,211 @@ const router = createBrowserRouter([
     ),
     children: [
       {
-        index: true,
-        element: <DashboardPage />
-      }
-    ]
-  },
-
-  // Deals Routes
-  {
-    path: '/deals',
-    element: (
-      <ProtectedRoute>
-        <Suspense fallback={<PageLoader />}>
-          <MainLayout />
-        </Suspense>
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <DealsListPage />
+        path: 'dashboard',
+        children: [
+          {
+            index: true,
+            element: <DashboardPage />,
+          },
+          // RATE CARDS ROUTES ARE NOW PROPERLY NESTED
+          {
+            path: 'rate-cards',
+            element: (
+              <ProtectedRoute requiredSubscription={['pro', 'elite', 'agency_starter', 'agency_pro']}>
+                <Outlet />
+              </ProtectedRoute>
+            ),
+            children: [
+              {
+                index: true,
+                element: <RateCardDashboard />,
+              },
+              {
+                path: 'create',
+                element: <CreateRateCard />,
+              },
+              {
+                path: ':rateCardId/edit',
+                element: <EditRateCard />,
+              },
+              {
+                path: ':rateCardId/history',
+                element: <RateCardHistory />,
+              },
+              {
+                path: ':rateCardId/analytics',
+                element: (
+                  <ProtectedRoute requiredSubscription={['elite', 'agency_starter', 'agency_pro']}>
+                    <RateCardAnalytics />
+                  </ProtectedRoute>
+                ),
+              },
+            ],
+          },
+        ],
       },
       {
-        path: 'pipeline',
-        element: <DealsPipelinePage />
+        path: 'deals',
+        children: [
+          {
+            index: true,
+            element: <DealsListPage />,
+          },
+          {
+            path: 'pipeline',
+            element: <DealsPipelinePage />,
+          },
+          {
+            path: 'create',
+            element: <CreateDealPage />,
+          },
+          {
+            path: ':dealId',
+            element: <DealDetailsPage />,
+          },
+          {
+            path: ':dealId/edit',
+            element: <CreateDealPage />,
+          },
+        ],
       },
       {
-        path: 'create',
-        element: <CreateDealPage />
+        path: 'invoices',
+        element: (
+          <ProtectedRoute requiredSubscription={['starter', 'pro', 'elite', 'agency_starter', 'agency_pro']}>
+            <Outlet />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: <InvoicesListPage />,
+          },
+          {
+            path: 'create',
+            element: <CreateInvoicePage />,
+          },
+          {
+            path: ':invoiceId',
+            element: <InvoiceDetailsPage />,
+          },
+        ],
       },
       {
-        path: ':dealId',
-        element: <DealDetailsPage />
+        path: 'briefs',
+        element: (
+          <ProtectedRoute requiredSubscription={['pro', 'elite', 'agency_starter', 'agency_pro']}>
+            <Outlet />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: <BriefsListPage />,
+          },
+          {
+            path: 'create',
+            element: <CreateBriefPage />,
+          },
+          {
+            path: ':briefId',
+            element: <BriefDetailsPage />,
+          },
+        ],
       },
       {
-        path: ':dealId/edit',
-        element: <CreateDealPage />
-      }
-    ]
-  },
-
-  // Invoices Routes
-  {
-    path: '/invoices',
-    element: (
-      <ProtectedRoute requiredSubscription={['starter', 'pro', 'elite', 'agency_starter', 'agency_pro']}>
-        <Suspense fallback={<PageLoader />}>
-          <MainLayout />
-        </Suspense>
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <InvoicesListPage />
-      },
-      {
-        path: 'create',
-        element: <CreateInvoicePage />
-      },
-      {
-        path: ':invoiceId',
-        element: <InvoiceDetailsPage />
-      }
-    ]
-  },
-
-  // Briefs Routes
-  {
-    path: '/briefs',
-    element: (
-      <ProtectedRoute requiredSubscription={['pro', 'elite', 'agency_starter', 'agency_pro']}>
-        <Suspense fallback={<PageLoader />}>
-          <MainLayout />
-        </Suspense>
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <BriefsListPage />
-      },
-      {
-        path: 'create',
-        element: <CreateBriefPage />
-      },
-      {
-        path: ':briefId',
-        element: <BriefDetailsPage />
-      }
-    ]
-  },
-
-  // Analytics Routes
-  {
-    path: '/analytics',
-    element: (
-      <ProtectedRoute requiredSubscription={['pro', 'elite', 'agency_starter', 'agency_pro']}>
-        <Suspense fallback={<PageLoader />}>
-          <MainLayout />
-        </Suspense>
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <AnalyticsDashboardPage />
-      },
-      {
-        path: 'revenue',
-        element: <RevenueAnalyticsPage />
+        path: 'analytics',
+        element: (
+          <ProtectedRoute requiredSubscription={['pro', 'elite', 'agency_starter', 'agency_pro']}>
+            <Outlet />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: <AnalyticsDashboardPage />,
+          },
+          {
+            path: 'revenue',
+            element: <RevenueAnalyticsPage />,
+          },
+          {
+            path: 'performance',
+            element: <PerformanceAnalyticsPage />,
+          },
+        ],
       },
       {
         path: 'performance',
-        element: <PerformanceAnalyticsPage />
-      }
-    ]
-  },
-
-  // Performance Routes
-  {
-    path: '/performance',
-    element: (
-      <ProtectedRoute requiredSubscription={['pro', 'elite', 'agency_starter', 'agency_pro']}>
-        <Suspense fallback={<PageLoader />}>
-          <MainLayout />
-        </Suspense>
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <CampaignsListPage />
+        element: (
+          <ProtectedRoute requiredSubscription={['pro', 'elite', 'agency_starter', 'agency_pro']}>
+            <Outlet />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: <CampaignsListPage />,
+          },
+          {
+            path: ':campaignId',
+            element: <CampaignDetailsPage />,
+          },
+        ],
       },
       {
-        path: ':campaignId',
-        element: <CampaignDetailsPage />
-      }
-    ]
-  },
-
-  // Contracts Routes
-  {
-    path: '/contracts',
-    element: (
-      <ProtectedRoute>
-        <Suspense fallback={<PageLoader />}>
-          <MainLayout />
-        </Suspense>
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <ContractsListPage />
+        path: 'contracts',
+        children: [
+          {
+            index: true,
+            element: <ContractsListPage />,
+          },
+          {
+            path: ':contractId',
+            element: <ContractDetailsPage />,
+          },
+        ],
       },
+      // Legacy Rate Cards Routes (for backward compatibility)
       {
-        path: ':contractId',
-        element: <ContractDetailsPage />
-      }
-    ]
-  },
-
-  // Rate Cards Routes
-  {
-    path: '/ratecards',
-    element: (
-      <ProtectedRoute>
-        <Suspense fallback={<PageLoader />}>
-          <MainLayout />
-        </Suspense>
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <RateCardsListPage />
+        path: 'ratecards',
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/dashboard/rate-cards" replace />,
+          },
+          {
+            path: 'builder',
+            element: <Navigate to="/dashboard/rate-cards/create" replace />,
+          },
+          {
+            path: ':rateCardId/edit',
+            element: <Navigate to="/dashboard/rate-cards/:rateCardId/edit" replace />,
+          },
+        ],
       },
+      // Note: Removed the duplicate '/rate-cards' route block
       {
-        path: 'builder',
-        element: <RateCardBuilderPage />
+        path: 'settings',
+        children: [
+          {
+            index: true,
+            element: <SettingsPage />,
+          },
+          {
+            path: 'profile',
+            element: <ProfilePage />,
+          },
+          {
+            path: 'subscription',
+            element: <SubscriptionPage />,
+          },
+          {
+            path: 'team',
+            element: <TeamPage />,
+          },
+        ],
       },
-      {
-        path: ':rateCardId/edit',
-        element: <RateCardBuilderPage />
-      }
-    ]
-  },
-
-  // Settings Routes
-  {
-    path: '/settings',
-    element: (
-      <ProtectedRoute>
-        <Suspense fallback={<PageLoader />}>
-          <MainLayout />
-        </Suspense>
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <SettingsPage />
-      },
-      {
-        path: 'profile',
-        element: <ProfilePage />
-      },
-      {
-        path: 'subscription',
-        element: <SubscriptionPage />
-      },
-      {
-        path: 'team',
-        element: <TeamPage />
-      }
     ]
   },
 

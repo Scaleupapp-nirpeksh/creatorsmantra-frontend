@@ -1,15 +1,14 @@
 /**
  * Data Store - Global state management for business data
- * 
- * This store manages:
+ * * This store manages:
  * - Deals data with caching
  * - Invoices data with caching
  * - Briefs data with caching
  * - Analytics data with caching
+ * - Rate Cards data with caching // New addition
  * - Cache invalidation
  * - Optimistic updates
- * 
- * File: src/store/dataStore.js
+ * * File: src/store/dataStore.js
  */
 
 import { create } from 'zustand';
@@ -21,7 +20,7 @@ import {
   analyticsAPI,
   performanceAPI,
   contractsAPI,
-  rateCardsAPI 
+  rateCardAPI 
 } from '@/api/endpoints';
 import toast from 'react-hot-toast';
 
@@ -152,17 +151,15 @@ const useDataStore = create(
     },
     
     // ============================================
-    // Rate Cards State
+    // Rate Cards State (New Addition)
     // ============================================
     rateCards: {
       list: [],
       byId: {},
-      templates: [],
-      categories: [],
-      platforms: [],
+      pagination: { page: 1, limit: 10, total: 0, pages: 1 },
       lastFetch: null,
       isLoading: false,
-      error: null
+      error: null,
     },
     
     // ============================================
@@ -562,13 +559,99 @@ const useDataStore = create(
     },
     
     // ============================================
+    // Rate Cards Actions (New Addition)
+    // ============================================
+    fetchRateCards: async (params, force = false) => {
+      if (!force && get().isCacheValid('rateCards', CACHE_DURATION.SHORT)) {
+        return;
+      }
+      set(state => ({
+        rateCards: { ...state.rateCards, isLoading: true, error: null }
+      }));
+      try {
+        const response = await rateCardAPI.getRateCards(params);
+        if (response.success) {
+          const byId = response.data.rateCards.reduce((acc, card) => {
+            acc[card._id] = card;
+            return acc;
+          }, {});
+          set(state => ({
+            rateCards: {
+              ...state.rateCards,
+              list: response.data.rateCards,
+              byId: { ...state.rateCards.byId, ...byId },
+              pagination: response.data.pagination,
+              isLoading: false,
+              lastFetch: new Date().toISOString(),
+            },
+          }));
+        } else {
+          throw new Error(response.message);
+        }
+      } catch (error) {
+        set(state => ({
+          rateCards: { ...state.rateCards, isLoading: false, error: error.message }
+        }));
+        toast.error(error.message || 'Failed to fetch rate cards.');
+      }
+    },
+
+    createRateCard: async (data) => {
+      set(state => ({ rateCards: { ...state.rateCards, isLoading: true } }));
+      try {
+        const response = await rateCardAPI.createRateCard(data);
+        if (response.success) {
+          toast.success('Rate card created successfully!');
+          get().invalidateCache('rateCards');
+          // Refetch to get the latest list
+          await get().fetchRateCards({}, true);
+          return { success: true, data: response.data };
+        } else {
+          throw new Error(response.message);
+        }
+      } catch (error) {
+        toast.error(error.message || 'Failed to create rate card.');
+        set(state => ({ rateCards: { ...state.rateCards, isLoading: false } }));
+        return { success: false, error: error.message };
+      }
+    },
+
+    deleteRateCard: async (id) => {
+      try {
+        const response = await rateCardAPI.deleteRateCard(id);
+        if (response.success) {
+          toast.success('Rate card deleted.');
+          set(state => {
+            const newList = state.rateCards.list.filter(rc => rc._id !== id);
+            const newById = { ...state.rateCards.byId };
+            delete newById[id];
+            return {
+              rateCards: {
+                ...state.rateCards,
+                list: newList,
+                byId: newById,
+              },
+            };
+          });
+          return { success: true };
+        } else {
+          throw new Error(response.message);
+        }
+      } catch (error) {
+        toast.error(error.message || 'Could not delete rate card.');
+        return { success: false, error: error.message };
+      }
+    },
+    
+    // ============================================
     // Global Actions
     // ============================================
     refreshAllData: async () => {
       const promises = [
         get().fetchDeals(true),
         get().fetchInvoices(true),
-        get().fetchAnalyticsDashboard('month', true)
+        get().fetchAnalyticsDashboard('month', true),
+        get().fetchRateCards({}, true), // New
       ];
       
       try {
@@ -587,7 +670,7 @@ const useDataStore = create(
         analytics: get().analytics,
         performance: get().performance,
         contracts: get().contracts,
-        rateCards: get().rateCards
+        rateCards: get().rateCards // New
       });
     }
   }))
