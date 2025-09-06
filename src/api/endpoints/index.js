@@ -13,7 +13,7 @@ export { invoicesAPI, invoiceHelpers } from './invoices';
 export { briefsAPI, briefHelpers } from './briefs';
 export { analyticsAPI } from './analytics';
 export { performanceAPI } from './performance';
-export { contractsAPI } from './contracts';
+export { contractsAPI, contractHelpers } from './contracts';
 export { subscriptionsAPI } from './subscriptions';
 export { scriptsAPI } from './scripts';
 export { rateCardAPI } from './ratecards'; 

@@ -17,6 +17,7 @@ import useBriefStore from './briefStore';
 import useScriptsStore from './scriptsStore';
 import useInvoiceStore from './invoiceStore';
 import useRateCardStore from './ratecardStore';
+import useContractsStore from './contractsStore';
 
 // ============================================
 // Store Selectors (for optimized re-renders)
@@ -236,6 +237,46 @@ export const rateCardSelectors = {
   hasCurrentRateCard: (state) => !!state.currentRateCard
 };
 
+/**
+ * Contracts Selectors
+ */
+export const contractsSelectors = {
+  // Core contract data
+  contracts: (state) => state.contracts,
+  currentContract: (state) => state.currentContract,
+  totalContracts: (state) => state.totalContracts,
+  currentPage: (state) => state.currentPage,
+  totalPages: (state) => state.totalPages,
+
+  // Filters and search
+  filters: (state) => state.filters,
+
+  // Loading states
+  isLoading: (state) => state.isLoading,
+  isLoadingContract: (state) => state.isLoadingContract,
+  isLoadingAnalytics: (state) => state.isLoadingAnalytics,
+  isAnalyzing: (state) => state.isAnalyzing,
+
+  // Upload state
+  uploadProgress: (state) => state.uploadProgress,
+  isUploading: (state) => state.isUploading,
+
+  // Analytics and features
+  analytics: (state) => state.analytics,
+  analysisStatus: (state) => state.analysisStatus,
+  uploadLimits: (state) => state.uploadLimits,
+  activityFeed: (state) => state.activityFeed,
+
+  // Helpers
+  hasCurrentContract: (state) => !!state.currentContract,
+  currentContractStatus: (state) => state.currentContract?.status,
+  currentContractRiskLevel: (state) => state.currentContract?.riskLevel,
+  currentContractRiskScore: (state) => state.currentContract?.riskScore,
+  canUploadMore: (state) => {
+    const limits = state.uploadLimits;
+    return !limits || limits.monthlyLimit === -1 || limits.currentUsage < limits.monthlyLimit;
+  }
+};
 
 // ============================================
 // Store Hooks (for common combinations)
@@ -263,8 +304,9 @@ export const useGlobalLoading = () => {
   const scriptsLoading = useScriptsStore(scriptsSelectors.isLoading);
   const invoicesLoading = useInvoiceStore(invoiceSelectors.isLoading);
   const rateCardsLoading = useRateCardStore(rateCardSelectors.isLoading);
+  const contractsLoading = useContractsStore(contractsSelectors.isLoading);
   
-  return authLoading || uiLoading || dealsLoading || briefsLoading || scriptsLoading || invoicesLoading || rateCardsLoading;
+  return authLoading || uiLoading || dealsLoading || briefsLoading || scriptsLoading || invoicesLoading || rateCardsLoading || contractsLoading;
 };
 
 /**
@@ -307,6 +349,20 @@ export const useInvoicesState = () => {
 };
 
 /**
+ * Use contracts state with common data
+ */
+export const useContractsState = () => {
+  const contracts = useContractsStore(contractsSelectors.contracts);
+  const isLoading = useContractsStore(contractsSelectors.isLoading);
+  const filters = useContractsStore(contractsSelectors.filters);
+  const currentPage = useContractsStore(contractsSelectors.currentPage);
+  const totalPages = useContractsStore(contractsSelectors.totalPages);
+  const totalContracts = useContractsStore(contractsSelectors.totalContracts);
+  
+  return { contracts, isLoading, filters, currentPage, totalPages, totalContracts };
+};
+
+/**
  * Use current invoice with all related state
  */
 export const useCurrentInvoice = () => {
@@ -330,6 +386,98 @@ export const useCurrentInvoice = () => {
     deleteInvoice,
     generatePDF,
     clearInvoice
+  };
+};
+
+/**
+ * Use current contract with all related state
+ */
+export const useCurrentContract = () => {
+  const contract = useContractsStore(contractsSelectors.currentContract);
+  const isLoading = useContractsStore(contractsSelectors.isLoadingContract);
+  const isAnalyzing = useContractsStore(contractsSelectors.isAnalyzing);
+  
+  // Actions
+  const fetchContract = useContractsStore(state => state.fetchContract);
+  const updateStatus = useContractsStore(state => state.updateContractStatus);
+  const deleteContract = useContractsStore(state => state.deleteContract);
+  const analyzeContract = useContractsStore(state => state.analyzeContract);
+  const clearContract = useContractsStore(state => state.clearCurrentContract);
+  
+  return {
+    contract,
+    isLoading,
+    isAnalyzing,
+    fetchContract,
+    updateStatus,
+    deleteContract,
+    analyzeContract,
+    clearContract
+  };
+};
+
+/**
+ * Use contract upload functionality
+ */
+export const useContractUpload = () => {
+  const uploadProgress = useContractsStore(contractsSelectors.uploadProgress);
+  const isUploading = useContractsStore(contractsSelectors.isUploading);
+  const uploadLimits = useContractsStore(contractsSelectors.uploadLimits);
+  const canUpload = useContractsStore(contractsSelectors.canUploadMore);
+  
+  // Actions
+  const uploadContract = useContractsStore(state => state.uploadContract);
+  const fetchUploadLimits = useContractsStore(state => state.fetchUploadLimits);
+  
+  return {
+    uploadProgress,
+    isUploading,
+    uploadLimits,
+    canUpload,
+    uploadContract,
+    fetchUploadLimits
+  };
+};
+
+/**
+ * Use contract analytics
+ */
+export const useContractAnalytics = () => {
+  const analytics = useContractsStore(contractsSelectors.analytics);
+  const isLoading = useContractsStore(contractsSelectors.isLoadingAnalytics);
+  
+  // Actions
+  const fetchAnalytics = useContractsStore(state => state.fetchDashboardAnalytics);
+  
+  return {
+    analytics,
+    isLoading,
+    fetchAnalytics
+  };
+};
+
+/**
+ * Use contract filters and pagination
+ */
+export const useContractFiltering = () => {
+  const filters = useContractsStore(contractsSelectors.filters);
+  const currentPage = useContractsStore(contractsSelectors.currentPage);
+  const totalPages = useContractsStore(contractsSelectors.totalPages);
+  
+  // Actions
+  const updateFilters = useContractsStore(state => state.updateFilters);
+  const resetFilters = useContractsStore(state => state.resetFilters);
+  const searchContracts = useContractsStore(state => state.searchContracts);
+  const fetchContracts = useContractsStore(state => state.fetchContracts);
+  
+  return {
+    filters,
+    currentPage,
+    totalPages,
+    updateFilters,
+    resetFilters,
+    searchContracts,
+    fetchContracts
   };
 };
 
@@ -627,6 +775,7 @@ export const resetAllStores = () => {
   useScriptsStore.getState().reset();
   useInvoiceStore.getState().reset();
   useRateCardStore.getState().reset();
+  useContractsStore.getState().reset();
 };
 
 /**
@@ -652,6 +801,9 @@ export const initializeStores = async () => {
   // Initialize invoice store
   await useInvoiceStore.getState().init();
 
+  // Initialize contracts upload limits
+  await useContractsStore.getState().fetchUploadLimits();
+
   // Rate card store does not have an explicit init function
 };
 
@@ -668,6 +820,7 @@ export const debugStores = () => {
     console.log('Scripts Store:', useScriptsStore.getState());
     console.log('Invoice Store:', useInvoiceStore.getState());
     console.log('Rate Card Store:', useRateCardStore.getState());
+    console.log('Contracts Store:', useContractsStore.getState());
     console.groupEnd();
   }
 };
@@ -777,6 +930,46 @@ export const subscribeToCurrentRateCard = (callback) => {
 };
 
 /**
+ * Subscribe to contracts changes
+ */
+export const subscribeToContractsChanges = (callback) => {
+  return useContractsStore.subscribe(
+    (state) => state.contracts,
+    callback
+  );
+};
+
+/**
+ * Subscribe to current contract changes
+ */
+export const subscribeToCurrentContract = (callback) => {
+  return useContractsStore.subscribe(
+    (state) => state.currentContract,
+    callback
+  );
+};
+
+/**
+ * Subscribe to contract analysis progress
+ */
+export const subscribeToContractAnalysis = (callback) => {
+  return useContractsStore.subscribe(
+    (state) => state.isAnalyzing,
+    callback
+  );
+};
+
+/**
+ * Subscribe to contract upload progress
+ */
+export const subscribeToContractUpload = (callback) => {
+  return useContractsStore.subscribe(
+    (state) => state.uploadProgress,
+    callback
+  );
+};
+
+/**
  * Subscribe to AI extraction progress
  */
 export const subscribeToAIProgress = (callback) => {
@@ -798,7 +991,8 @@ export {
   useBriefStore, 
   useScriptsStore, 
   useInvoiceStore,
-  useRateCardStore
+  useRateCardStore,
+  useContractsStore
 };
 
 // Export store provider for app initialization
@@ -831,6 +1025,9 @@ export const useStoreInitialization = () => {
     
     // Initialize invoice store
     useInvoiceStore.getState().init();
+    
+    // Initialize contracts upload limits
+    useContractsStore.getState().fetchUploadLimits();
     
     // Debug stores in development
     if (import.meta.env.DEV) {
@@ -940,6 +1137,29 @@ export const cleanupRateCardStore = () => {
 };
 
 /**
+ * Initialize contracts workflow for a new user session
+ */
+export const initializeContractsWorkflow = async () => {
+  const contractsStore = useContractsStore.getState();
+  const authStore = useAuthStore.getState();
+
+  if (authStore.canAccessFeature('contracts')) {
+    await Promise.allSettled([
+      contractsStore.fetchUploadLimits(),
+      contractsStore.fetchDashboardAnalytics(),
+      contractsStore.fetchContracts()
+    ]);
+  }
+};
+
+/**
+ * Clean up contracts store on logout
+ */
+export const cleanupContractsStore = () => {
+  useContractsStore.getState().reset();
+};
+
+/**
  * Use rate card summary statistics
  */
 export const useRateCardSummary = () => {
@@ -950,6 +1170,27 @@ export const useRateCardSummary = () => {
     activeCount: rateCards.filter(rc => rc.status === 'active').length,
     draftCount: rateCards.filter(rc => rc.status === 'draft').length,
     archivedCount: rateCards.filter(rc => rc.status === 'archived').length
+  };
+};
+
+/**
+ * Use contract summary statistics
+ */
+export const useContractSummary = () => {
+  const contracts = useContractsStore(contractsSelectors.contracts);
+  const analytics = useContractsStore(contractsSelectors.analytics);
+  
+  return {
+    totalContracts: contracts.length,
+    draftCount: contracts.filter(c => c.status === 'draft').length,
+    activeCount: contracts.filter(c => c.status === 'active').length,
+    completedCount: contracts.filter(c => c.status === 'completed').length,
+    cancelledCount: contracts.filter(c => c.status === 'cancelled').length,
+    highRiskCount: contracts.filter(c => c.riskLevel === 'high').length,
+    mediumRiskCount: contracts.filter(c => c.riskLevel === 'medium').length,
+    lowRiskCount: contracts.filter(c => c.riskLevel === 'low').length,
+    avgRiskScore: analytics?.avgRiskScore || 0,
+    recentUploads: analytics?.recentUploads || 0
   };
 };
 
@@ -972,6 +1213,24 @@ export const canCreateInvoices = () => {
 export const canAccessInvoiceAnalytics = () => {
   const authStore = useAuthStore.getState();
   return authStore.canAccessFeature('analytics') && 
+         authStore.hasSubscription(['pro', 'elite', 'agency_starter', 'agency_pro']);
+};
+
+/**
+ * Helper to check if user can upload contracts
+ */
+export const canUploadContracts = () => {
+  const authStore = useAuthStore.getState();
+  return authStore.canAccessFeature('contracts') && 
+         authStore.hasSubscription(['starter', 'pro', 'elite', 'agency_starter', 'agency_pro']);
+};
+
+/**
+ * Helper to check if user can access contract analytics
+ */
+export const canAccessContractAnalytics = () => {
+  const authStore = useAuthStore.getState();
+  return authStore.canAccessFeature('contracts') && 
          authStore.hasSubscription(['pro', 'elite', 'agency_starter', 'agency_pro']);
 };
 
@@ -1006,6 +1265,7 @@ if (import.meta.env.DEV) {
   let scriptsUpdates = 0;
   let invoiceUpdates = 0;
   let rateCardUpdates = 0;
+  let contractsUpdates = 0;
   
   useAuthStore.subscribe(() => {
     authUpdates++;
@@ -1042,6 +1302,11 @@ if (import.meta.env.DEV) {
     console.log(`[Rate Card Store] Update #${rateCardUpdates}`);
   });
   
+  useContractsStore.subscribe(() => {
+    contractsUpdates++;
+    console.log(`[Contracts Store] Update #${contractsUpdates}`);
+  });
+  
   setInterval(() => {
     console.group('Store Performance Stats');
     console.log(`Auth Updates: ${authUpdates}`);
@@ -1051,6 +1316,7 @@ if (import.meta.env.DEV) {
     console.log(`Scripts Updates: ${scriptsUpdates}`);
     console.log(`Invoice Updates: ${invoiceUpdates}`);
     console.log(`Rate Card Updates: ${rateCardUpdates}`);
+    console.log(`Contracts Updates: ${contractsUpdates}`);
     console.groupEnd();
     
     authUpdates = 0;
@@ -1060,6 +1326,7 @@ if (import.meta.env.DEV) {
     scriptsUpdates = 0;
     invoiceUpdates = 0;
     rateCardUpdates = 0;
+    contractsUpdates = 0;
   }, 30000);
 }
 
@@ -1071,6 +1338,7 @@ export default {
   useScriptsStore,
   useInvoiceStore,
   useRateCardStore,
+  useContractsStore,
   selectors: {
     auth: authSelectors,
     ui: uiSelectors,
@@ -1078,7 +1346,8 @@ export default {
     brief: briefSelectors,
     scripts: scriptsSelectors,
     invoice: invoiceSelectors,
-    rateCard: rateCardSelectors
+    rateCard: rateCardSelectors,
+    contracts: contractsSelectors
   },
   hooks: {
     useCurrentUser,
@@ -1106,7 +1375,13 @@ export default {
     useRateCardsState,
     useCurrentRateCard,
     useRateCardCreation,
-    // REMOVED: useRateCardFiltering - this function was not defined
+    // Contracts
+    useContractsState,
+    useCurrentContract,
+    useContractUpload,
+    useContractAnalytics,
+    useContractFiltering,
+    useContractSummary,
   },
   utils: {
     resetAllStores,
@@ -1126,6 +1401,11 @@ export default {
     canAccessInvoiceAnalytics,
     // Rate Cards
     initializeRateCardWorkflow,
-    cleanupRateCardStore
+    cleanupRateCardStore,
+    // Contracts
+    initializeContractsWorkflow,
+    cleanupContractsStore,
+    canUploadContracts,
+    canAccessContractAnalytics
   }
 };

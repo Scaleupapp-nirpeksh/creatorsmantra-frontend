@@ -17,6 +17,7 @@ import useDealsStore from './store/dealsStore';
 import useInvoiceStore from './store/invoiceStore';
 import useScriptsStore from './store/scriptsStore';
 import useRateCardStore from './store/ratecardStore'; 
+import useContractsStore from './store/contractsStore';
 
 // Layout imports
 import MainLayout from './layouts/MainLayout';
@@ -61,6 +62,10 @@ const RateCardHistory = lazy(() => import('./features/rateCard/pages/RateCardHis
 const RateCardAnalytics = lazy(() => import('./features/rateCard/pages/RateCardAnalytics'));
 const PublicRateCard = lazy(() => import('./features/rateCard/pages/PublicRateCard'));
 
+// Lazy load Contracts Module pages
+const ContractsDashboard = lazy(() => import('./features/contracts/pages/ContractsDashboard'));
+const ContractDetails = lazy(() => import('./features/contracts/pages/ContractDetails'));
+
 // Import styles
 import './styles/index.css';
 
@@ -82,6 +87,7 @@ function App() {
   const { init: initInvoices } = useInvoiceStore();
   const { initialize: initScripts } = useScriptsStore();
   const { clearCurrentRateCard } = useRateCardStore();
+  const { init: initContracts } = useContractsStore();
 
   // Initialize app
   useEffect(() => {
@@ -124,8 +130,9 @@ function App() {
       initDeals();
       initInvoices();
       initScripts();
+      initContracts(); // Add this line
     }
-  }, [isAuthenticated, initDeals, initInvoices, initScripts]);
+  }, [isAuthenticated, initDeals, initInvoices, initScripts, initContracts]);
 
   if (!appReady || !isInitialized) {
     return (
@@ -328,18 +335,16 @@ function App() {
 
                 {/* Contracts Routes */}
                 <Route path="/contracts">
-                  <Route index element={<div style={styles.comingSoon}>
-                    <h2>Contracts List</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path="new" element={<div style={styles.comingSoon}>
-                    <h2>New Contract</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path=":contractId" element={<div style={styles.comingSoon}>
-                    <h2>Contract Details</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
+                  <Route index element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ContractsDashboard />
+                    </Suspense>
+                  } />
+                  <Route path=":contractId" element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ContractDetails />
+                    </Suspense>
+                  } />
                 </Route>
 
                 {/* Profile Routes */}

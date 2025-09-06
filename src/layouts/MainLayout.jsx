@@ -1,5 +1,5 @@
 /**
- * Main Layout Component - Complete with Deals, Invoice, Scripts & Rate Cards Modules
+ * Main Layout Component - Complete with Deals, Invoice, Scripts, Rate Cards & Contracts Modules
  * Path: src/layouts/MainLayout.jsx
  */
 
@@ -49,13 +49,18 @@ import {
   Download,
   QrCode,
   Globe,
-  Edit3
+  Edit3,
+  Upload,
+  FileCheck,
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '../store';
 import useDealsStore from '../store/dealsStore';
 import useInvoiceStore from '../store/invoiceStore';
 import useScriptsStore from '../store/scriptsStore';
 import useRateCardStore from '../store/ratecardStore';
+import useContractsStore from '../store/contractsStore';
 import toast from 'react-hot-toast';
 
 const MainLayout = () => {
@@ -83,6 +88,7 @@ const MainLayout = () => {
   const { invoices, dashboard } = useInvoiceStore();
   const { scripts = [] } = useScriptsStore();
   const { rateCards } = useRateCardStore();
+  const { contracts, analytics: contractsAnalytics, isUploading } = useContractsStore();
   
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -115,10 +121,34 @@ const MainLayout = () => {
     card.sharing?.expiresAt && new Date(card.sharing.expiresAt) < new Date()
   ).length;
 
+  // Calculate contracts notifications
+  const draftContractsCount = contracts.filter(contract => 
+    contract.status === 'draft'
+  ).length;
+  
+  const highRiskContractsCount = contracts.filter(contract => 
+    contract.riskLevel === 'high' && contract.status === 'active'
+  ).length;
+  
+  const pendingAnalysisCount = contracts.filter(contract => 
+    contract.analysisStatus === 'pending' || contract.analysisStatus === 'processing'
+  ).length;
+  
+  const expiredContractsCount = contracts.filter(contract => 
+    contract.expiresAt && new Date(contract.expiresAt) < new Date() && 
+    contract.status === 'active'
+  ).length;
+
+  // Total contracts needing attention
+  const contractsNeedingAttentionCount = highRiskContractsCount + 
+    pendingAnalysisCount + 
+    expiredContractsCount;
+
   // Total notification count
   const totalNotificationCount = overdueInvoicesCount + 
     scriptsNeedingAttentionCount + 
-    expiredRateCardsCount;
+    expiredRateCardsCount +
+    contractsNeedingAttentionCount;
   
   const menuItems = [
     {
@@ -214,33 +244,31 @@ const MainLayout = () => {
         }
       ]
     },
-    // Find the rate-cards menu item in your menuItems array and replace it with this:
-{
-  id: 'rate-cards',
-  label: 'Rate Cards',
-  icon: CreditCard,
-  path: '/dashboard/rate-cards',
-  badge: expiredRateCardsCount > 0 ? 
-    { count: expiredRateCardsCount, type: 'warning' } : 
-    draftRateCardsCount > 0 ? 
-    { count: draftRateCardsCount, type: 'primary' } : null,
-  premium: true,
-  subItems: [
-    { 
-      id: 'rate-cards-dashboard', 
-      label: 'My Rate Cards', 
-      path: '/dashboard/rate-cards', 
-      icon: List 
+    {
+      id: 'rate-cards',
+      label: 'Rate Cards',
+      icon: CreditCard,
+      path: '/dashboard/rate-cards',
+      badge: expiredRateCardsCount > 0 ? 
+        { count: expiredRateCardsCount, type: 'warning' } : 
+        draftRateCardsCount > 0 ? 
+        { count: draftRateCardsCount, type: 'primary' } : null,
+      premium: true,
+      subItems: [
+        { 
+          id: 'rate-cards-dashboard', 
+          label: 'My Rate Cards', 
+          path: '/dashboard/rate-cards', 
+          icon: List 
+        },
+        { 
+          id: 'rate-cards-create', 
+          label: 'Create Rate Card', 
+          path: '/dashboard/rate-cards/create', 
+          icon: Plus 
+        }
+      ]
     },
-    { 
-      id: 'rate-cards-create', 
-      label: 'Create Rate Card', 
-      path: '/dashboard/rate-cards/create', 
-      icon: Plus 
-    }
-    // Removed 'Templates' and 'Analytics' tabs
-  ]
-},
     {
       id: 'performance',
       label: 'Performance',
@@ -258,10 +286,31 @@ const MainLayout = () => {
       label: 'Contracts',
       icon: Shield,
       path: '/contracts',
+      badge: contractsNeedingAttentionCount > 0 ? { 
+        count: contractsNeedingAttentionCount, 
+        type: highRiskContractsCount > 0 || expiredContractsCount > 0 ? 'warning' : 'primary' 
+      } : null,
       premium: true,
       subItems: [
-        { id: 'contracts-list', label: 'All Contracts', path: '/contracts', icon: List },
-        { id: 'contracts-new', label: 'New Contract', path: '/contracts/new', icon: Plus }
+        { 
+          id: 'contracts-list', 
+          label: 'All Contracts', 
+          path: '/contracts', 
+          icon: List 
+        },
+        { 
+          id: 'contracts-upload', 
+          label: 'Upload Contract', 
+          path: '/contracts?action=upload', 
+          icon: Upload 
+        },
+        { 
+          id: 'contracts-analytics', 
+          label: 'Analytics', 
+          path: '/contracts?tab=analytics', 
+          icon: PieChart,
+          premium: subscription?.tier === 'starter'
+        }
       ]
     }
   ];
@@ -320,6 +369,12 @@ const MainLayout = () => {
     if (user && rateCardStore.fetchRateCards) {
       rateCardStore.fetchRateCards();
     }
+
+    // Initialize contracts data when component mounts
+    const contractsStore = useContractsStore.getState();
+    if (user && contractsStore.fetchContracts) {
+      contractsStore.fetchContracts();
+    }
   }, [user]);
   
   useEffect(() => {
@@ -374,6 +429,9 @@ const MainLayout = () => {
         if (rateCardStore.setSearchQuery) {
           rateCardStore.setSearchQuery(searchQuery);
         }
+      } else if (location.pathname.startsWith('/contracts')) {
+        const contractsStore = useContractsStore.getState();
+        contractsStore.searchContracts(searchQuery);
       } else {
         navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
       }
@@ -410,6 +468,51 @@ const MainLayout = () => {
           >
             <Plus size={18} />
           </button>
+        </div>
+      );
+    }
+    
+    if (path.startsWith('/contracts')) {
+      return (
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => {
+              // Trigger upload modal or navigate to upload section
+              const contractsStore = useContractsStore.getState();
+              if (contractsStore.canUploadMore && contractsStore.canUploadMore()) {
+                // You can trigger a modal here or navigate to upload
+                // For now, we'll add a URL parameter to trigger upload UI
+                navigate('/contracts?action=upload');
+              } else {
+                toast.error('Upload limit reached. Please upgrade your plan.');
+              }
+            }}
+            style={{
+              ...styles.iconButton,
+              background: isUploading ? 'var(--color-neutral-300)' : 'var(--gradient-primary)',
+              color: 'white',
+              border: 'none',
+              cursor: isUploading ? 'not-allowed' : 'pointer'
+            }}
+            title={isUploading ? 'Upload in progress...' : 'Upload Contract'}
+            disabled={isUploading}
+          >
+            {isUploading ? <Clock size={18} /> : <Upload size={18} />}
+          </button>
+          
+          {contractsAnalytics && (
+            <button
+              onClick={() => navigate('/contracts?tab=analytics')}
+              style={{
+                ...styles.iconButton,
+                background: 'transparent',
+                color: 'var(--color-neutral-700)'
+              }}
+              title="View Analytics"
+            >
+              <BarChart3 size={18} />
+            </button>
+          )}
         </div>
       );
     }
@@ -986,7 +1089,7 @@ const MainLayout = () => {
             <Search size={18} style={styles.searchIcon} />
             <input
               type="text"
-              placeholder="Search deals, invoices, rate cards, scripts, brands..."
+              placeholder="Search deals, invoices, rate cards, scripts, contracts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={styles.searchInput}

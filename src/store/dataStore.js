@@ -1,14 +1,28 @@
 /**
  * Data Store - Global state management for business data
- * * This store manages:
- * - Deals data with caching
- * - Invoices data with caching
- * - Briefs data with caching
- * - Analytics data with caching
- * - Rate Cards data with caching // New addition
- * - Cache invalidation
- * - Optimistic updates
- * * File: src/store/dataStore.js
+ * 
+ * This store manages:
+ * - Deals data with caching and optimistic updates
+ * - Invoices data with caching and pagination  
+ * - Briefs data with caching and filtering
+ * - Analytics data with caching and period management
+ * - Performance data with campaign tracking
+ * - Contracts data with AI analysis and risk assessment
+ * - Rate Cards data with pagination and AI suggestions
+ * - Cache invalidation and refresh mechanisms
+ * - Optimistic updates for better UX
+ * 
+ * Features:
+ * - Multi-level caching with configurable durations
+ * - Optimistic updates with rollback on failure
+ * - Pagination and filtering support
+ * - Error handling with user notifications
+ * - Bulk operations support
+ * - Real-time data synchronization
+ * 
+ * @filepath src/store/dataStore.js
+ * @version 1.0.0
+ * @author CreatorsMantra Frontend Team
  */
 
 import { create } from 'zustand';
@@ -24,18 +38,18 @@ import {
 } from '@/api/endpoints';
 import toast from 'react-hot-toast';
 
-// Cache duration in milliseconds
+// Cache duration in milliseconds - optimized for different data types
 const CACHE_DURATION = {
-  SHORT: 5 * 60 * 1000,    // 5 minutes
-  MEDIUM: 15 * 60 * 1000,   // 15 minutes
-  LONG: 30 * 60 * 1000,     // 30 minutes
-  VERY_LONG: 60 * 60 * 1000 // 1 hour
+  SHORT: 5 * 60 * 1000,    // 5 minutes - frequently changing data
+  MEDIUM: 15 * 60 * 1000,   // 15 minutes - moderately stable data
+  LONG: 30 * 60 * 1000,     // 30 minutes - stable data
+  VERY_LONG: 60 * 60 * 1000 // 1 hour - very stable data like metadata
 };
 
 const useDataStore = create(
   subscribeWithSelector((set, get) => ({
     // ============================================
-    // Deals State
+    // Deals State - Sales pipeline management
     // ============================================
     deals: {
       list: [],
@@ -62,7 +76,7 @@ const useDataStore = create(
     },
     
     // ============================================
-    // Invoices State
+    // Invoices State - Financial document management
     // ============================================
     invoices: {
       list: [],
@@ -87,7 +101,7 @@ const useDataStore = create(
     },
     
     // ============================================
-    // Briefs State
+    // Briefs State - Campaign brief management
     // ============================================
     briefs: {
       list: [],
@@ -111,7 +125,7 @@ const useDataStore = create(
     },
     
     // ============================================
-    // Analytics State
+    // Analytics State - Business intelligence data
     // ============================================
     analytics: {
       dashboard: null,
@@ -126,7 +140,7 @@ const useDataStore = create(
     },
     
     // ============================================
-    // Performance State
+    // Performance State - Campaign performance tracking
     // ============================================
     performance: {
       campaigns: [],
@@ -139,19 +153,36 @@ const useDataStore = create(
     },
     
     // ============================================
-    // Contracts State
+    // Contracts State - Legal document management with AI analysis
     // ============================================
     contracts: {
       list: [],
       byId: {},
       templates: [],
+      analytics: null,
+      uploadLimits: null,
+      activityFeed: [],
       lastFetch: null,
       isLoading: false,
-      error: null
+      error: null,
+      filters: {
+        status: '',
+        brandName: '',
+        riskLevel: '',
+        search: '',
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      },
+      pagination: {
+        page: 1,
+        limit: 20,
+        total: 0,
+        hasMore: false
+      }
     },
     
     // ============================================
-    // Rate Cards State (New Addition)
+    // Rate Cards State - Pricing and package management
     // ============================================
     rateCards: {
       list: [],
@@ -163,7 +194,7 @@ const useDataStore = create(
     },
     
     // ============================================
-    // Cache Management
+    // Cache Management - Intelligent data freshness control
     // ============================================
     isCacheValid: (dataType, duration = CACHE_DURATION.MEDIUM) => {
       const state = get()[dataType];
@@ -183,7 +214,7 @@ const useDataStore = create(
           }
         }));
       } else {
-        // Invalidate all caches
+        // Invalidate all caches for complete data refresh
         const types = ['deals', 'invoices', 'briefs', 'analytics', 'performance', 'contracts', 'rateCards'];
         types.forEach(type => {
           set(state => ({
@@ -197,12 +228,12 @@ const useDataStore = create(
     },
     
     // ============================================
-    // Deals Actions
+    // Deals Actions - Sales pipeline operations
     // ============================================
     fetchDeals: async (force = false) => {
       const state = get().deals;
       
-      // Check cache
+      // Check cache validity for performance optimization
       if (!force && get().isCacheValid('deals', CACHE_DURATION.SHORT)) {
         return { success: true, data: state.list };
       }
@@ -222,7 +253,7 @@ const useDataStore = create(
         if (response.success) {
           const { deals, total, hasMore } = response.data;
           
-          // Create byId map for quick access
+          // Create byId map for O(1) lookups
           const byId = deals.reduce((acc, deal) => {
             acc[deal._id] = deal;
             return acc;
@@ -258,7 +289,7 @@ const useDataStore = create(
     fetchDealById: async (dealId, force = false) => {
       const state = get().deals;
       
-      // Check if we have it in cache
+      // Check cache for individual deal
       if (!force && state.byId[dealId] && get().isCacheValid('deals', CACHE_DURATION.MEDIUM)) {
         return { success: true, data: state.byId[dealId] };
       }
@@ -296,7 +327,7 @@ const useDataStore = create(
         if (response.success) {
           const newDeal = response.data;
           
-          // Optimistically add to store
+          // Optimistic update for immediate UI feedback
           set(state => ({
             deals: {
               ...state.deals,
@@ -306,7 +337,7 @@ const useDataStore = create(
             }
           }));
           
-          // Invalidate cache to fetch fresh data next time
+          // Invalidate cache for fresh data on next fetch
           get().invalidateCache('deals');
           
           return { success: true, data: newDeal };
@@ -322,7 +353,7 @@ const useDataStore = create(
     },
     
     updateDeal: async (dealId, updates) => {
-      // Optimistic update
+      // Optimistic update with rollback capability
       const oldDeal = get().deals.byId[dealId];
       
       set(state => ({
@@ -354,7 +385,7 @@ const useDataStore = create(
         
         throw new Error(response.message || 'Failed to update deal');
       } catch (error) {
-        // Revert optimistic update
+        // Rollback optimistic update on failure
         set(state => ({
           deals: {
             ...state.deals,
@@ -398,12 +429,12 @@ const useDataStore = create(
         }
       }));
       
-      // Fetch with new filters
+      // Auto-fetch with new filters
       get().fetchDeals(true);
     },
     
     // ============================================
-    // Invoices Actions
+    // Invoices Actions - Financial document operations
     // ============================================
     fetchInvoices: async (force = false) => {
       const state = get().invoices;
@@ -519,7 +550,7 @@ const useDataStore = create(
     },
     
     // ============================================
-    // Analytics Actions
+    // Analytics Actions - Business intelligence operations
     // ============================================
     fetchAnalyticsDashboard: async (period = 'month', force = false) => {
       const state = get().analytics;
@@ -559,7 +590,380 @@ const useDataStore = create(
     },
     
     // ============================================
-    // Rate Cards Actions (New Addition)
+    // Contracts Actions - Legal document management with AI
+    // ============================================
+    fetchContracts: async (force = false) => {
+      const state = get().contracts;
+      
+      if (!force && get().isCacheValid('contracts', CACHE_DURATION.SHORT)) {
+        return { success: true, data: state.list };
+      }
+      
+      set(state => ({
+        contracts: { ...state.contracts, isLoading: true, error: null }
+      }));
+      
+      try {
+        const { filters, pagination } = state;
+        const params = {
+          page: pagination.page,
+          limit: pagination.limit,
+          ...filters
+        };
+        
+        const response = await contractsAPI.getContracts(params);
+        
+        if (response.success) {
+          const { contracts, pagination: paginationData } = response.data;
+          
+          // Create optimized lookup map
+          const byId = contracts.reduce((acc, contract) => {
+            acc[contract.id] = contract;
+            return acc;
+          }, {});
+          
+          set(state => ({
+            contracts: {
+              ...state.contracts,
+              list: contracts,
+              byId: { ...state.contracts.byId, ...byId },
+              lastFetch: new Date().toISOString(),
+              isLoading: false,
+              pagination: {
+                ...state.contracts.pagination,
+                total: paginationData.total,
+                hasMore: paginationData.page < paginationData.pages
+              }
+            }
+          }));
+          
+          return { success: true, data: contracts };
+        }
+        
+        throw new Error(response.message || 'Failed to fetch contracts');
+      } catch (error) {
+        set(state => ({
+          contracts: { ...state.contracts, isLoading: false, error: error.message }
+        }));
+        return { success: false, error: error.message };
+      }
+    },
+    
+    fetchContractById: async (contractId, force = false) => {
+      const state = get().contracts;
+      
+      // Efficient cache check for individual contracts
+      if (!force && state.byId[contractId] && get().isCacheValid('contracts', CACHE_DURATION.MEDIUM)) {
+        return { success: true, data: state.byId[contractId] };
+      }
+      
+      try {
+        const response = await contractsAPI.getContract(contractId);
+        
+        if (response.success) {
+          const contract = response.data.contract;
+          
+          set(state => ({
+            contracts: {
+              ...state.contracts,
+              byId: { ...state.contracts.byId, [contractId]: contract }
+            }
+          }));
+          
+          return { success: true, data: contract };
+        }
+        
+        throw new Error(response.message || 'Failed to fetch contract');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    
+    uploadContract: async (formData, onProgress) => {
+      set(state => ({
+        contracts: { ...state.contracts, isLoading: true }
+      }));
+      
+      try {
+        const response = await contractsAPI.uploadContract(formData, onProgress);
+        
+        if (response.success) {
+          const newContract = response.data.contract;
+          
+          // Optimistic addition to contracts list
+          set(state => ({
+            contracts: {
+              ...state.contracts,
+              list: [newContract, ...state.contracts.list],
+              byId: { ...state.contracts.byId, [newContract.id]: newContract },
+              isLoading: false
+            }
+          }));
+          
+          // Invalidate cache for fresh data
+          get().invalidateCache('contracts');
+          
+          return { success: true, data: newContract };
+        }
+        
+        throw new Error(response.message || 'Failed to upload contract');
+      } catch (error) {
+        set(state => ({
+          contracts: { ...state.contracts, isLoading: false }
+        }));
+        return { success: false, error: error.message };
+      }
+    },
+    
+    updateContractStatus: async (contractId, status, notes = '') => {
+      // Optimistic update with rollback support
+      const oldContract = get().contracts.byId[contractId];
+      const updatedContract = { 
+        ...oldContract, 
+        status, 
+        updatedAt: new Date().toISOString() 
+      };
+      
+      set(state => ({
+        contracts: {
+          ...state.contracts,
+          byId: {
+            ...state.contracts.byId,
+            [contractId]: updatedContract
+          },
+          list: state.contracts.list.map(c => 
+            c.id === contractId ? updatedContract : c
+          )
+        }
+      }));
+      
+      try {
+        const response = await contractsAPI.updateContractStatus(contractId, status, notes);
+        
+        if (response.success) {
+          return { success: true };
+        }
+        
+        throw new Error(response.message || 'Failed to update contract status');
+      } catch (error) {
+        // Rollback optimistic update
+        set(state => ({
+          contracts: {
+            ...state.contracts,
+            byId: { ...state.contracts.byId, [contractId]: oldContract },
+            list: state.contracts.list.map(c => 
+              c.id === contractId ? oldContract : c
+            )
+          }
+        }));
+        return { success: false, error: error.message };
+      }
+    },
+    
+    deleteContract: async (contractId) => {
+      try {
+        const response = await contractsAPI.deleteContract(contractId);
+        
+        if (response.success) {
+          set(state => ({
+            contracts: {
+              ...state.contracts,
+              list: state.contracts.list.filter(c => c.id !== contractId),
+              byId: Object.fromEntries(
+                Object.entries(state.contracts.byId).filter(([id]) => id !== contractId)
+              )
+            }
+          }));
+          
+          return { success: true };
+        }
+        
+        throw new Error(response.message || 'Failed to delete contract');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    
+    bulkUpdateContractStatus: async (contractIds, status, notes = '') => {
+      try {
+        const response = await contractsAPI.bulkUpdateStatus(contractIds, status, notes);
+        
+        if (response.success) {
+          const updatedAt = new Date().toISOString();
+          
+          // Bulk update in store
+          set(state => ({
+            contracts: {
+              ...state.contracts,
+              list: state.contracts.list.map(contract =>
+                contractIds.includes(contract.id)
+                  ? { ...contract, status, updatedAt }
+                  : contract
+              ),
+              byId: Object.fromEntries(
+                Object.entries(state.contracts.byId).map(([id, contract]) =>
+                  contractIds.includes(id)
+                    ? [id, { ...contract, status, updatedAt }]
+                    : [id, contract]
+                )
+              )
+            }
+          }));
+          
+          return { success: true };
+        }
+        
+        throw new Error(response.message || 'Failed to bulk update contracts');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    
+    bulkDeleteContracts: async (contractIds) => {
+      try {
+        const response = await contractsAPI.bulkDeleteContracts(contractIds);
+        
+        if (response.success) {
+          set(state => ({
+            contracts: {
+              ...state.contracts,
+              list: state.contracts.list.filter(c => !contractIds.includes(c.id)),
+              byId: Object.fromEntries(
+                Object.entries(state.contracts.byId).filter(([id]) => !contractIds.includes(id))
+              )
+            }
+          }));
+          
+          return { success: true };
+        }
+        
+        throw new Error(response.message || 'Failed to bulk delete contracts');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    
+    fetchContractAnalytics: async (force = false) => {
+      const state = get().contracts;
+      
+      if (!force && state.analytics && get().isCacheValid('contracts', CACHE_DURATION.LONG)) {
+        return { success: true, data: state.analytics };
+      }
+      
+      try {
+        const response = await contractsAPI.getDashboardAnalytics();
+        
+        if (response.success) {
+          set(state => ({
+            contracts: {
+              ...state.contracts,
+              analytics: response.data
+            }
+          }));
+          
+          return { success: true, data: response.data };
+        }
+        
+        throw new Error(response.message || 'Failed to fetch contract analytics');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    
+    fetchUploadLimits: async (force = false) => {
+      const state = get().contracts;
+      
+      if (!force && state.uploadLimits && get().isCacheValid('contracts', CACHE_DURATION.VERY_LONG)) {
+        return { success: true, data: state.uploadLimits };
+      }
+      
+      try {
+        const response = await contractsAPI.getUploadLimits();
+        
+        if (response.success) {
+          set(state => ({
+            contracts: {
+              ...state.contracts,
+              uploadLimits: response.data
+            }
+          }));
+          
+          return { success: true, data: response.data };
+        }
+        
+        throw new Error(response.message || 'Failed to fetch upload limits');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    
+    fetchContractActivityFeed: async (contractId = null, limit = 10, force = false) => {
+      const state = get().contracts;
+      
+      if (!force && state.activityFeed.length > 0 && get().isCacheValid('contracts', CACHE_DURATION.MEDIUM)) {
+        return { success: true, data: state.activityFeed };
+      }
+      
+      try {
+        const response = await contractsAPI.getActivityFeed(contractId, limit);
+        
+        if (response.success) {
+          set(state => ({
+            contracts: {
+              ...state.contracts,
+              activityFeed: response.data.activities
+            }
+          }));
+          
+          return { success: true, data: response.data };
+        }
+        
+        throw new Error(response.message || 'Failed to fetch activity feed');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    
+    setContractFilters: (filters) => {
+      set(state => ({
+        contracts: {
+          ...state.contracts,
+          filters: { ...state.contracts.filters, ...filters },
+          pagination: { ...state.contracts.pagination, page: 1 }
+        }
+      }));
+      
+      // Auto-fetch with new filters
+      get().fetchContracts(true);
+    },
+    
+    searchContracts: (query) => {
+      get().setContractFilters({ search: query });
+    },
+    
+    resetContractFilters: () => {
+      const defaultFilters = {
+        status: '',
+        brandName: '',
+        riskLevel: '',
+        search: '',
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      };
+      
+      set(state => ({
+        contracts: {
+          ...state.contracts,
+          filters: defaultFilters,
+          pagination: { ...state.contracts.pagination, page: 1 }
+        }
+      }));
+      
+      get().fetchContracts(true);
+    },
+    
+    // ============================================
+    // Rate Cards Actions - Pricing package management
     // ============================================
     fetchRateCards: async (params, force = false) => {
       if (!force && get().isCacheValid('rateCards', CACHE_DURATION.SHORT)) {
@@ -644,14 +1048,17 @@ const useDataStore = create(
     },
     
     // ============================================
-    // Global Actions
+    // Global Actions - Cross-feature operations
     // ============================================
     refreshAllData: async () => {
       const promises = [
         get().fetchDeals(true),
         get().fetchInvoices(true),
         get().fetchAnalyticsDashboard('month', true),
-        get().fetchRateCards({}, true), // New
+        get().fetchRateCards({}, true),
+        get().fetchContracts(true),
+        get().fetchContractAnalytics(true),
+        get().fetchUploadLimits(true),
       ];
       
       try {
@@ -664,13 +1071,123 @@ const useDataStore = create(
     
     clearAllData: () => {
       set({
-        deals: get().deals,
-        invoices: get().invoices,
-        briefs: get().briefs,
-        analytics: get().analytics,
-        performance: get().performance,
-        contracts: get().contracts,
-        rateCards: get().rateCards // New
+        deals: {
+          list: [],
+          byId: {},
+          pipeline: {},
+          brands: [],
+          templates: [],
+          metadata: null,
+          lastFetch: null,
+          isLoading: false,
+          error: null,
+          filters: {
+            stage: 'all',
+            brand: 'all',
+            dateRange: 'all',
+            search: ''
+          },
+          pagination: {
+            page: 1,
+            limit: 20,
+            total: 0,
+            hasMore: false
+          }
+        },
+        invoices: {
+          list: [],
+          byId: {},
+          availableDeals: [],
+          taxPreferences: null,
+          dashboard: null,
+          lastFetch: null,
+          isLoading: false,
+          error: null,
+          filters: {
+            status: 'all',
+            dateRange: 'all',
+            search: ''
+          },
+          pagination: {
+            page: 1,
+            limit: 20,
+            total: 0,
+            hasMore: false
+          }
+        },
+        briefs: {
+          list: [],
+          byId: {},
+          templates: [],
+          stats: null,
+          lastFetch: null,
+          isLoading: false,
+          error: null,
+          filters: {
+            status: 'all',
+            type: 'all',
+            search: ''
+          },
+          pagination: {
+            page: 1,
+            limit: 20,
+            total: 0,
+            hasMore: false
+          }
+        },
+        analytics: {
+          dashboard: null,
+          revenue: null,
+          performance: null,
+          insights: [],
+          trends: null,
+          lastFetch: null,
+          isLoading: false,
+          error: null,
+          period: 'month'
+        },
+        performance: {
+          campaigns: [],
+          byId: {},
+          dashboard: null,
+          benchmarks: null,
+          lastFetch: null,
+          isLoading: false,
+          error: null
+        },
+        contracts: {
+          list: [],
+          byId: {},
+          templates: [],
+          analytics: null,
+          uploadLimits: null,
+          activityFeed: [],
+          lastFetch: null,
+          isLoading: false,
+          error: null,
+          filters: {
+            status: '',
+            brandName: '',
+            riskLevel: '',
+            search: '',
+            sortBy: 'createdAt',
+            sortOrder: 'desc'
+          },
+          pagination: {
+            page: 1,
+            limit: 20,
+            total: 0,
+            hasMore: false
+          }
+        },
+        rateCards: {
+          list: [],
+          byId: {},
+          pagination: { page: 1, limit: 10, total: 0, pages: 1 },
+          lastFetch: null,
+          isLoading: false,
+          error: null,
+        }
       });
     }
   }))
