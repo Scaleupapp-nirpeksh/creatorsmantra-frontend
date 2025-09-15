@@ -1,339 +1,128 @@
-// src/pages/auth/LoginPage.jsx
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { motion, AnimatePresence } from 'framer-motion';
-import toast from 'react-hot-toast';
-import  useAuthStore  from '../../store/authStore';
-import { 
-  Phone, 
-  Mail, 
-  Lock, 
-  ArrowRight, 
-  Eye, 
+// Dependencies
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { motion, AnimatePresence } from 'framer-motion'
+import toast from 'react-hot-toast'
+import {
+  Phone,
+  Mail,
+  Lock,
+  ArrowRight,
+  Eye,
   EyeOff,
   Loader2,
   CheckCircle,
   AlertCircle,
   Smartphone,
   Key,
-  ChevronLeft
-} from 'lucide-react';
+} from 'lucide-react'
+
+// Store Hooks
+import { useAuthStore } from '../../store'
+
+// Styles
+import '../../styles/animateSpin.css'
+import { loginPageStyles as styles } from '../../utils/stylesInline'
 
 const LoginPage = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { sendOTP, loginWithPassword, isLoading } = useAuthStore();
-  
-  // State management
-  const [loginMethod, setLoginMethod] = useState('otp'); // 'otp' or 'password'
-  const [showPassword, setShowPassword] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [countdown, setCountdown] = useState(0);
+  // State Variables
+  const [loginMethod, setLoginMethod] = useState('otp') // 'otp' or 'password'
+  const [showPassword, setShowPassword] = useState(false)
+  const [countdown, setCountdown] = useState(0)
+
+  // Hooks
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { sendOTP, loginWithPassword, isLoading } = useAuthStore()
 
   // Get redirect URL from location state
-  const from = location.state?.from || '/dashboard';
-  const message = location.state?.message;
+  const from = location.state?.from || '/dashboard'
+  const message = location.state?.message
 
   // React Hook Form setup
-  const { 
-    register, 
-    handleSubmit, 
+  const {
+    register,
+    handleSubmit,
     formState: { errors, isSubmitting },
-    watch,
-    setValue,
-    clearErrors
+    clearErrors,
   } = useForm({
-    mode: 'onBlur'
-  });
+    mode: 'onBlur',
+  })
 
+  // Effects
   // Countdown timer for OTP resend
   useEffect(() => {
     if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+      return () => clearTimeout(timer)
     }
-  }, [countdown]);
+  }, [countdown])
 
   // Show message from redirect
   useEffect(() => {
-    if (message) {
-      toast.error(message);
-    }
-  }, [message]);
+    if (message) toast.error(message)
+  }, [message])
 
+  // Handlers
   // Handle OTP Send
   const handleSendOTP = async (data) => {
     try {
-      const phone = data.phone.replace(/\D/g, ''); // Remove non-digits
-      
+      const phone = data.phone.replace(/\D/g, '') // Remove non-digits
+
       if (phone.length !== 10) {
-        toast.error('Please enter a valid 10-digit phone number');
-        return;
+        toast.error('Please enter a valid 10-digit phone number')
+        return
       }
 
-      const result = await sendOTP(phone, 'login');
-      
+      const result = await sendOTP(phone, 'login')
+
       if (result.success) {
-        setOtpSent(true);
-        setPhoneNumber(phone);
-        setCountdown(120); // 2 minutes countdown
-        toast.success('OTP sent successfully! Check your SMS.');
-        
+        setCountdown(120) // 2 minutes countdown
+        toast.success('OTP sent successfully! Check your SMS.')
+
         // Navigate to OTP verification page
-        navigate('/verify-otp', { 
-          state: { 
-            phone, 
+        navigate('/verify-otp', {
+          state: {
+            phone,
             purpose: 'login',
-            from 
-          } 
-        });
+            from,
+          },
+        })
       }
     } catch (error) {
-      toast.error(error.message || 'Failed to send OTP');
+      toast.error(error.message || 'Failed to send OTP')
     }
-  };
+  }
 
   // Handle Password Login
   const handlePasswordLogin = async (data) => {
     try {
-      const result = await loginWithPassword(data.identifier, data.password);
-      
+      const result = await loginWithPassword(data.identifier, data.password)
+
       if (result.success) {
-        toast.success('Login successful!');
-        
+        toast.success('Login successful!')
+
         // Check if redirect after login exists
-        const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+        // Persist the previosu logout state
+        const redirectPath = sessionStorage.getItem('redirectAfterLogin')
         if (redirectPath) {
-          sessionStorage.removeItem('redirectAfterLogin');
-          navigate(redirectPath);
+          sessionStorage.removeItem('redirectAfterLogin')
+          navigate(redirectPath)
         } else {
-          navigate(from);
+          navigate(from)
         }
       }
     } catch (error) {
-      toast.error(error.message || 'Invalid credentials');
+      toast.error(error.message || 'Invalid credentials')
     }
-  };
+  }
 
   // Form submit handler
   const onSubmit = (data) => {
-    if (loginMethod === 'otp') {
-      return handleSendOTP(data);
-    } else {
-      return handlePasswordLogin(data);
-    }
-  };
-
-  // Inline styles
-  const styles = {
-    container: {
-      maxWidth: '440px',
-      width: '100%',
-      margin: '0 auto',
-    },
-    
-    header: {
-      textAlign: 'center',
-      marginBottom: '2rem',
-    },
-    
-    title: {
-      fontSize: '2rem',
-      fontWeight: '700',
-      color: 'var(--color-neutral-900)',
-      marginBottom: '0.5rem',
-    },
-    
-    subtitle: {
-      fontSize: '1rem',
-      color: 'var(--color-neutral-600)',
-    },
-    
-    methodToggle: {
-      display: 'flex',
-      gap: '0.5rem',
-      padding: '0.25rem',
-      background: 'var(--color-neutral-100)',
-      borderRadius: '12px',
-      marginBottom: '2rem',
-    },
-    
-    methodButton: {
-      flex: 1,
-      padding: '0.75rem',
-      border: 'none',
-      borderRadius: '8px',
-      fontSize: '0.875rem',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '0.5rem',
-      background: 'transparent',
-      color: 'var(--color-neutral-600)',
-    },
-    
-    methodButtonActive: {
-      background: 'white',
-      color: 'var(--color-primary-600)',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    },
-    
-    form: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1.5rem',
-    },
-    
-    inputGroup: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.5rem',
-    },
-    
-    label: {
-      fontSize: '0.875rem',
-      fontWeight: '500',
-      color: 'var(--color-neutral-700)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-    },
-    
-    inputWrapper: {
-      position: 'relative',
-      display: 'flex',
-      alignItems: 'center',
-    },
-    
-    input: {
-      width: '100%',
-      padding: '0.75rem 1rem',
-      paddingLeft: '2.75rem',
-      border: '1px solid var(--color-neutral-300)',
-      borderRadius: '12px',
-      fontSize: '1rem',
-      transition: 'all 0.2s ease',
-      background: 'white',
-    },
-    
-    inputError: {
-      borderColor: 'var(--color-error)',
-    },
-    
-    inputIcon: {
-      position: 'absolute',
-      left: '1rem',
-      color: 'var(--color-neutral-400)',
-      pointerEvents: 'none',
-    },
-    
-    passwordToggle: {
-      position: 'absolute',
-      right: '1rem',
-      background: 'none',
-      border: 'none',
-      color: 'var(--color-neutral-400)',
-      cursor: 'pointer',
-      padding: '0.25rem',
-    },
-    
-    error: {
-      fontSize: '0.75rem',
-      color: 'var(--color-error)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.25rem',
-    },
-    
-    forgotPassword: {
-      alignSelf: 'flex-end',
-      fontSize: '0.875rem',
-      color: 'var(--color-primary-600)',
-      textDecoration: 'none',
-      fontWeight: '500',
-      transition: 'color 0.2s ease',
-    },
-    
-    submitButton: {
-      padding: '0.875rem',
-      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '12px',
-      fontSize: '1rem',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '0.5rem',
-      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-    },
-    
-    submitButtonDisabled: {
-      opacity: 0.6,
-      cursor: 'not-allowed',
-    },
-    
-    divider: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-      margin: '1.5rem 0',
-    },
-    
-    dividerLine: {
-      flex: 1,
-      height: '1px',
-      background: 'var(--color-neutral-200)',
-    },
-    
-    dividerText: {
-      fontSize: '0.875rem',
-      color: 'var(--color-neutral-500)',
-      fontWeight: '500',
-    },
-    
-    signupLink: {
-      textAlign: 'center',
-      fontSize: '0.875rem',
-      color: 'var(--color-neutral-600)',
-    },
-    
-    signupLinkAnchor: {
-      color: 'var(--color-primary-600)',
-      textDecoration: 'none',
-      fontWeight: '600',
-    },
-    
-    features: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.75rem',
-      padding: '1.5rem',
-      background: 'var(--color-neutral-50)',
-      borderRadius: '12px',
-      marginTop: '2rem',
-    },
-    
-    feature: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.75rem',
-      fontSize: '0.875rem',
-      color: 'var(--color-neutral-700)',
-    },
-    
-    featureIcon: {
-      color: 'var(--color-success)',
-    },
-  };
+    if (loginMethod === 'otp') return handleSendOTP(data)
+    else return handlePasswordLogin(data)
+  }
 
   return (
     <div style={styles.container}>
@@ -345,9 +134,7 @@ const LoginPage = () => {
         {/* Header */}
         <div style={styles.header}>
           <h1 style={styles.title}>Welcome Back!</h1>
-          <p style={styles.subtitle}>
-            Login to manage your creator business
-          </p>
+          <p style={styles.subtitle}>Login to manage your creator business</p>
         </div>
 
         {/* Login Method Toggle */}
@@ -356,11 +143,11 @@ const LoginPage = () => {
             type="button"
             style={{
               ...styles.methodButton,
-              ...(loginMethod === 'otp' ? styles.methodButtonActive : {})
+              ...(loginMethod === 'otp' ? styles.methodButtonActive : {}),
             }}
             onClick={() => {
-              setLoginMethod('otp');
-              clearErrors();
+              setLoginMethod('otp')
+              clearErrors()
             }}
           >
             <Smartphone size={18} />
@@ -370,11 +157,11 @@ const LoginPage = () => {
             type="button"
             style={{
               ...styles.methodButton,
-              ...(loginMethod === 'password' ? styles.methodButtonActive : {})
+              ...(loginMethod === 'password' ? styles.methodButtonActive : {}),
             }}
             onClick={() => {
-              setLoginMethod('password');
-              clearErrors();
+              setLoginMethod('password')
+              clearErrors()
             }}
           >
             <Key size={18} />
@@ -405,14 +192,14 @@ const LoginPage = () => {
                       placeholder="Enter your 10-digit phone number"
                       style={{
                         ...styles.input,
-                        ...(errors.phone ? styles.inputError : {})
+                        ...(errors.phone ? styles.inputError : {}),
                       }}
                       {...register('phone', {
                         required: 'Phone number is required',
                         pattern: {
                           value: /^[6-9]\d{9}$/,
-                          message: 'Please enter a valid Indian phone number'
-                        }
+                          message: 'Please enter a valid Indian phone number',
+                        },
                       })}
                       maxLength={10}
                     />
@@ -446,10 +233,10 @@ const LoginPage = () => {
                       placeholder="Enter email or phone number"
                       style={{
                         ...styles.input,
-                        ...(errors.identifier ? styles.inputError : {})
+                        ...(errors.identifier ? styles.inputError : {}),
                       }}
                       {...register('identifier', {
-                        required: 'Email or phone is required'
+                        required: 'Email or phone is required',
                       })}
                     />
                   </div>
@@ -474,14 +261,14 @@ const LoginPage = () => {
                       style={{
                         ...styles.input,
                         paddingRight: '3rem',
-                        ...(errors.password ? styles.inputError : {})
+                        ...(errors.password ? styles.inputError : {}),
                       }}
                       {...register('password', {
                         required: 'Password is required',
                         minLength: {
                           value: 8,
-                          message: 'Password must be at least 8 characters'
-                        }
+                          message: 'Password must be at least 8 characters',
+                        },
                       })}
                     />
                     <button
@@ -513,7 +300,7 @@ const LoginPage = () => {
             disabled={isSubmitting || isLoading}
             style={{
               ...styles.submitButton,
-              ...(isSubmitting || isLoading ? styles.submitButtonDisabled : {})
+              ...(isSubmitting || isLoading ? styles.submitButtonDisabled : {}),
             }}
           >
             {isSubmitting || isLoading ? (
@@ -561,18 +348,8 @@ const LoginPage = () => {
           </div>
         </div>
       </motion.div>
-
-      {/* Add spinning animation */}
-      <style jsx>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-      `}</style>
     </div>
-  );
-};
+  )
+}
 
-export default LoginPage;
+export default LoginPage

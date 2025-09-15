@@ -1,0 +1,233 @@
+import {
+  BarChart3,
+  Briefcase,
+  Calculator,
+  CreditCard,
+  FileSpreadsheet,
+  FileText,
+  HelpCircle,
+  Home,
+  Kanban,
+  List,
+  MessageSquare,
+  PieChart,
+  Plus,
+  Settings,
+  Shield,
+  TrendingUp,
+  Upload,
+  User,
+  Users,
+} from 'lucide-react'
+
+export const MainLayoutConstants = {
+  bottomMenuItems: [
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: User,
+      path: '/profile',
+      subItems: [
+        { id: 'profile-overview', label: 'Overview', path: '/profile', icon: User },
+        { id: 'profile-settings', label: 'Settings', path: '/profile/settings', icon: Settings },
+        {
+          id: 'profile-subscription',
+          label: 'Subscription',
+          path: '/profile/subscription',
+          icon: CreditCard,
+        },
+        { id: 'profile-team', label: 'Team Management', path: '/profile/team', icon: Users },
+      ],
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: Settings,
+      path: '/settings',
+      subItems: [
+        {
+          id: 'settings-general',
+          label: 'General',
+          path: '/settings',
+          icon: Settings,
+        },
+        {
+          id: 'settings-tax',
+          label: 'Tax Preferences',
+          path: '/settings/tax-preferences',
+          icon: Calculator,
+        },
+        {
+          id: 'settings-subscription',
+          label: 'Subscription',
+          path: '/settings/subscription',
+          icon: CreditCard,
+        },
+      ],
+    },
+    {
+      id: 'help',
+      label: 'Help & Support',
+      icon: HelpCircle,
+      path: '/help',
+    },
+  ],
+  menuItems: [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: Home,
+      path: '/dashboard',
+    },
+    {
+      id: 'deals',
+      label: 'Deals',
+      icon: Briefcase,
+      path: '/deals',
+      subItems: [
+        {
+          id: 'deals-list',
+          label: 'Pipeline View',
+          path: '/deals',
+          icon: Kanban,
+        },
+        {
+          id: 'deals-create',
+          label: 'Create Deal',
+          path: '/deals/create',
+          icon: Plus,
+        },
+      ],
+    },
+    {
+      id: 'invoices',
+      label: 'Invoices',
+      icon: FileText,
+      path: '/invoices',
+      subItems: [
+        {
+          id: 'invoices-list',
+          label: 'All Invoices',
+          path: '/invoices',
+          icon: List,
+        },
+        {
+          id: 'invoices-create',
+          label: 'Create Invoice',
+          path: '/invoices/create',
+          icon: Plus,
+        },
+        {
+          id: 'invoices-consolidated',
+          label: 'Consolidated Invoice',
+          path: '/invoices/create-consolidated',
+          icon: FileSpreadsheet,
+          premium: true,
+        },
+        {
+          id: 'invoices-analytics',
+          label: 'Analytics',
+          path: '/invoices/analytics',
+          icon: PieChart,
+        },
+      ],
+    },
+    {
+      id: 'scripts',
+      label: 'Scripts',
+      icon: MessageSquare,
+      path: '/scripts',
+      premium: true,
+      subItems: [
+        {
+          id: 'scripts-dashboard',
+          label: 'Dashboard',
+          path: '/scripts',
+          icon: List,
+        },
+        {
+          id: 'scripts-create',
+          label: 'Create Script',
+          path: '/scripts/create',
+          icon: Plus,
+        },
+        {
+          id: 'scripts-analytics',
+          label: 'Analytics',
+          path: '/scripts/analytics',
+          icon: PieChart,
+        },
+      ],
+    },
+    {
+      id: 'rate-cards',
+      label: 'Rate Cards',
+      icon: CreditCard,
+      path: '/dashboard/rate-cards',
+      premium: true,
+      subItems: [
+        {
+          id: 'rate-cards-dashboard',
+          label: 'My Rate Cards',
+          path: '/dashboard/rate-cards',
+          icon: List,
+        },
+        {
+          id: 'rate-cards-create',
+          label: 'Create Rate Card',
+          path: '/dashboard/rate-cards/create',
+          icon: Plus,
+        },
+      ],
+    },
+    {
+      id: 'performance',
+      label: 'Performance',
+      icon: TrendingUp,
+      path: '/performance',
+      subItems: [
+        { id: 'performance-overview', label: 'Overview', path: '/performance', icon: BarChart3 },
+        {
+          id: 'performance-analytics',
+          label: 'Analytics',
+          path: '/performance/analytics',
+          icon: PieChart,
+        },
+        {
+          id: 'performance-reports',
+          label: 'Reports',
+          path: '/performance/reports',
+          icon: FileText,
+        },
+      ],
+    },
+    {
+      id: 'contracts',
+      label: 'Contracts',
+      icon: Shield,
+      path: '/contracts',
+      premium: true,
+      subItems: [
+        {
+          id: 'contracts-list',
+          label: 'All Contracts',
+          path: '/contracts',
+          icon: List,
+        },
+        {
+          id: 'contracts-upload',
+          label: 'Upload Contract',
+          path: '/contracts?action=upload',
+          icon: Upload,
+        },
+        {
+          id: 'contracts-analytics',
+          label: 'Analytics',
+          path: '/contracts?tab=analytics',
+          icon: PieChart,
+          premium: true,
+        },
+      ],
+    },
+  ],
+}

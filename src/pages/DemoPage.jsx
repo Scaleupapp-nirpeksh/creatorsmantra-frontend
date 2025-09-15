@@ -1,311 +1,110 @@
-// src/pages/DemoPage.jsx - Fixed with original clean design
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+// Dependenincies
+import { AnimatePresence, motion } from 'framer-motion'
 import {
-  Play,
-  X,
-  ChevronRight,
-  ChevronLeft,
-  Sparkles,
-  Briefcase,
-  FileText,
-  DollarSign,
-  BarChart3,
-  TrendingUp,
-  Shield,
-  Users,
-  User, // THIS WAS MISSING - FIXED!
-  Calendar,
-  Bell,
-  CheckCircle,
-  ArrowRight,
-  Zap,
   Award,
-  Target,
+  BarChart3,
+  Briefcase,
+  Calendar,
+  CheckCircle,
+  ChevronRight,
   Clock,
-  Package,
-  Eye,
-  MessageSquare,
-  Heart,
-  Share2,
-  Instagram,
-  Youtube,
-  PieChart,
-  Activity,
   CreditCard,
-  FileSignature,
-  Settings,
-  LogOut,
-  Menu,
-  Search,
-  Plus,
-  Filter,
+  DollarSign,
   Download,
-  RefreshCw
-} from 'lucide-react';
+  FileSignature,
+  FileText,
+  Filter,
+  Package,
+  Play,
+  Plus,
+  Shield,
+  Sparkles,
+  Target,
+  TrendingUp,
+  User,
+  X,
+  Zap,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 import {
-  LineChart,
-  Line,
-  AreaChart,
   Area,
-  BarChart,
+  AreaChart,
   Bar,
-  PieChart as RePieChart,
-  Pie,
+  BarChart,
+  CartesianGrid,
   Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart as RePieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend
-} from 'recharts';
-import toast from 'react-hot-toast';
+} from 'recharts'
+
+import { DemoData } from '../../test-data'
 
 const DemoPage = () => {
-  const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedDeal, setSelectedDeal] = useState(null);
-  const [tourActive, setTourActive] = useState(true);
-  const [tourStep, setTourStep] = useState(0);
+  const navigate = useNavigate()
+  const [currentView, setCurrentView] = useState('dashboard')
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [selectedDeal, setSelectedDeal] = useState(null)
+  const [tourActive, setTourActive] = useState(true)
+  const [tourStep, setTourStep] = useState(0)
   const [demoUser] = useState({
     name: 'Priya Sharma',
     handle: '@priyastyles',
     avatar: '👩',
     followers: 245000,
     engagement: 3.8,
-    tier: 'pro'
-  });
+    tier: 'pro',
+  })
 
-  // Demo Data
-  const demoStats = {
-    totalRevenue: 1250000,
-    revenueGrowth: 23.5,
-    activeDeals: 12,
-    dealsGrowth: 40,
-    pendingInvoices: 5,
-    invoiceAmount: 285000,
-    completionRate: 94,
-    avgDealValue: 85000
-  };
-
-  const revenueData = [
-    { month: 'Jul', revenue: 125000, deals: 4 },
-    { month: 'Aug', revenue: 180000, deals: 5 },
-    { month: 'Sep', revenue: 165000, deals: 6 },
-    { month: 'Oct', revenue: 220000, deals: 7 },
-    { month: 'Nov', revenue: 195000, deals: 5 },
-    { month: 'Dec', revenue: 245000, deals: 8 },
-  ];
-
-  const demoDeals = [
-    {
-      id: 1,
-      brand: 'Nike India',
-      title: 'Summer Collection Campaign',
-      value: 150000,
-      stage: 'negotiation',
-      priority: 'high',
-      deliverables: ['3 Instagram Posts', '2 Reels', '5 Stories'],
-      deadline: '2024-01-15',
-      contact: 'Rahul Verma',
-      status: 'active'
-    },
-    {
-      id: 2,
-      brand: 'Myntra',
-      title: 'End of Season Sale',
-      value: 85000,
-      stage: 'contract',
-      priority: 'medium',
-      deliverables: ['2 Instagram Reels', '3 Stories'],
-      deadline: '2024-01-10',
-      contact: 'Sneha Patel',
-      status: 'active'
-    },
-    {
-      id: 3,
-      brand: 'Amazon Fashion',
-      title: 'Prime Day Special',
-      value: 200000,
-      stage: 'ongoing',
-      priority: 'high',
-      deliverables: ['5 Posts', '3 Reels', '1 YouTube Video'],
-      deadline: '2024-01-20',
-      contact: 'Amit Kumar',
-      status: 'active'
-    },
-    {
-      id: 4,
-      brand: 'Zara',
-      title: 'Winter Collection',
-      value: 120000,
-      stage: 'lead',
-      priority: 'low',
-      deliverables: ['2 Posts', '1 Reel'],
-      deadline: '2024-02-01',
-      contact: 'Lisa Chen',
-      status: 'pending'
-    },
-  ];
-
-  const demoInvoices = [
-    {
-      id: 'INV-001',
-      client: 'Nike India',
-      amount: 150000,
-      status: 'paid',
-      date: '2023-12-01',
-      gst: 27000,
-      total: 177000
-    },
-    {
-      id: 'INV-002',
-      client: 'Myntra',
-      amount: 85000,
-      status: 'pending',
-      date: '2023-12-15',
-      gst: 15300,
-      total: 100300
-    },
-    {
-      id: 'INV-003',
-      client: 'Amazon Fashion',
-      amount: 200000,
-      status: 'overdue',
-      date: '2023-11-20',
-      gst: 36000,
-      total: 236000
-    },
-  ];
-
-  const demoBriefs = [
-    {
-      id: 1,
-      brand: 'Flipkart',
-      title: 'Big Billion Days Campaign',
-      risk: 'low',
-      score: 92,
-      budget: 180000,
-      timeline: '2 weeks',
-      requirements: [
-        'Product placement in lifestyle setting',
-        'Focus on affordability',
-        'Include discount codes',
-        'Family-oriented content'
-      ],
-      aiInsights: [
-        'Budget aligns well with market rates',
-        'Timeline is reasonable for deliverables',
-        'Clear brand guidelines provided',
-        'Payment terms favorable (30 days)'
-      ]
-    },
-    {
-      id: 2,
-      brand: 'Nykaa',
-      title: 'Beauty Festival',
-      risk: 'medium',
-      score: 78,
-      budget: 95000,
-      timeline: '10 days',
-      requirements: [
-        'Tutorial-style content',
-        'Before/after transformations',
-        'Product reviews',
-        'User testimonials'
-      ],
-      aiInsights: [
-        'Tight timeline for video content',
-        'Budget slightly below market average',
-        'Exclusivity clause needs negotiation',
-        'Good potential for long-term partnership'
-      ]
-    },
-  ];
-
-  const platformData = [
-    { platform: 'Instagram', value: 65, color: '#E4405F', followers: '245K' },
-    { platform: 'YouTube', value: 25, color: '#FF0000', followers: '82K' },
-    { platform: 'Twitter', value: 10, color: '#1DA1F2', followers: '15K' },
-  ];
-
-  const engagementData = [
-    { day: 'Mon', likes: 12500, comments: 890, shares: 345 },
-    { day: 'Tue', likes: 15200, comments: 1020, shares: 412 },
-    { day: 'Wed', likes: 13800, comments: 950, shares: 380 },
-    { day: 'Thu', likes: 16500, comments: 1100, shares: 425 },
-    { day: 'Fri', likes: 18200, comments: 1250, shares: 480 },
-    { day: 'Sat', likes: 22000, comments: 1450, shares: 520 },
-    { day: 'Sun', likes: 20500, comments: 1380, shares: 495 },
-  ];
-
-  // Tour Steps
-  const tourSteps = [
-    {
-      title: 'Welcome to CreatorsMantra Demo! 👋',
-      description: 'Let\'s take a quick tour of how CreatorsMantra can transform your creator business.',
-      target: 'dashboard'
-    },
-    {
-      title: 'Your Business Dashboard',
-      description: 'Get a complete overview of your revenue, deals, and performance at a glance.',
-      target: 'stats'
-    },
-    {
-      title: 'Deal Pipeline',
-      description: 'Manage all your brand collaborations through different stages - from lead to completion.',
-      target: 'deals'
-    },
-    {
-      title: 'Smart Invoicing',
-      description: 'Create GST-compliant invoices in seconds and track payments effortlessly.',
-      target: 'invoices'
-    },
-    {
-      title: 'AI Brief Analyzer',
-      description: 'Let AI analyze brand briefs to identify risks and opportunities instantly.',
-      target: 'briefs'
-    },
-    {
-      title: 'Performance Analytics',
-      description: 'Track your content performance and ROI across all platforms.',
-      target: 'analytics'
-    },
-  ];
+  // Constants
+  const {
+    demoStats,
+    demoBriefs,
+    demoDeals,
+    demoInvoices,
+    engagementData,
+    platformData,
+    revenueData,
+    tourSteps,
+  } = DemoData
 
   // Handle tour navigation
   const nextTourStep = () => {
     if (tourStep < tourSteps.length - 1) {
-      setTourStep(tourStep + 1);
+      setTourStep(tourStep + 1)
       // Navigate to relevant view
-      if (tourSteps[tourStep + 1].target === 'deals') setCurrentView('deals');
-      if (tourSteps[tourStep + 1].target === 'invoices') setCurrentView('invoices');
-      if (tourSteps[tourStep + 1].target === 'briefs') setCurrentView('briefs');
-      if (tourSteps[tourStep + 1].target === 'analytics') setCurrentView('analytics');
+      if (tourSteps[tourStep + 1].target === 'deals') setCurrentView('deals')
+      if (tourSteps[tourStep + 1].target === 'invoices') setCurrentView('invoices')
+      if (tourSteps[tourStep + 1].target === 'briefs') setCurrentView('briefs')
+      if (tourSteps[tourStep + 1].target === 'analytics') setCurrentView('analytics')
     } else {
-      setTourActive(false);
-      toast.success('Tour completed! Feel free to explore on your own.');
+      setTourActive(false)
+      toast.success('Tour completed! Feel free to explore on your own.')
     }
-  };
+  }
 
   const skipTour = () => {
-    setTourActive(false);
-    toast('You can restart the tour anytime from the help menu', { icon: '💡' });
-  };
+    setTourActive(false)
+    toast('You can restart the tour anytime from the help menu', { icon: '💡' })
+  }
 
   // Simulate real-time updates
   useEffect(() => {
     const interval = setInterval(() => {
       // Simulate notification
       if (Math.random() > 0.9) {
-        toast.success('New deal inquiry from Adidas!', { icon: '🎉' });
+        toast.success('New deal inquiry from Adidas!', { icon: '🎉' })
       }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const styles = {
     container: {
@@ -320,7 +119,8 @@ const DemoPage = () => {
       left: 0,
       right: 0,
       height: '60px',
-      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      background:
+        'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
       color: 'white',
       display: 'flex',
       alignItems: 'center',
@@ -409,7 +209,8 @@ const DemoPage = () => {
       width: '48px',
       height: '48px',
       borderRadius: '12px',
-      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      background:
+        'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -736,7 +537,8 @@ const DemoPage = () => {
     tourIcon: {
       width: '48px',
       height: '48px',
-      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      background:
+        'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
       borderRadius: '12px',
       display: 'flex',
       alignItems: 'center',
@@ -800,7 +602,8 @@ const DemoPage = () => {
 
     nextButton: {
       padding: '0.625rem 1.5rem',
-      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      background:
+        'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
       color: 'white',
       border: 'none',
       borderRadius: '10px',
@@ -811,13 +614,13 @@ const DemoPage = () => {
       alignItems: 'center',
       gap: '0.5rem',
     },
-  };
+  }
 
   // Render different views
   const renderDashboard = () => (
     <>
       <div style={styles.statsGrid} className="tour-stats">
-        <motion.div 
+        <motion.div
           style={styles.statCard}
           whileHover={{ y: -4, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
         >
@@ -826,20 +629,21 @@ const DemoPage = () => {
               <div style={styles.statLabel}>Total Revenue</div>
               <div style={styles.statValue}>₹{(demoStats.totalRevenue / 100000).toFixed(1)}L</div>
               <div style={styles.statChange}>
-                <TrendingUp size={16} />
-                +{demoStats.revenueGrowth}% from last month
+                <TrendingUp size={16} />+{demoStats.revenueGrowth}% from last month
               </div>
             </div>
-            <div style={{
-              ...styles.statIcon,
-              background: 'rgba(16, 185, 129, 0.1)',
-            }}>
+            <div
+              style={{
+                ...styles.statIcon,
+                background: 'rgba(16, 185, 129, 0.1)',
+              }}
+            >
               <DollarSign size={24} color="var(--color-success)" />
             </div>
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           style={styles.statCard}
           whileHover={{ y: -4, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
         >
@@ -848,20 +652,21 @@ const DemoPage = () => {
               <div style={styles.statLabel}>Active Deals</div>
               <div style={styles.statValue}>{demoStats.activeDeals}</div>
               <div style={styles.statChange}>
-                <TrendingUp size={16} />
-                +{demoStats.dealsGrowth}% growth
+                <TrendingUp size={16} />+{demoStats.dealsGrowth}% growth
               </div>
             </div>
-            <div style={{
-              ...styles.statIcon,
-              background: 'rgba(102, 126, 234, 0.1)',
-            }}>
+            <div
+              style={{
+                ...styles.statIcon,
+                background: 'rgba(102, 126, 234, 0.1)',
+              }}
+            >
               <Briefcase size={24} color="var(--color-primary-500)" />
             </div>
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           style={styles.statCard}
           whileHover={{ y: -4, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
         >
@@ -873,16 +678,18 @@ const DemoPage = () => {
                 ₹{(demoStats.invoiceAmount / 1000).toFixed(0)}K pending
               </div>
             </div>
-            <div style={{
-              ...styles.statIcon,
-              background: 'rgba(251, 191, 36, 0.1)',
-            }}>
+            <div
+              style={{
+                ...styles.statIcon,
+                background: 'rgba(251, 191, 36, 0.1)',
+              }}
+            >
               <FileText size={24} color="var(--color-warning)" />
             </div>
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           style={styles.statCard}
           whileHover={{ y: -4, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
         >
@@ -895,10 +702,12 @@ const DemoPage = () => {
                 Excellent performance
               </div>
             </div>
-            <div style={{
-              ...styles.statIcon,
-              background: 'rgba(118, 75, 162, 0.1)',
-            }}>
+            <div
+              style={{
+                ...styles.statIcon,
+                background: 'rgba(118, 75, 162, 0.1)',
+              }}
+            >
               <Target size={24} color="var(--color-secondary-500)" />
             </div>
           </div>
@@ -913,8 +722,8 @@ const DemoPage = () => {
           <AreaChart data={revenueData}>
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#667eea" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#667eea" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#667eea" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#667eea" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -974,40 +783,45 @@ const DemoPage = () => {
         </div>
       </div>
     </>
-  );
+  )
 
   const renderDeals = () => (
     <>
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-        <button style={{
-          padding: '0.625rem 1.25rem',
-          background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '10px',
-          fontSize: '0.875rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-        }}>
+        <button
+          style={{
+            padding: '0.625rem 1.25rem',
+            background:
+              'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
           <Plus size={18} />
           New Deal
         </button>
-        <button style={{
-          padding: '0.625rem 1.25rem',
-          background: 'white',
-          color: 'var(--color-neutral-700)',
-          border: '1px solid var(--color-neutral-300)',
-          borderRadius: '10px',
-          fontSize: '0.875rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-        }}>
+        <button
+          style={{
+            padding: '0.625rem 1.25rem',
+            background: 'white',
+            color: 'var(--color-neutral-700)',
+            border: '1px solid var(--color-neutral-300)',
+            borderRadius: '10px',
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
           <Filter size={18} />
           Filter
         </button>
@@ -1027,58 +841,73 @@ const DemoPage = () => {
             </div>
             <div>
               <div style={styles.dealValue}>₹{(deal.value / 1000).toFixed(0)}K</div>
-              <div style={{
-                ...styles.stageBadge,
-                ...(deal.priority === 'high' ? styles.priorityHigh :
-                   deal.priority === 'medium' ? styles.priorityMedium :
-                   styles.priorityLow)
-              }}>
+              <div
+                style={{
+                  ...styles.stageBadge,
+                  ...(deal.priority === 'high'
+                    ? styles.priorityHigh
+                    : deal.priority === 'medium'
+                      ? styles.priorityMedium
+                      : styles.priorityLow),
+                }}
+              >
                 {deal.priority} priority
               </div>
             </div>
           </div>
           <div style={styles.dealMeta}>
-            <span><Calendar size={14} /> {deal.deadline}</span>
-            <span><User size={14} /> {deal.contact}</span>
-            <span><Package size={14} /> {deal.deliverables.length} deliverables</span>
+            <span>
+              <Calendar size={14} /> {deal.deadline}
+            </span>
+            <span>
+              <User size={14} /> {deal.contact}
+            </span>
+            <span>
+              <Package size={14} /> {deal.deliverables.length} deliverables
+            </span>
           </div>
         </motion.div>
       ))}
     </>
-  );
+  )
 
   const renderInvoices = () => (
     <>
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-        <button style={{
-          padding: '0.625rem 1.25rem',
-          background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '10px',
-          fontSize: '0.875rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-        }}>
+        <button
+          style={{
+            padding: '0.625rem 1.25rem',
+            background:
+              'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
           <Plus size={18} />
           Create Invoice
         </button>
-        <button style={{
-          padding: '0.625rem 1.25rem',
-          background: 'white',
-          color: 'var(--color-neutral-700)',
-          border: '1px solid var(--color-neutral-300)',
-          borderRadius: '10px',
-          fontSize: '0.875rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-        }}>
+        <button
+          style={{
+            padding: '0.625rem 1.25rem',
+            background: 'white',
+            color: 'var(--color-neutral-700)',
+            border: '1px solid var(--color-neutral-300)',
+            borderRadius: '10px',
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
           <Download size={18} />
           Export
         </button>
@@ -1099,15 +928,23 @@ const DemoPage = () => {
             <span>₹{(invoice.amount / 1000).toFixed(0)}K</span>
             <span>₹{(invoice.gst / 1000).toFixed(0)}K</span>
             <span>
-              <div style={{
-                ...styles.statusBadge,
-                background: invoice.status === 'paid' ? 'rgba(16, 185, 129, 0.1)' :
-                          invoice.status === 'pending' ? 'rgba(251, 191, 36, 0.1)' :
-                          'rgba(239, 68, 68, 0.1)',
-                color: invoice.status === 'paid' ? 'var(--color-success)' :
-                      invoice.status === 'pending' ? 'var(--color-warning)' :
-                      'var(--color-error)',
-              }}>
+              <div
+                style={{
+                  ...styles.statusBadge,
+                  background:
+                    invoice.status === 'paid'
+                      ? 'rgba(16, 185, 129, 0.1)'
+                      : invoice.status === 'pending'
+                        ? 'rgba(251, 191, 36, 0.1)'
+                        : 'rgba(239, 68, 68, 0.1)',
+                  color:
+                    invoice.status === 'paid'
+                      ? 'var(--color-success)'
+                      : invoice.status === 'pending'
+                        ? 'var(--color-warning)'
+                        : 'var(--color-error)',
+                }}
+              >
                 {invoice.status}
               </div>
             </span>
@@ -1115,7 +952,7 @@ const DemoPage = () => {
         ))}
       </div>
     </>
-  );
+  )
 
   const renderBriefs = () => (
     <>
@@ -1126,29 +963,54 @@ const DemoPage = () => {
               <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem' }}>
                 {brief.brand} - {brief.title}
               </h3>
-              <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: 'var(--color-neutral-600)' }}>
-                <span><DollarSign size={14} /> Budget: ₹{(brief.budget / 1000).toFixed(0)}K</span>
-                <span><Clock size={14} /> Timeline: {brief.timeline}</span>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  fontSize: '0.875rem',
+                  color: 'var(--color-neutral-600)',
+                }}
+              >
+                <span>
+                  <DollarSign size={14} /> Budget: ₹{(brief.budget / 1000).toFixed(0)}K
+                </span>
+                <span>
+                  <Clock size={14} /> Timeline: {brief.timeline}
+                </span>
               </div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={styles.briefScore}>{brief.score}</div>
-              <div style={{
-                fontSize: '0.875rem',
-                color: brief.risk === 'low' ? 'var(--color-success)' :
-                       brief.risk === 'medium' ? 'var(--color-warning)' :
-                       'var(--color-error)',
-                fontWeight: '600',
-              }}>
+              <div
+                style={{
+                  fontSize: '0.875rem',
+                  color:
+                    brief.risk === 'low'
+                      ? 'var(--color-success)'
+                      : brief.risk === 'medium'
+                        ? 'var(--color-warning)'
+                        : 'var(--color-error)',
+                  fontWeight: '600',
+                }}
+              >
                 {brief.risk.toUpperCase()} RISK
               </div>
             </div>
           </div>
 
           <div style={styles.aiInsights}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginBottom: '0.75rem',
+              }}
+            >
               <Sparkles size={18} color="var(--color-primary-600)" />
-              <span style={{ fontWeight: '600', color: 'var(--color-primary-700)' }}>AI Insights</span>
+              <span style={{ fontWeight: '600', color: 'var(--color-primary-700)' }}>
+                AI Insights
+              </span>
             </div>
             {brief.aiInsights.map((insight, index) => (
               <div key={index} style={styles.insightItem}>
@@ -1160,25 +1022,52 @@ const DemoPage = () => {
         </div>
       ))}
     </>
-  );
+  )
 
   const renderAnalytics = () => (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          gap: '1rem',
+          marginBottom: '1.5rem',
+        }}
+      >
         <div style={styles.statCard}>
           <div style={{ fontSize: '0.875rem', color: 'var(--color-neutral-600)' }}>Total Reach</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--color-neutral-900)' }}>2.4M</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-success)' }}>+18% from last month</div>
+          <div
+            style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--color-neutral-900)' }}
+          >
+            2.4M
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-success)' }}>
+            +18% from last month
+          </div>
         </div>
         <div style={styles.statCard}>
-          <div style={{ fontSize: '0.875rem', color: 'var(--color-neutral-600)' }}>Engagement Rate</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--color-neutral-900)' }}>3.8%</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-success)' }}>Above industry average</div>
+          <div style={{ fontSize: '0.875rem', color: 'var(--color-neutral-600)' }}>
+            Engagement Rate
+          </div>
+          <div
+            style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--color-neutral-900)' }}
+          >
+            3.8%
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-success)' }}>
+            Above industry average
+          </div>
         </div>
         <div style={styles.statCard}>
           <div style={{ fontSize: '0.875rem', color: 'var(--color-neutral-600)' }}>Avg. ROI</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--color-neutral-900)' }}>4.2x</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-success)' }}>Excellent returns</div>
+          <div
+            style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--color-neutral-900)' }}
+          >
+            4.2x
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-success)' }}>
+            Excellent returns
+          </div>
         </div>
       </div>
 
@@ -1199,7 +1088,7 @@ const DemoPage = () => {
         </ResponsiveContainer>
       </div>
     </>
-  );
+  )
 
   return (
     <div style={styles.container}>
@@ -1210,7 +1099,7 @@ const DemoPage = () => {
           <span>DEMO MODE</span>
           <span style={styles.demoInfo}>• Exploring with sample data</span>
         </div>
-        
+
         <div style={styles.demoActions}>
           <button
             onClick={() => setTourActive(true)}
@@ -1219,17 +1108,11 @@ const DemoPage = () => {
             <Play size={18} />
             Restart Tour
           </button>
-          <button
-            onClick={() => navigate('/register')}
-            style={styles.startTrialBtn}
-          >
+          <button onClick={() => navigate('/register')} style={styles.startTrialBtn}>
             <Zap size={18} />
             Start Free Trial
           </button>
-          <button
-            onClick={() => navigate('/')}
-            style={styles.exitDemoBtn}
-          >
+          <button onClick={() => navigate('/')} style={styles.exitDemoBtn}>
             <X size={20} />
           </button>
         </div>
@@ -1246,7 +1129,8 @@ const DemoPage = () => {
                 <div style={styles.userName}>{demoUser.name}</div>
                 <div style={styles.userHandle}>{demoUser.handle}</div>
                 <div style={styles.userStats}>
-                  {(demoUser.followers / 1000).toFixed(0)}K followers • {demoUser.engagement}% engagement
+                  {(demoUser.followers / 1000).toFixed(0)}K followers • {demoUser.engagement}%
+                  engagement
                 </div>
               </div>
             </div>
@@ -1256,7 +1140,7 @@ const DemoPage = () => {
             <button
               style={{
                 ...styles.navItem,
-                ...(currentView === 'dashboard' ? styles.navItemActive : {})
+                ...(currentView === 'dashboard' ? styles.navItemActive : {}),
               }}
               onClick={() => setCurrentView('dashboard')}
             >
@@ -1266,7 +1150,7 @@ const DemoPage = () => {
             <button
               style={{
                 ...styles.navItem,
-                ...(currentView === 'deals' ? styles.navItemActive : {})
+                ...(currentView === 'deals' ? styles.navItemActive : {}),
               }}
               onClick={() => setCurrentView('deals')}
             >
@@ -1276,7 +1160,7 @@ const DemoPage = () => {
             <button
               style={{
                 ...styles.navItem,
-                ...(currentView === 'invoices' ? styles.navItemActive : {})
+                ...(currentView === 'invoices' ? styles.navItemActive : {}),
               }}
               onClick={() => setCurrentView('invoices')}
             >
@@ -1286,28 +1170,30 @@ const DemoPage = () => {
             <button
               style={{
                 ...styles.navItem,
-                ...(currentView === 'briefs' ? styles.navItemActive : {})
+                ...(currentView === 'briefs' ? styles.navItemActive : {}),
               }}
               onClick={() => setCurrentView('briefs')}
             >
               <FileSignature size={20} />
               Briefs
-              <span style={{
-                marginLeft: 'auto',
-                padding: '0.125rem 0.5rem',
-                background: 'var(--color-primary-500)',
-                color: 'white',
-                borderRadius: '4px',
-                fontSize: '0.625rem',
-                fontWeight: '600',
-              }}>
+              <span
+                style={{
+                  marginLeft: 'auto',
+                  padding: '0.125rem 0.5rem',
+                  background: 'var(--color-primary-500)',
+                  color: 'white',
+                  borderRadius: '4px',
+                  fontSize: '0.625rem',
+                  fontWeight: '600',
+                }}
+              >
                 AI
               </span>
             </button>
             <button
               style={{
                 ...styles.navItem,
-                ...(currentView === 'analytics' ? styles.navItemActive : {})
+                ...(currentView === 'analytics' ? styles.navItemActive : {}),
               }}
               onClick={() => setCurrentView('analytics')}
             >
@@ -1336,11 +1222,15 @@ const DemoPage = () => {
               {currentView === 'analytics' && 'Performance Analytics'}
             </h1>
             <p style={styles.viewDescription}>
-              {currentView === 'dashboard' && 'Your business at a glance - track revenue, deals, and performance metrics'}
-              {currentView === 'deals' && 'Manage all your brand collaborations through different stages'}
+              {currentView === 'dashboard' &&
+                'Your business at a glance - track revenue, deals, and performance metrics'}
+              {currentView === 'deals' &&
+                'Manage all your brand collaborations through different stages'}
               {currentView === 'invoices' && 'Create GST-compliant invoices and track payments'}
-              {currentView === 'briefs' && 'Let AI analyze brand briefs to identify opportunities and risks'}
-              {currentView === 'analytics' && 'Track your content performance and ROI across platforms'}
+              {currentView === 'briefs' &&
+                'Let AI analyze brand briefs to identify opportunities and risks'}
+              {currentView === 'analytics' &&
+                'Track your content performance and ROI across platforms'}
             </p>
           </div>
 
@@ -1377,10 +1267,8 @@ const DemoPage = () => {
               </div>
               <h2 style={styles.tourTitle}>{tourSteps[tourStep].title}</h2>
             </div>
-            
-            <p style={styles.tourDescription}>
-              {tourSteps[tourStep].description}
-            </p>
+
+            <p style={styles.tourDescription}>{tourSteps[tourStep].description}</p>
 
             <div style={styles.tourActions}>
               <div style={styles.tourProgress}>
@@ -1389,7 +1277,7 @@ const DemoPage = () => {
                     key={index}
                     style={{
                       ...styles.tourDot,
-                      ...(index === tourStep ? styles.tourDotActive : {})
+                      ...(index === tourStep ? styles.tourDotActive : {}),
                     }}
                   />
                 ))}
@@ -1409,7 +1297,7 @@ const DemoPage = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default DemoPage;
+export default DemoPage

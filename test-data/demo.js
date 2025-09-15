@@ -1,0 +1,198 @@
+export const DemoData = {
+  demoStats: {
+    totalRevenue: 1250000,
+    revenueGrowth: 23.5,
+    activeDeals: 12,
+    dealsGrowth: 40,
+    pendingInvoices: 5,
+    invoiceAmount: 285000,
+    completionRate: 94,
+    avgDealValue: 85000,
+  },
+
+  revenueData: [
+    { month: 'Jul', revenue: 125000, deals: 4 },
+    { month: 'Aug', revenue: 180000, deals: 5 },
+    { month: 'Sep', revenue: 165000, deals: 6 },
+    { month: 'Oct', revenue: 220000, deals: 7 },
+    { month: 'Nov', revenue: 195000, deals: 5 },
+    { month: 'Dec', revenue: 245000, deals: 8 },
+  ],
+
+  demoDeals: [
+    {
+      id: 1,
+      brand: 'Nike India',
+      title: 'Summer Collection Campaign',
+      value: 150000,
+      stage: 'negotiation',
+      priority: 'high',
+      deliverables: ['3 Instagram Posts', '2 Reels', '5 Stories'],
+      deadline: '2024-01-15',
+      contact: 'Rahul Verma',
+      status: 'active',
+    },
+    {
+      id: 2,
+      brand: 'Myntra',
+      title: 'End of Season Sale',
+      value: 85000,
+      stage: 'contract',
+      priority: 'medium',
+      deliverables: ['2 Instagram Reels', '3 Stories'],
+      deadline: '2024-01-10',
+      contact: 'Sneha Patel',
+      status: 'active',
+    },
+    {
+      id: 3,
+      brand: 'Amazon Fashion',
+      title: 'Prime Day Special',
+      value: 200000,
+      stage: 'ongoing',
+      priority: 'high',
+      deliverables: ['5 Posts', '3 Reels', '1 YouTube Video'],
+      deadline: '2024-01-20',
+      contact: 'Amit Kumar',
+      status: 'active',
+    },
+    {
+      id: 4,
+      brand: 'Zara',
+      title: 'Winter Collection',
+      value: 120000,
+      stage: 'lead',
+      priority: 'low',
+      deliverables: ['2 Posts', '1 Reel'],
+      deadline: '2024-02-01',
+      contact: 'Lisa Chen',
+      status: 'pending',
+    },
+  ],
+
+  demoInvoices: [
+    {
+      id: 'INV-001',
+      client: 'Nike India',
+      amount: 150000,
+      status: 'paid',
+      date: '2023-12-01',
+      gst: 27000,
+      total: 177000,
+    },
+    {
+      id: 'INV-002',
+      client: 'Myntra',
+      amount: 85000,
+      status: 'pending',
+      date: '2023-12-15',
+      gst: 15300,
+      total: 100300,
+    },
+    {
+      id: 'INV-003',
+      client: 'Amazon Fashion',
+      amount: 200000,
+      status: 'overdue',
+      date: '2023-11-20',
+      gst: 36000,
+      total: 236000,
+    },
+  ],
+
+  demoBriefs: [
+    {
+      id: 1,
+      brand: 'Flipkart',
+      title: 'Big Billion Days Campaign',
+      risk: 'low',
+      score: 92,
+      budget: 180000,
+      timeline: '2 weeks',
+      requirements: [
+        'Product placement in lifestyle setting',
+        'Focus on affordability',
+        'Include discount codes',
+        'Family-oriented content',
+      ],
+      aiInsights: [
+        'Budget aligns well with market rates',
+        'Timeline is reasonable for deliverables',
+        'Clear brand guidelines provided',
+        'Payment terms favorable (30 days)',
+      ],
+    },
+    {
+      id: 2,
+      brand: 'Nykaa',
+      title: 'Beauty Festival',
+      risk: 'medium',
+      score: 78,
+      budget: 95000,
+      timeline: '10 days',
+      requirements: [
+        'Tutorial-style content',
+        'Before/after transformations',
+        'Product reviews',
+        'User testimonials',
+      ],
+      aiInsights: [
+        'Tight timeline for video content',
+        'Budget slightly below market average',
+        'Exclusivity clause needs negotiation',
+        'Good potential for long-term partnership',
+      ],
+    },
+  ],
+
+  platformData: [
+    { platform: 'Instagram', value: 65, color: '#E4405F', followers: '245K' },
+    { platform: 'YouTube', value: 25, color: '#FF0000', followers: '82K' },
+    { platform: 'Twitter', value: 10, color: '#1DA1F2', followers: '15K' },
+  ],
+
+  engagementData: [
+    { day: 'Mon', likes: 12500, comments: 890, shares: 345 },
+    { day: 'Tue', likes: 15200, comments: 1020, shares: 412 },
+    { day: 'Wed', likes: 13800, comments: 950, shares: 380 },
+    { day: 'Thu', likes: 16500, comments: 1100, shares: 425 },
+    { day: 'Fri', likes: 18200, comments: 1250, shares: 480 },
+    { day: 'Sat', likes: 22000, comments: 1450, shares: 520 },
+    { day: 'Sun', likes: 20500, comments: 1380, shares: 495 },
+  ],
+
+  tourSteps: [
+    {
+      title: 'Welcome to CreatorsMantra Demo! 👋',
+      description:
+        "Let's take a quick tour of how CreatorsMantra can transform your creator business.",
+      target: 'dashboard',
+    },
+    {
+      title: 'Your Business Dashboard',
+      description: 'Get a complete overview of your revenue, deals, and performance at a glance.',
+      target: 'stats',
+    },
+    {
+      title: 'Deal Pipeline',
+      description:
+        'Manage all your brand collaborations through different stages - from lead to completion.',
+      target: 'deals',
+    },
+    {
+      title: 'Smart Invoicing',
+      description: 'Create GST-compliant invoices in seconds and track payments effortlessly.',
+      target: 'invoices',
+    },
+    {
+      title: 'AI Brief Analyzer',
+      description: 'Let AI analyze brand briefs to identify risks and opportunities instantly.',
+      target: 'briefs',
+    },
+    {
+      title: 'Performance Analytics',
+      description: 'Track your content performance and ROI across all platforms.',
+      target: 'analytics',
+    },
+  ],
+}

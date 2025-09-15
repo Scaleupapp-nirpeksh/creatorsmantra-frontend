@@ -3,456 +3,123 @@
  * Path: src/layouts/MainLayout.jsx
  */
 
-import React, { useEffect, useState } from 'react';
-import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+// Dependencies
 import {
-  Menu,
-  X,
-  Home,
-  Briefcase,
-  FileText,
   BarChart3,
-  CreditCard,
-  Users,
-  Settings,
-  LogOut,
   Bell,
-  Search,
-  ChevronDown,
-  ChevronRight,
-  Moon,
-  Sun,
-  HelpCircle,
-  User,
-  Package,
-  TrendingUp,
-  Star,
-  Zap,
-  Shield,
-  Award,
-  Target,
-  Sparkles,
   ChevronLeft,
+  ChevronRight,
+  Clock,
+  LogOut,
   Plus,
-  Kanban,
-  List,
-  Receipt,
-  Calculator,
-  IndianRupee,
-  FileSpreadsheet,
-  PieChart,
-  Brain,
-  MessageSquare,
-  Eye,
-  Share2,
-  Download,
-  QrCode,
-  Globe,
-  Edit3,
+  Search,
+  TrendingUp,
   Upload,
-  FileCheck,
-  AlertTriangle,
-  Clock
-} from 'lucide-react';
-import { useAuthStore, useUIStore, useDataStore } from '../store';
-import useDealsStore from '../store/dealsStore';
-import useInvoiceStore from '../store/invoiceStore';
-import useScriptsStore from '../store/scriptsStore';
-import useRateCardStore from '../store/ratecardStore';
-import useContractsStore from '../store/contractsStore';
-import toast from 'react-hot-toast';
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+
+// Store Hooks
+import { useAuthStore, useContractsStore, useDataStore, useUIStore } from '../store'
+
+// Cosntants
+import { MainLayoutConstants } from '../utils/constants'
+
+// Components
+import { RenderMenuItems } from '../components'
+
+// Styles
+import '../styles/mainLayout.css'
 
 const MainLayout = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  const { user, subscription, logout } = useAuthStore();
-  
-  const { 
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const { user, subscription, logout } = useAuthStore()
+
+  const {
     sidebar,
     toggleSidebar,
     collapseSidebar,
     setActiveMenuItem,
-    toggleMenuExpansion,
     viewport,
-    theme,
-    toggleTheme,
-    openModal,
     setPageTitle,
-    loading: loadingState = { global: false, page: false, action: false, submit: false }
-  } = useUIStore();
-  
-  const { refreshAllData } = useDataStore();
-  const { deals } = useDealsStore();
-  const { invoices, dashboard } = useInvoiceStore();
-  const { scripts = [] } = useScriptsStore();
-  const { rateCards } = useRateCardStore();
-  const { contracts, analytics: contractsAnalytics, isUploading } = useContractsStore();
-  
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const isPageLoading = loadingState?.page || false;
-  const isGlobalLoading = loadingState?.global || false;
-  
-  const activeDealsCount = deals.filter(deal => 
-    ['lead', 'negotiation', 'confirmed', 'content_creation'].includes(deal.stage)
-  ).length;
-  
-  const pendingInvoicesCount = invoices.filter(invoice => 
-    ['sent', 'viewed', 'partially_paid'].includes(invoice.status)
-  ).length;
-  
-  const overdueInvoicesCount = dashboard?.overdueInvoices || 0;
+    loading: loadingState = { global: false, page: false, action: false, submit: false },
+  } = useUIStore()
 
-  // Calculate scripts count needing attention
-  const scriptsNeedingAttentionCount = scripts.filter(script => 
-    script.aiGeneration?.status === 'failed' || script.status === 'draft'
-  ).length;
+  // Store Hooks
+  const { refreshAllData } = useDataStore()
+  const { analytics: contractsAnalytics, isUploading } = useContractsStore()
 
-  // Calculate rate card notifications
-  const draftRateCardsCount = rateCards.filter(card => 
-    card.version?.status === 'draft'
-  ).length;
-  
-  const expiredRateCardsCount = rateCards.filter(card => 
-    card.sharing?.expiresAt && new Date(card.sharing.expiresAt) < new Date()
-  ).length;
+  // State Variables
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  // Calculate contracts notifications
-  const draftContractsCount = contracts.filter(contract => 
-    contract.status === 'draft'
-  ).length;
-  
-  const highRiskContractsCount = contracts.filter(contract => 
-    contract.riskLevel === 'high' && contract.status === 'active'
-  ).length;
-  
-  const pendingAnalysisCount = contracts.filter(contract => 
-    contract.analysisStatus === 'pending' || contract.analysisStatus === 'processing'
-  ).length;
-  
-  const expiredContractsCount = contracts.filter(contract => 
-    contract.expiresAt && new Date(contract.expiresAt) < new Date() && 
-    contract.status === 'active'
-  ).length;
-
-  // Total contracts needing attention
-  const contractsNeedingAttentionCount = highRiskContractsCount + 
-    pendingAnalysisCount + 
-    expiredContractsCount;
-
-  // Total notification count
-  const totalNotificationCount = overdueInvoicesCount + 
-    scriptsNeedingAttentionCount + 
-    expiredRateCardsCount +
-    contractsNeedingAttentionCount;
-  
-  const menuItems = [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: Home,
-      path: '/dashboard',
-      badge: null
-    },
-    {
-      id: 'deals',
-      label: 'Deals',
-      icon: Briefcase,
-      path: '/deals',
-      badge: activeDealsCount > 0 ? { count: activeDealsCount, type: 'primary' } : null,
-      subItems: [
-        { 
-          id: 'deals-list', 
-          label: 'Pipeline View',
-          path: '/deals',
-          icon: Kanban
-        },
-        { 
-          id: 'deals-create',
-          label: 'Create Deal',
-          path: '/deals/create',
-          icon: Plus
-        }
-      ]
-    },
-    {
-      id: 'invoices',
-      label: 'Invoices',
-      icon: FileText,
-      path: '/invoices',
-      badge: overdueInvoicesCount > 0 ? 
-        { count: overdueInvoicesCount, type: 'warning' } : 
-        pendingInvoicesCount > 0 ? 
-        { count: pendingInvoicesCount, type: 'primary' } : null,
-      subItems: [
-        { 
-          id: 'invoices-list', 
-          label: 'All Invoices', 
-          path: '/invoices',
-          icon: List
-        },
-        { 
-          id: 'invoices-create', 
-          label: 'Create Invoice', 
-          path: '/invoices/create',
-          icon: Plus
-        },
-        { 
-          id: 'invoices-consolidated', 
-          label: 'Consolidated Invoice', 
-          path: '/invoices/create-consolidated',
-          icon: FileSpreadsheet,
-          premium: subscription?.tier === 'starter'
-        },
-        { 
-          id: 'invoices-analytics', 
-          label: 'Analytics', 
-          path: '/invoices/analytics',
-          icon: PieChart
-        }
-      ]
-    },
-    {
-      id: 'scripts',
-      label: 'Scripts',
-      icon: MessageSquare,
-      path: '/scripts',
-      badge: scriptsNeedingAttentionCount > 0 ? { count: scriptsNeedingAttentionCount, type: 'primary' } : null,
-      premium: true,
-      subItems: [
-        { 
-          id: 'scripts-dashboard', 
-          label: 'Dashboard', 
-          path: '/scripts',
-          icon: List
-        },
-        { 
-          id: 'scripts-create', 
-          label: 'Create Script', 
-          path: '/scripts/create',
-          icon: Plus
-        },
-        { 
-          id: 'scripts-analytics', 
-          label: 'Analytics', 
-          path: '/scripts/analytics',
-          icon: PieChart
-        }
-      ]
-    },
-    {
-      id: 'rate-cards',
-      label: 'Rate Cards',
-      icon: CreditCard,
-      path: '/dashboard/rate-cards',
-      badge: expiredRateCardsCount > 0 ? 
-        { count: expiredRateCardsCount, type: 'warning' } : 
-        draftRateCardsCount > 0 ? 
-        { count: draftRateCardsCount, type: 'primary' } : null,
-      premium: true,
-      subItems: [
-        { 
-          id: 'rate-cards-dashboard', 
-          label: 'My Rate Cards', 
-          path: '/dashboard/rate-cards', 
-          icon: List 
-        },
-        { 
-          id: 'rate-cards-create', 
-          label: 'Create Rate Card', 
-          path: '/dashboard/rate-cards/create', 
-          icon: Plus 
-        }
-      ]
-    },
-    {
-      id: 'performance',
-      label: 'Performance',
-      icon: TrendingUp,
-      path: '/performance',
-      badge: null,
-      subItems: [
-        { id: 'performance-overview', label: 'Overview', path: '/performance', icon: BarChart3 },
-        { id: 'performance-analytics', label: 'Analytics', path: '/performance/analytics', icon: PieChart },
-        { id: 'performance-reports', label: 'Reports', path: '/performance/reports', icon: FileText }
-      ]
-    },
-    {
-      id: 'contracts',
-      label: 'Contracts',
-      icon: Shield,
-      path: '/contracts',
-      badge: contractsNeedingAttentionCount > 0 ? { 
-        count: contractsNeedingAttentionCount, 
-        type: highRiskContractsCount > 0 || expiredContractsCount > 0 ? 'warning' : 'primary' 
-      } : null,
-      premium: true,
-      subItems: [
-        { 
-          id: 'contracts-list', 
-          label: 'All Contracts', 
-          path: '/contracts', 
-          icon: List 
-        },
-        { 
-          id: 'contracts-upload', 
-          label: 'Upload Contract', 
-          path: '/contracts?action=upload', 
-          icon: Upload 
-        },
-        { 
-          id: 'contracts-analytics', 
-          label: 'Analytics', 
-          path: '/contracts?tab=analytics', 
-          icon: PieChart,
-          premium: subscription?.tier === 'starter'
-        }
-      ]
-    }
-  ];
-  
-  const bottomMenuItems = [
-    {
-      id: 'profile',
-      label: 'Profile',
-      icon: User,
-      path: '/profile',
-      subItems: [
-        { id: 'profile-overview', label: 'Overview', path: '/profile', icon: User },
-        { id: 'profile-settings', label: 'Settings', path: '/profile/settings', icon: Settings },
-        { id: 'profile-subscription', label: 'Subscription', path: '/profile/subscription', icon: CreditCard },
-        { id: 'profile-team', label: 'Team Management', path: '/profile/team', icon: Users }
-      ]
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      icon: Settings,
-      path: '/settings',
-      subItems: [
-        { 
-          id: 'settings-general', 
-          label: 'General', 
-          path: '/settings',
-          icon: Settings
-        },
-        { 
-          id: 'settings-tax', 
-          label: 'Tax Preferences', 
-          path: '/settings/tax-preferences',
-          icon: Calculator
-        },
-        { 
-          id: 'settings-subscription', 
-          label: 'Subscription', 
-          path: '/settings/subscription',
-          icon: CreditCard
-        }
-      ]
-    },
-    {
-      id: 'help',
-      label: 'Help & Support',
-      icon: HelpCircle,
-      path: '/help'
-    }
-  ];
-  
-  // Initialize data on component mount
   useEffect(() => {
-    // Initialize rate card data when component mounts
-    const rateCardStore = useRateCardStore.getState();
-    if (user && rateCardStore.fetchRateCards) {
-      rateCardStore.fetchRateCards();
-    }
+    const path = location.pathname
+    let activeItem = 'dashboard'
 
-    // Initialize contracts data when component mounts
-    const contractsStore = useContractsStore.getState();
-    if (user && contractsStore.fetchContracts) {
-      contractsStore.fetchContracts();
-    }
-  }, [user]);
-  
-  useEffect(() => {
-    const path = location.pathname;
-    let activeItem = 'dashboard';
-    
-    const allItems = [...menuItems, ...bottomMenuItems];
+    const allItems = [...menuItems, ...bottomMenuItems]
     // Find the active menu item based on current path
-    const foundItem = allItems.find(item => {
-      if (path === item.path) return true;
-      if (item.path !== '/' && path.startsWith(item.path)) return true;
-      return false;
-    });
-    
-    if (foundItem) {
-      activeItem = foundItem.id;
-    }
-    
-    setActiveMenuItem(activeItem);
-    
+    const foundItem = allItems.find((item) => {
+      if (path === item.path || (item.path !== '/' && path.startsWith(item.path))) return true
+      return false
+    })
+
+    if (foundItem) activeItem = foundItem.id
+    setActiveMenuItem(activeItem)
+
     // Set page title
-    const item = allItems.find(i => i.id === activeItem);
-    if (item) {
-      setPageTitle(item.label);
-    }
-  }, [location.pathname, setActiveMenuItem, setPageTitle]);
-  
+    const item = allItems.find((i) => i.id === activeItem)
+    if (item) setPageTitle(item.label)
+  }, [location.pathname, setActiveMenuItem, setPageTitle])
+
+  // Handlers
   const handleLogout = async () => {
     try {
-      await logout();
-      navigate('/login');
-      toast.success('Logged out successfully');
+      await logout()
+      navigate('/login')
+      toast.success('Logged out successfully')
     } catch (error) {
-      toast.error('Failed to logout');
+      toast.error('Failed to logout')
     }
-  };
-  
+  }
+
+  // TODO: MOdify search handler
   const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      if (location.pathname.startsWith('/deals')) {
-        const dealsStore = useDealsStore.getState();
-        dealsStore.searchDeals(searchQuery);
-      } else if (location.pathname.startsWith('/invoices')) {
-        const invoiceStore = useInvoiceStore.getState();
-        invoiceStore.setFilters({ clientName: searchQuery });
-      } else if (location.pathname.startsWith('/scripts')) {
-        const scriptsStore = useScriptsStore.getState();
-        scriptsStore.updateFilters({ search: searchQuery });
-      } else if (location.pathname.includes('/rate-cards')) {
-        const rateCardStore = useRateCardStore.getState();
-        if (rateCardStore.setSearchQuery) {
-          rateCardStore.setSearchQuery(searchQuery);
-        }
-      } else if (location.pathname.startsWith('/contracts')) {
-        const contractsStore = useContractsStore.getState();
-        contractsStore.searchContracts(searchQuery);
-      } else {
-        navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-      }
-      setSearchQuery('');
-    }
-  };
-  
-  const isFeatureLocked = (item) => {
-    const userSubscription = subscription || {
-      tier: user?.subscriptionTier,
-      status: user?.subscriptionStatus,
-      isActive: user?.subscriptionStatus === 'active'
-    };
-    
-    return item.premium && (!userSubscription || userSubscription.tier === 'starter');
-  };
+    e.preventDefault()
+    toast.success('TODO: Search Functionality Coming Soon')
+    // if (searchQuery.trim()) {
+    //   if (location.pathname.startsWith('/deals')) {
+    //     const dealsStore = useDealsStore.getState()
+    //     dealsStore.searchDeals(searchQuery)
+    //   } else if (location.pathname.startsWith('/invoices')) {
+    //     const invoiceStore = useInvoiceStore.getState()
+    //     invoiceStore.setFilters({ clientName: searchQuery })
+    //   } else if (location.pathname.startsWith('/scripts')) {
+    //     const scriptsStore = useScriptsStore.getState()
+    //     scriptsStore.updateFilters({ search: searchQuery })
+    //   } else if (location.pathname.includes('/rate-cards')) {
+    //     const rateCardStore = useRateCardStore.getState()
+    //     if (rateCardStore.setSearchQuery) {
+    //       rateCardStore.setSearchQuery(searchQuery)
+    //     }
+    //   } else if (location.pathname.startsWith('/contracts')) {
+    //     const contractsStore = useContractsStore.getState()
+    //     contractsStore.searchContracts(searchQuery)
+    //   } else {
+    //     navigate(`/search?q=${encodeURIComponent(searchQuery)}`)
+    //   }
+    //   setSearchQuery('')
+    // }
+  }
 
   // Get quick actions based on current page
   const getQuickActions = () => {
-    const path = location.pathname;
-    
+    const path = location.pathname
+
     if (path.startsWith('/dashboard/rate-cards')) {
       return (
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -462,29 +129,29 @@ const MainLayout = () => {
               ...styles.iconButton,
               background: 'var(--gradient-primary)',
               color: 'white',
-              border: 'none'
+              border: 'none',
             }}
             title="Create Rate Card"
           >
             <Plus size={18} />
           </button>
         </div>
-      );
+      )
     }
-    
+
     if (path.startsWith('/contracts')) {
       return (
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
             onClick={() => {
               // Trigger upload modal or navigate to upload section
-              const contractsStore = useContractsStore.getState();
+              const contractsStore = useContractsStore.getState()
               if (contractsStore.canUploadMore && contractsStore.canUploadMore()) {
                 // You can trigger a modal here or navigate to upload
                 // For now, we'll add a URL parameter to trigger upload UI
-                navigate('/contracts?action=upload');
+                navigate('/contracts?action=upload')
               } else {
-                toast.error('Upload limit reached. Please upgrade your plan.');
+                toast.error('Upload limit reached. Please upgrade your plan.')
               }
             }}
             style={{
@@ -492,21 +159,21 @@ const MainLayout = () => {
               background: isUploading ? 'var(--color-neutral-300)' : 'var(--gradient-primary)',
               color: 'white',
               border: 'none',
-              cursor: isUploading ? 'not-allowed' : 'pointer'
+              cursor: isUploading ? 'not-allowed' : 'pointer',
             }}
             title={isUploading ? 'Upload in progress...' : 'Upload Contract'}
             disabled={isUploading}
           >
             {isUploading ? <Clock size={18} /> : <Upload size={18} />}
           </button>
-          
+
           {contractsAnalytics && (
             <button
               onClick={() => navigate('/contracts?tab=analytics')}
               style={{
                 ...styles.iconButton,
                 background: 'transparent',
-                color: 'var(--color-neutral-700)'
+                color: 'var(--color-neutral-700)',
               }}
               title="View Analytics"
             >
@@ -514,117 +181,20 @@ const MainLayout = () => {
             </button>
           )}
         </div>
-      );
+      )
     }
-    
-    return null;
-  };
-  
-  const renderMenuItem = (item) => {
-    const Icon = item.icon;
-    const isActive = sidebar.activeItem === item.id;
-    const isExpanded = sidebar.expandedItems?.includes(item.id);
-    const isLocked = isFeatureLocked(item);
-    const hasSubItems = item.subItems && item.subItems.length > 0;
-    
-    return (
-      <div key={item.id} style={styles.menuItemContainer}>
-        <div
-          onClick={() => {
-            if (isLocked) {
-              openModal('upgradePlan');
-              return;
-            }
-            
-            if (hasSubItems && !sidebar.isCollapsed) {
-              toggleMenuExpansion(item.id);
-            } else {
-              navigate(item.path);
-            }
-          }}
-          style={{
-            ...styles.menuItem,
-            ...(isActive ? styles.menuItemActive : {}),
-            ...(isLocked ? styles.menuItemLocked : {})
-          }}
-        >
-          <div style={styles.menuItemContent}>
-            <Icon size={20} />
-            {!sidebar.isCollapsed && (
-              <>
-                <span style={styles.menuItemLabel}>{item.label}</span>
-                {item.premium && (
-                  <Zap size={14} color="var(--color-warning)" />
-                )}
-                {item.badge && !sidebar.isCollapsed && (
-                  <span style={{
-                    ...styles.badge,
-                    ...(item.badge.type === 'primary' ? styles.badgePrimary :
-                        item.badge.type === 'warning' ? styles.badgeWarning :
-                        styles.badgeSuccess)
-                  }}>
-                    {item.badge.count}
-                  </span>
-                )}
-                {hasSubItems && (
-                  <ChevronRight 
-                    size={16} 
-                    style={{
-                      ...styles.chevron,
-                      transform: isExpanded ? 'rotate(90deg)' : 'none'
-                    }}
-                  />
-                )}
-              </>
-            )}
-          </div>
-        </div>
-        
-        {hasSubItems && isExpanded && !sidebar.isCollapsed && (
-          <div style={styles.subItemsContainer}>
-            {item.subItems.map(subItem => {
-              const SubIcon = subItem.icon;
-              const isSubItemLocked = isFeatureLocked(subItem);
-              const isSubItemActive = location.pathname === subItem.path;
-              
-              return (
-                <Link
-                  key={subItem.id}
-                  to={!isSubItemLocked ? subItem.path : '#'}
-                  onClick={(e) => {
-                    if (isSubItemLocked) {
-                      e.preventDefault();
-                      openModal('upgradePlan');
-                    }
-                  }}
-                  style={{
-                    ...styles.subItem,
-                    ...(isSubItemActive ? styles.subItemActive : {}),
-                    ...(isSubItemLocked ? styles.subItemLocked : {})
-                  }}
-                >
-                  {SubIcon && <SubIcon size={14} style={{ marginRight: '0.5rem' }} />}
-                  {subItem.label}
-                  {subItem.premium && (
-                    <Zap size={12} color="var(--color-warning)" style={{ marginLeft: 'auto' }} />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  };
-  
+
+    return null
+  }
+
   const styles = {
     container: {
       display: 'flex',
       height: '100vh',
       background: 'var(--color-background)',
-      overflow: 'hidden'
+      overflow: 'hidden',
     },
-    
+
     sidebar: {
       width: sidebar.isCollapsed ? '80px' : '260px',
       background: 'white',
@@ -635,12 +205,14 @@ const MainLayout = () => {
       position: viewport.isMobile ? 'fixed' : 'relative',
       height: '100vh',
       zIndex: viewport.isMobile ? 100 : 1,
-      transform: viewport.isMobile ? 
-        (sidebar.isMobileOpen ? 'translateX(0)' : 'translateX(-100%)') : 
-        'none',
-      flexShrink: 0
+      transform: viewport.isMobile
+        ? sidebar.isMobileOpen
+          ? 'translateX(0)'
+          : 'translateX(-100%)'
+        : 'none',
+      flexShrink: 0,
     },
-    
+
     sidebarHeader: {
       padding: '1.5rem',
       borderBottom: '1px solid var(--color-neutral-200)',
@@ -648,18 +220,19 @@ const MainLayout = () => {
       alignItems: 'center',
       justifyContent: sidebar.isCollapsed ? 'center' : 'space-between',
     },
-    
+
     logo: {
       display: 'flex',
       alignItems: 'center',
       gap: '0.75rem',
       textDecoration: 'none',
     },
-    
+
     logoIcon: {
       width: '32px',
       height: '32px',
-      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      background:
+        'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
       borderRadius: '10px',
       display: 'flex',
       alignItems: 'center',
@@ -668,14 +241,14 @@ const MainLayout = () => {
       fontWeight: '700',
       fontSize: '1.125rem',
     },
-    
+
     logoText: {
       fontSize: '1.25rem',
       fontWeight: '700',
       color: 'var(--color-neutral-900)',
       display: sidebar.isCollapsed ? 'none' : 'block',
     },
-    
+
     collapseButton: {
       padding: '0.5rem',
       background: 'transparent',
@@ -686,124 +259,23 @@ const MainLayout = () => {
       transition: 'all 0.2s ease',
       display: viewport.isMobile ? 'none' : 'flex',
     },
-    
+
     sidebarContent: {
       flex: 1,
       padding: '1rem',
       overflowY: 'auto',
       overflowX: 'hidden',
     },
-    
+
     menuSection: {
       marginBottom: '2rem',
     },
-    
-    menuItemContainer: {
-      marginBottom: '0.25rem',
-    },
-    
-    menuItem: {
-      display: 'flex',
-      alignItems: 'center',
-      padding: sidebar.isCollapsed ? '0.75rem' : '0.75rem 1rem',
-      borderRadius: '10px',
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-      color: 'var(--color-neutral-700)',
-      textDecoration: 'none',
-      justifyContent: sidebar.isCollapsed ? 'center' : 'flex-start',
-    },
-    
-    menuItemActive: {
-      background: 'rgba(102, 126, 234, 0.1)',
-      color: 'var(--color-primary-600)',
-      fontWeight: '600',
-    },
-    
-    menuItemLocked: {
-      opacity: 0.6,
-      cursor: 'not-allowed',
-    },
-    
-    menuItemContent: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.75rem',
-      width: '100%',
-    },
-    
-    menuItemLabel: {
-      flex: 1,
-      fontSize: '0.875rem',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    },
-    
-    badge: {
-      padding: '0.125rem 0.5rem',
-      borderRadius: '10px',
-      fontSize: '0.75rem',
-      fontWeight: '600',
-      minWidth: '20px',
-      textAlign: 'center',
-    },
-    
-    badgePrimary: {
-      background: 'var(--color-primary-100)',
-      color: 'var(--color-primary-700)',
-    },
-    
-    badgeWarning: {
-      background: 'var(--color-warning-100)',
-      color: 'var(--color-warning-700)',
-    },
-    
-    badgeSuccess: {
-      background: 'var(--color-success-100)',
-      color: 'var(--color-success-700)',
-    },
-    
-    chevron: {
-      transition: 'transform 0.2s ease',
-      marginLeft: 'auto',
-    },
-    
-    subItemsContainer: {
-      marginLeft: sidebar.isCollapsed ? '0' : '2.5rem',
-      marginTop: '0.25rem',
-      paddingLeft: '0.5rem',
-      borderLeft: '2px solid var(--color-neutral-100)',
-    },
-    
-    subItem: {
-      display: 'flex',
-      alignItems: 'center',
-      padding: '0.5rem 1rem',
-      fontSize: '0.813rem',
-      color: 'var(--color-neutral-600)',
-      textDecoration: 'none',
-      borderRadius: '8px',
-      transition: 'all 0.2s ease',
-      marginBottom: '0.125rem',
-    },
-    
-    subItemActive: {
-      background: 'rgba(102, 126, 234, 0.05)',
-      color: 'var(--color-primary-600)',
-      fontWeight: '500',
-    },
-    
-    subItemLocked: {
-      opacity: 0.6,
-      cursor: 'not-allowed',
-    },
-    
+
     sidebarFooter: {
       padding: '1rem',
       borderTop: '1px solid var(--color-neutral-200)',
     },
-    
+
     userProfile: {
       display: 'flex',
       alignItems: 'center',
@@ -814,12 +286,13 @@ const MainLayout = () => {
       transition: 'all 0.2s ease',
       justifyContent: sidebar.isCollapsed ? 'center' : 'flex-start',
     },
-    
+
     userAvatar: {
       width: '36px',
       height: '36px',
       borderRadius: '50%',
-      background: 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      background:
+        'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -827,13 +300,13 @@ const MainLayout = () => {
       fontWeight: '600',
       fontSize: '0.875rem',
     },
-    
+
     userInfo: {
       flex: 1,
       display: sidebar.isCollapsed ? 'none' : 'block',
       minWidth: 0,
     },
-    
+
     userName: {
       fontSize: '0.875rem',
       fontWeight: '600',
@@ -843,7 +316,7 @@ const MainLayout = () => {
       overflow: 'hidden',
       textOverflow: 'ellipsis',
     },
-    
+
     userRole: {
       fontSize: '0.75rem',
       color: 'var(--color-neutral-600)',
@@ -851,7 +324,7 @@ const MainLayout = () => {
       overflow: 'hidden',
       textOverflow: 'ellipsis',
     },
-    
+
     mainContent: {
       flex: 1,
       display: 'flex',
@@ -860,7 +333,7 @@ const MainLayout = () => {
       overflow: 'hidden',
       minWidth: 0,
     },
-    
+
     header: {
       background: 'white',
       borderBottom: '1px solid var(--color-neutral-200)',
@@ -871,7 +344,7 @@ const MainLayout = () => {
       flexShrink: 0,
       minHeight: '70px',
     },
-    
+
     mobileMenuButton: {
       padding: '0.5rem',
       background: 'transparent',
@@ -882,13 +355,13 @@ const MainLayout = () => {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    
+
     searchBar: {
       flex: 1,
-      maxWidth: '500px',
+      // maxWidth: '500px',
       position: 'relative',
     },
-    
+
     searchInput: {
       width: '100%',
       padding: '0.625rem 1rem',
@@ -900,7 +373,7 @@ const MainLayout = () => {
       transition: 'all 0.2s ease',
       background: 'var(--color-neutral-50)',
     },
-    
+
     searchIcon: {
       position: 'absolute',
       left: '1rem',
@@ -908,14 +381,14 @@ const MainLayout = () => {
       transform: 'translateY(-50%)',
       color: 'var(--color-neutral-400)',
     },
-    
+
     headerActions: {
       marginLeft: 'auto',
       display: 'flex',
       alignItems: 'center',
       gap: '1rem',
     },
-    
+
     iconButton: {
       padding: '0.625rem',
       background: 'transparent',
@@ -929,7 +402,7 @@ const MainLayout = () => {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    
+
     notificationBadge: {
       position: 'absolute',
       top: '-4px',
@@ -945,13 +418,13 @@ const MainLayout = () => {
       fontSize: '0.625rem',
       fontWeight: '600',
     },
-    
+
     content: {
       flex: 1,
       overflow: 'auto',
-      position: 'relative'
+      position: 'relative',
     },
-    
+
     loadingOverlay: {
       position: 'absolute',
       top: 0,
@@ -964,7 +437,7 @@ const MainLayout = () => {
       justifyContent: 'center',
       zIndex: 100,
     },
-    
+
     loadingSpinner: {
       width: '40px',
       height: '40px',
@@ -973,7 +446,7 @@ const MainLayout = () => {
       borderRadius: '50%',
       animation: 'spin 1s linear infinite',
     },
-    
+
     mobileOverlay: {
       display: viewport.isMobile && sidebar.isMobileOpen ? 'block' : 'none',
       position: 'fixed',
@@ -984,7 +457,7 @@ const MainLayout = () => {
       background: 'rgba(0, 0, 0, 0.5)',
       zIndex: 99,
     },
-    
+
     logoutButton: {
       width: '100%',
       display: 'flex',
@@ -1000,91 +473,73 @@ const MainLayout = () => {
       fontSize: '0.875rem',
       transition: 'all 0.2s ease',
       justifyContent: sidebar.isCollapsed ? 'center' : 'flex-start',
-    }
-  };
-  
+    },
+  }
+
+  // Constants
+  const { bottomMenuItems, menuItems } = MainLayoutConstants
+
   return (
     <div style={styles.container}>
-      <div 
-        style={styles.mobileOverlay}
-        onClick={() => toggleSidebar()}
-      />
-      
+      <div style={styles.mobileOverlay} onClick={() => toggleSidebar()} />
+
       <aside style={styles.sidebar}>
+        {/* Sidebar Header */}
         <div style={styles.sidebarHeader}>
           <Link to="/dashboard" style={styles.logo}>
             <div style={styles.logoIcon}>C</div>
-            {!sidebar.isCollapsed && (
-              <span style={styles.logoText}>CreatorsMantra</span>
-            )}
+            {!sidebar.isCollapsed && <span style={styles.logoText}>CreatorsMantra</span>}
           </Link>
-          
+
           <button
             onClick={() => collapseSidebar()}
             style={{
               ...styles.collapseButton,
-              ...(sidebar.isCollapsed ? { margin: '0 auto' } : {})
+              ...(sidebar.isCollapsed ? { margin: '0 auto' } : {}),
             }}
           >
-            {sidebar.isCollapsed ? (
-              <ChevronRight size={20} />
-            ) : (
-              <ChevronLeft size={20} />
-            )}
+            {sidebar.isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
         </div>
-        
+
         <div style={styles.sidebarContent}>
           <div style={styles.menuSection}>
-            {menuItems.map(renderMenuItem)}
+            {menuItems.map((item, index) => (
+              <RenderMenuItems item={item} key={index} />
+            ))}
           </div>
-          
           <div style={styles.menuSection}>
-            {bottomMenuItems.map(renderMenuItem)}
+            {bottomMenuItems.map((item, index) => (
+              <RenderMenuItems item={item} key={index} />
+            ))}
           </div>
         </div>
-        
+
+        {/* Sidebar Footer */}
         <div style={styles.sidebarFooter}>
-          <div 
-            style={styles.userProfile}
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
-          >
-            <div style={styles.userAvatar}>
-              {user?.fullName?.charAt(0).toUpperCase() || 'U'}
-            </div>
+          <div style={styles.userProfile} onClick={() => setShowProfileMenu(!showProfileMenu)}>
+            <div style={styles.userAvatar}>{user?.fullName?.charAt(0).toUpperCase() || 'U'}</div>
             <div style={styles.userInfo}>
-              <div style={styles.userName}>
-                {user?.fullName || 'User'}
-              </div>
+              <div style={styles.userName}>{user?.fullName || 'User'}</div>
               <div style={styles.userRole}>
-                {subscription?.tier ? 
-                  `${subscription.tier.charAt(0).toUpperCase()}${subscription.tier.slice(1)} Plan` : 
-                  'Starter Plan'}
+                {subscription
+                  ? `${subscription.charAt(0).toUpperCase()}${subscription.slice(1)} Plan`
+                  : 'Starter Plan'}
               </div>
             </div>
           </div>
-          
-          <button
-            onClick={handleLogout}
-            style={styles.logoutButton}
-          >
+
+          {/* Logout Button */}
+          <button onClick={handleLogout} style={styles.logoutButton}>
             <LogOut size={20} />
             {!sidebar.isCollapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>
-      
+
       <div style={styles.mainContent}>
+        {/* Header */}
         <header style={styles.header}>
-          {viewport.isMobile && (
-            <button
-              onClick={() => toggleSidebar()}
-              style={styles.mobileMenuButton}
-            >
-              <Menu size={24} />
-            </button>
-          )}
-          
           <form onSubmit={handleSearch} style={styles.searchBar}>
             <Search size={18} style={styles.searchIcon} />
             <input
@@ -1095,99 +550,27 @@ const MainLayout = () => {
               style={styles.searchInput}
             />
           </form>
-          
+
           <div style={styles.headerActions}>
             {getQuickActions()}
-            
-            <button
-              onClick={() => toggleTheme()}
-              style={styles.iconButton}
-              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            >
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-            
+
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               style={styles.iconButton}
               title="Notifications"
             >
               <Bell size={20} />
-              {totalNotificationCount > 0 && (
-                <span style={styles.notificationBadge}>
-                  {totalNotificationCount}
-                </span>
-              )}
-            </button>
-            
-            <button
-              onClick={() => refreshAllData()}
-              style={styles.iconButton}
-              title="Refresh data"
-            >
-              <TrendingUp size={20} />
             </button>
           </div>
         </header>
-        
+
+        {/* Main Content */}
         <main style={styles.content}>
-          {isPageLoading && (
-            <div style={styles.loadingOverlay}>
-              <div style={styles.loadingSpinner} />
-            </div>
-          )}
-          
           <Outlet />
         </main>
       </div>
-      
-      <style jsx>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        
-        .sidebar:hover .collapse-button {
-          opacity: 1;
-        }
-        
-        .menu-item:hover {
-          background: rgba(102, 126, 234, 0.05);
-        }
-        
-        .sub-item:hover:not(.sub-item-locked) {
-          background: rgba(102, 126, 234, 0.05);
-        }
-        
-        .icon-button:hover {
-          background: var(--color-neutral-50);
-          border-color: var(--color-neutral-300);
-        }
-        
-        .search-input:focus {
-          border-color: var(--color-primary-300);
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .user-profile:hover {
-          background: rgba(102, 126, 234, 0.05);
-        }
-        
-        .logout-button:hover {
-          background: rgba(239, 68, 68, 0.05);
-        }
-        
-        @media (max-width: 768px) {
-          .header {
-            padding: 1rem;
-          }
-          
-          .search-bar {
-            max-width: none;
-          }
-        }
-      `}</style>
     </div>
-  );
-};
+  )
+}
 
-export default MainLayout;
+export default MainLayout

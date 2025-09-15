@@ -1,0 +1,25 @@
+export const RegisterPageConstants = {}
+
+RegisterPageConstants.CreatorTypes = [
+  { value: 'lifestyle', label: 'Lifestyle', icon: '🌟' },
+  { value: 'fashion', label: 'Fashion', icon: '👗' },
+  { value: 'beauty', label: 'Beauty', icon: '💄' },
+  { value: 'tech', label: 'Technology', icon: '💻' },
+  { value: 'food', label: 'Food', icon: '🍕' },
+  { value: 'travel', label: 'Travel', icon: '✈️' },
+  { value: 'fitness', label: 'Fitness', icon: '💪' },
+  { value: 'comedy', label: 'Comedy', icon: '😄' },
+  { value: 'education', label: 'Education', icon: '📚' },
+  { value: 'business', label: 'Business', icon: '💼' },
+  { value: 'gaming', label: 'Gaming', icon: '🎮' },
+  { value: 'home_decor', label: 'Home Decor', icon: '🏠' },
+  { value: 'art', label: 'Art & DIY', icon: '🎨' },
+  { value: 'music', label: 'Music', icon: '🎵' },
+  { value: 'dance', label: 'Dance', icon: '💃' },
+  { value: 'parenting', label: 'Parenting', icon: '👶' },
+  { value: 'pets', label: 'Pets', icon: '🐾' },
+  { value: 'sports', label: 'Sports', icon: '⚽' },
+  { value: 'automobile', label: 'Automobile', icon: '🚗' },
+  { value: 'finance', label: 'Finance', icon: '💰' },
+  { value: 'other', label: 'Other', icon: '✨' },
+]

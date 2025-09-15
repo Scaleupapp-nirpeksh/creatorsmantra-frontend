@@ -1,16 +1,11 @@
-// src/pages/LandingPage.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, useAnimation, useInView } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  ArrowRight, 
-  CheckCircle2, 
-  TrendingUp, 
-  FileText, 
-  Brain,
+// Dependencies
+import { useState, useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+import {
+  ArrowRight,
+  CheckCircle2,
   Shield,
-  Users,
-  BarChart3,
   Sparkles,
   Play,
   Star,
@@ -18,184 +13,51 @@ import {
   ChevronRight,
   Menu,
   X,
-  DollarSign,
   Clock,
-  Target,
-  Award,
   Globe,
-  Smartphone
-} from 'lucide-react';
-import  useAuthStore  from '../store/authStore';
-import  useUIStore  from '../store/uiStore';
-import styles from './LandingPage.module.css';
+} from 'lucide-react'
+
+// Store Hooks
+import { useAuthStore } from '../store'
+
+// Constants
+import { PageConstants } from '../utils/constants/page.constants'
+
+// Styles
+import styles from '../styles/LandingPage.module.css'
 
 const LandingPage = () => {
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
-  const { theme } = useUIStore();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('pro');
-  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const navigate = useNavigate()
+  const { isAuthenticated } = useAuthStore()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // TODO: Consume this value on Register Page
+  const [selectedPlan, setSelectedPlan] = useState('pro')
 
   // Animation refs
-  const heroRef = useRef(null);
-  const featuresRef = useRef(null);
-  const statsRef = useRef(null);
-  const pricingRef = useRef(null);
+  const heroRef = useRef(null)
+  const featuresRef = useRef(null)
+  const statsRef = useRef(null)
+  const pricingRef = useRef(null)
 
-  const heroInView = useInView(heroRef, { once: true });
-  const featuresInView = useInView(featuresRef, { once: true });
-  const statsInView = useInView(statsRef, { once: true });
-  const pricingInView = useInView(pricingRef, { once: true });
+  const heroInView = useInView(heroRef, { once: true })
+  const featuresInView = useInView(featuresRef, { once: true })
+  const statsInView = useInView(statsRef, { once: true })
+  const pricingInView = useInView(pricingRef, { once: true })
 
   // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, navigate]);
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />
 
-  // Features data
-  const features = [
-    {
-      icon: <TrendingUp className={styles.featureIcon} />,
-      title: 'Deal Pipeline Management',
-      description: 'Track brand collaborations from pitch to payment with our visual pipeline',
-      color: 'var(--color-primary)'
-    },
-    {
-      icon: <FileText className={styles.featureIcon} />,
-      title: 'Smart Invoicing',
-      description: 'Create GST-compliant invoices in seconds with automatic tax calculations',
-      color: 'var(--color-secondary)'
-    },
-    {
-      icon: <Brain className={styles.featureIcon} />,
-      title: 'AI Brief Analyzer',
-      description: 'Let AI extract key requirements and spot red flags in brand briefs instantly',
-      color: 'var(--color-accent)'
-    },
-    {
-      icon: <BarChart3 className={styles.featureIcon} />,
-      title: 'Performance Analytics',
-      description: 'Track ROI, engagement rates, and campaign performance in real-time',
-      color: 'var(--color-success)'
-    },
-    {
-      icon: <DollarSign className={styles.featureIcon} />,
-      title: 'Dynamic Rate Cards',
-      description: 'AI-powered pricing suggestions based on your metrics and market rates',
-      color: 'var(--color-warning)'
-    },
-    {
-      icon: <Shield className={styles.featureIcon} />,
-      title: 'Contract Management',
-      description: 'Store, track, and manage all your brand agreements in one secure place',
-      color: 'var(--color-info)'
-    }
-  ];
+  // Constants
+  const { pricingPlans, testimonials, features, stats } = PageConstants.CmMeta
 
-  // Stats data
-  const stats = [
-    { value: '10K+', label: 'Active Creators', icon: <Users /> },
-    { value: '₹50Cr+', label: 'Invoices Processed', icon: <DollarSign /> },
-    { value: '25K+', label: 'Deals Managed', icon: <Target /> },
-    { value: '98%', label: 'Creator Satisfaction', icon: <Award /> }
-  ];
-
-  // Pricing plans
-  const pricingPlans = [
-    {
-      id: 'starter',
-      name: 'Starter',
-      price: '₹299',
-      period: '/month',
-      description: 'Perfect for creators just starting out',
-      features: [
-        '10 Active Deals',
-        '20 Invoices/month',
-        'Basic CRM Pipeline',
-        'Invoice Management',
-        'Basic Performance Tracking',
-        'Email Support'
-      ],
-      popular: false
-    },
-    {
-      id: 'pro',
-      name: 'Pro',
-      price: '₹1,499',
-      period: '/month',
-      description: 'For established creators ready to scale',
-      features: [
-        '25 Active Deals',
-        'Unlimited Invoices',
-        'AI Brief Analyzer',
-        'AI-Powered Pricing',
-        'Advanced Analytics',
-        'Priority Support',
-        'Custom Rate Cards',
-        'Deal Templates'
-      ],
-      popular: true
-    },
-    {
-      id: 'elite',
-      name: 'Elite',
-      price: '₹2,999',
-      period: '/month',
-      description: 'Complete toolkit for power creators',
-      features: [
-        '50 Active Deals',
-        'Everything in Pro',
-        'AI Contract Review',
-        'Advanced Workflows',
-        'Team Collaboration',
-        'White-label Reports',
-        'API Access',
-        'Dedicated Account Manager'
-      ],
-      popular: false
-    }
-  ];
-
-  // Testimonials
-  const testimonials = [
-    {
-      name: 'Priya Sharma',
-      handle: '@priyastyles',
-      followers: '250K followers',
-      content: 'CreatorsMantra transformed how I manage collaborations. The AI brief analyzer alone saves me hours every week!',
-      avatar: '👩‍💼'
-    },
-    {
-      name: 'Arjun Patel',
-      handle: '@techwitharjun',
-      followers: '180K followers',
-      content: 'Finally, a platform that understands creator needs. Invoice generation with GST is now a 2-minute job.',
-      avatar: '👨‍💻'
-    },
-    {
-      name: 'Sneha Reddy',
-      handle: '@foodwithsneha',
-      followers: '320K followers',
-      content: 'The deal pipeline is a game-changer. I never miss a follow-up and my revenue has grown 40% in 3 months!',
-      avatar: '👩‍🍳'
-    }
-  ];
-
-  const handleStartFreeTrial = () => {
-    navigate('/register');
-  };
-
-  const handleExploreDemo = () => {
-    navigate('/demo');
-  };
-
+  // Handlers
+  const handleStartFreeTrial = () => navigate('/register')
+  const handleExploreDemo = () => navigate('/demo')
   const scrollToSection = (sectionId) => {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
-    setMobileMenuOpen(false);
-  };
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' })
+    setMobileMenuOpen(false)
+  }
 
   return (
     <div className={styles.landingPage}>
@@ -214,9 +76,6 @@ const LandingPage = () => {
             <button onClick={() => scrollToSection('pricing')} className={styles.navLink}>
               Pricing
             </button>
-            <button onClick={() => scrollToSection('testimonials')} className={styles.navLink}>
-              Testimonials
-            </button>
             <Link to="/login" className={styles.navLink}>
               Login
             </Link>
@@ -225,7 +84,7 @@ const LandingPage = () => {
             </button>
           </div>
 
-          <button 
+          <button
             className={styles.mobileMenuToggle}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
@@ -235,7 +94,7 @@ const LandingPage = () => {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <motion.div 
+          <motion.div
             className={styles.mobileMenu}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -246,7 +105,10 @@ const LandingPage = () => {
             <button onClick={() => scrollToSection('pricing')} className={styles.mobileNavLink}>
               Pricing
             </button>
-            <button onClick={() => scrollToSection('testimonials')} className={styles.mobileNavLink}>
+            <button
+              onClick={() => scrollToSection('testimonials')}
+              className={styles.mobileNavLink}
+            >
               Testimonials
             </button>
             <Link to="/login" className={styles.mobileNavLink}>
@@ -267,7 +129,7 @@ const LandingPage = () => {
           <div className={styles.gradientOrb3} />
         </div>
 
-        <motion.div 
+        <motion.div
           className={styles.heroContent}
           initial={{ opacity: 0, y: 30 }}
           animate={heroInView ? { opacity: 1, y: 0 } : {}}
@@ -283,8 +145,8 @@ const LandingPage = () => {
           </h1>
 
           <p className={styles.heroDescription}>
-            Manage deals, create invoices, analyze briefs with AI, and grow your creator business 
-            — all from one powerful platform trusted by 10,000+ Indian creators.
+            Manage deals, create invoices, analyze briefs with AI, and grow your creator business —
+            all from one powerful platform trusted by 10,000+ Indian creators.
           </p>
 
           <div className={styles.heroActions}>
@@ -314,7 +176,7 @@ const LandingPage = () => {
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           className={styles.heroVisual}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={heroInView ? { opacity: 1, scale: 1 } : {}}
@@ -346,25 +208,6 @@ const LandingPage = () => {
         </motion.div>
       </section>
 
-      {/* Stats Section */}
-      <section className={styles.stats} ref={statsRef}>
-        <div className={styles.statsContainer}>
-          {stats.map((stat, index) => (
-            <motion.div
-              key={index}
-              className={styles.statCard}
-              initial={{ opacity: 0, y: 20 }}
-              animate={statsInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <div className={styles.statIcon}>{stat.icon}</div>
-              <div className={styles.statValue}>{stat.value}</div>
-              <div className={styles.statLabel}>{stat.label}</div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
       {/* Features Section */}
       <section className={styles.features} id="features" ref={featuresRef}>
         <div className={styles.sectionHeader}>
@@ -378,7 +221,7 @@ const LandingPage = () => {
         </div>
 
         <div className={styles.featuresGrid}>
-          {features.map((feature, index) => (
+          {features.map(({ title, description, Icon, style, color }, index) => (
             <motion.div
               key={index}
               className={styles.featureCard}
@@ -387,11 +230,11 @@ const LandingPage = () => {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{ y: -5, transition: { duration: 0.2 } }}
             >
-              <div className={styles.featureIconWrapper} style={{ background: feature.color }}>
-                {feature.icon}
+              <div className={styles.featureIconWrapper} style={{ background: color }}>
+                <Icon className={styles.featureIcon} />
               </div>
-              <h3 className={styles.featureTitle}>{feature.title}</h3>
-              <p className={styles.featureDescription}>{feature.description}</p>
+              <h3 className={styles.featureTitle}>{title}</h3>
+              <p className={styles.featureDescription}>{description}</p>
             </motion.div>
           ))}
         </div>
@@ -424,7 +267,7 @@ const LandingPage = () => {
                   <Star /> Most Popular
                 </div>
               )}
-              
+
               <div className={styles.planHeader}>
                 <h3 className={styles.planName}>{plan.name}</h3>
                 <div className={styles.planPrice}>
@@ -443,11 +286,11 @@ const LandingPage = () => {
                 ))}
               </ul>
 
-              <button 
+              <button
                 className={`${styles.planCta} ${plan.popular ? styles.planCtaPrimary : ''}`}
                 onClick={() => {
-                  setSelectedPlan(plan.id);
-                  handleStartFreeTrial();
+                  setSelectedPlan(plan.id)
+                  handleStartFreeTrial()
                 }}
               >
                 Start Free Trial
@@ -458,68 +301,21 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className={styles.testimonials} id="testimonials">
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>
-            Loved by
-            <span className={styles.titleGradient}> 10,000+ Creators</span>
-          </h2>
-          <p className={styles.sectionDescription}>
-            See how CreatorsMantra is transforming creator businesses across India
-          </p>
-        </div>
-
-        <div className={styles.testimonialsGrid}>
-          {testimonials.map((testimonial, index) => (
-            <motion.div
-              key={index}
-              className={styles.testimonialCard}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <div className={styles.testimonialHeader}>
-                <div className={styles.testimonialAvatar}>{testimonial.avatar}</div>
-                <div className={styles.testimonialInfo}>
-                  <h4 className={styles.testimonialName}>{testimonial.name}</h4>
-                  <p className={styles.testimonialHandle}>{testimonial.handle}</p>
-                  <p className={styles.testimonialFollowers}>{testimonial.followers}</p>
-                </div>
-              </div>
-              
-              <div className={styles.testimonialContent}>
-                <p>"{testimonial.content}"</p>
-              </div>
-              
-              <div className={styles.testimonialRating}>
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className={styles.ratingStar} />
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className={styles.finalCta}>
-        <motion.div 
+        <motion.div
           className={styles.ctaContent}
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
         >
-          <h2 className={styles.ctaTitle}>
-            Ready to 10x Your Creator Business?
-          </h2>
+          <h2 className={styles.ctaTitle}>Ready to 10x Your Creator Business?</h2>
           <p className={styles.ctaDescription}>
-            Join thousands of creators who've already transformed their business with CreatorsMantra.
-            Start your 14-day free trial today — no credit card required.
+            Join thousands of creators who've already transformed their business with
+            CreatorsMantra. Start your 14-day free trial today — no credit card required.
           </p>
-          
+
           <div className={styles.ctaActions}>
             <button onClick={handleStartFreeTrial} className={styles.ctaPrimary}>
               Start Your Free Trial
@@ -587,28 +383,8 @@ const LandingPage = () => {
           <p>Made with ❤️ for Indian Creators</p>
         </div>
       </footer>
-
-      {/* Video Modal */}
-      {videoModalOpen && (
-        <motion.div 
-          className={styles.videoModal}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          onClick={() => setVideoModalOpen(false)}
-        >
-          <div className={styles.videoContainer}>
-            <button className={styles.closeVideo} onClick={() => setVideoModalOpen(false)}>
-              <X />
-            </button>
-            <div className={styles.videoPlaceholder}>
-              <Play />
-              <p>Demo Video Coming Soon</p>
-            </div>
-          </div>
-        </motion.div>
-      )}
     </div>
-  );
-};
+  )
+}
 
-export default LandingPage;
+export default LandingPage
