@@ -94,42 +94,21 @@ export const getStageValue = (stageId, deals) => {
     return sum + amount
   }, 0)
 }
-export const checkCondition = (cond, data) => {
-  if (!cond) return true
-  const val = data?.[cond.field]?.value === cond.value.toLowerCase()
-  return val
-}
-export const validateSection = (formState, sectionFields) => {
-  const result = { formValues: { ...formState }, hasError: false }
+export const validate = (draft, fieldsConfig) => {
+  const result = {
+    hasErrors: false,
+    updatedDraft: { ...draft },
+  }
 
-  sectionFields.forEach((field) => {
-    const key = field.name
-    const value = formState[key]?.value ?? ''
+  fieldsConfig.forEach((field) => {
+    if (!field?.required) return
+    if (draft[field.name]?.value !== '') return
 
-    result.formValues[key] = {
-      value,
-      error: '',
+    result.updatedDraft[field.name] = {
+      ...draft[field.name],
+      error: `This field is required.`,
     }
-
-    if (field.showIf) {
-      const { field: depField, value: expectedValue, operation } = field.showIf
-      const depFieldValue = formState[depField]?.value
-
-      let isVisible = true
-      if (operation === 'equals') {
-        isVisible = depFieldValue === expectedValue
-      } else if (operation === 'notEquals') {
-        isVisible = depFieldValue !== expectedValue
-      }
-
-      if (!isVisible) return // skip validation for hidden field
-    }
-
-    // Field Validations
-    if (field.isRequired && (!value || value.trim() === '')) {
-      result.formValues[key].error = `${field.label || key} is required`
-      result.hasError = true
-    }
+    result.hasErrors = true
   })
 
   return result
@@ -187,4 +166,9 @@ export const formatNumberWithCommas = (value) => {
   const [integer, decimal] = value.toString().split('.')
   const formattedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   return decimal ? `${formattedInteger}.${decimal}` : formattedInteger
+}
+export const getNextGroupUid = (arr) => {
+  if (arr.length === 0) return null // handle empty case
+  const lastUID = arr.at(-1) // get last element safely
+  return lastUID.replace(/(\d+)$/, (match) => String(Number(match) + 1))
 }

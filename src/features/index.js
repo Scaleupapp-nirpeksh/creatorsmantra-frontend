@@ -7,3 +7,6 @@ export const PublicRateCard = lazy(() => import('./rateCard/pages/PublicRateCard
 export const RenderDealsListing = lazy(() => import('./deals/pages/DealsListPage'))
 export const RenderCreateDeal = lazy(() => import('./deals/pages/CreateDealPage'))
 export const RenderDealDetails = lazy(() => import('./deals/pages/DealDetailsPage'))
+
+// Invoices
+export const RenderInvoiceDashboard = lazy(() => import('./invoices/pages/InvoiceDashboard'))

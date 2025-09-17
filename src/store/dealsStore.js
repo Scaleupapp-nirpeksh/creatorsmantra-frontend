@@ -18,7 +18,9 @@ import { create } from 'zustand'
 import { dealsAPI } from '../api/endpoints/deals'
 import { toast } from 'react-hot-toast'
 import { createJSONStorage, devtools, persist } from 'zustand/middleware'
-import { calculateAnalytics, checkOverdueStatus } from '../utils/helpers'
+import { calculateAnalytics, checkOverdueStatus, validate } from '../utils/helpers'
+import { DealsConstants } from '../utils/constants'
+import { CreateDealForm } from '../features/deals/formFields'
 
 // Storage key prefix from environment
 const STORAGE_PREFIX = import.meta.env.VITE_STORAGE_PREFIX || 'cm_'
@@ -26,12 +28,18 @@ const STORAGE_PREFIX = import.meta.env.VITE_STORAGE_PREFIX || 'cm_'
 const ifProd = import.meta.env.VITE_ENV === 'production'
 const storeWrapper = (f) => (ifProd ? (f) => f : devtools(f, { name: 'dealsStore' }))
 
+const { CreateDealSections, SectionMap } = DealsConstants
+
+/*
+    TODO:
+    1. Add Reset Mechanism if user leaves the page in between
+*/
+
 const useDealsStore = create((set, get) => ({
   // --------------- STATE ---------------
 
   // Deals data
   deals: [],
-  draftDeal: {},
   loading: false,
   error: null,
   viewType: 'pipeline', // pipeline, table, calendar
@@ -53,11 +61,199 @@ const useDealsStore = create((set, get) => ({
     overdueDeals: 0,
   },
 
+  // Create Deals Operations
+  sectionConfig: {
+    key: CreateDealSections.BasicInfo.key,
+    fields: CreateDealForm[CreateDealSections.BasicInfo.key].fields,
+    title: CreateDealForm[CreateDealSections.BasicInfo.key].title,
+    isLast: false,
+  },
+  draftDeal: {},
+  dynamicGroups: {}, // Required for Deliverables
+  ifFormHasError: false, // Required for Validation before moving to next step
+
   // Cache
   lastFetch: null,
   cacheTimeout: 5 * 60 * 1000, // 5 minutes
 
   // --------------- HANDLERS ---------------
+
+  // Local Ops
+  initiateDraftState: () => {
+    const { sectionConfig, draftDeal } = get()
+    const dynamicGrps = {}
+
+    const newDraftDeal = { ...(draftDeal || {}) }
+
+    sectionConfig.fields.forEach((f) => {
+      if (f.component === 'group') {
+        // Generate Dynamic Group Fields
+        dynamicGrps[f.uid] = f.config?.group?.canAddFields ? [f.group] : []
+
+        const grp = Object.fromEntries(f.group.map((g) => [g.uid, { value: '', error: '' }]))
+
+        newDraftDeal[f.name] = {
+          isGroupedField: true,
+          group: [grp],
+          value: '',
+          error: '',
+        }
+      } else if ('default' in f) {
+        newDraftDeal[f.name] = {
+          isGroupedField: false,
+          group: '',
+          value: draftDeal?.[f.name]?.value ?? f.default,
+          error: '',
+        }
+      }
+    })
+
+    set({
+      draftDeal: newDraftDeal,
+      ...(Object.keys(dynamicGrps).length > 0 && { dynamicGroups: dynamicGrps }),
+    })
+  },
+
+  modifyDynamicGroups: (action, fieldUid, field, groupIdx = null) => {
+    // groupIdx & field is required for gorouped data
+    const sectionConfig = get().sectionConfig
+    const dynamicGroups = get().dynamicGroups
+    const draftDeal = get().draftDeal
+
+    const fieldData = sectionConfig.fields.find((f) => f.uid === fieldUid)
+    if (!fieldData) return
+
+    if (action === 'remove') {
+      const updatedGroups = {
+        ...dynamicGroups,
+        [fieldUid]: dynamicGroups?.[fieldUid].filter((_, i) => i !== groupIdx),
+      }
+
+      const updatedDraftGroup = draftDeal?.[field]?.group.filter((_, i) => i !== groupIdx)
+
+      const updatedDraft = {
+        ...draftDeal,
+        [field]: {
+          ...draftDeal[field],
+          group: updatedDraftGroup,
+        },
+      }
+
+      const stateToUpdate = {
+        dynamicGroups: updatedGroups,
+        draftDeal: updatedDraft,
+      }
+
+      set(stateToUpdate)
+      return
+    }
+
+    // Generate unique Id For New Group
+    const lastItemUid = dynamicGroups?.[fieldData.uid].at(-1).at(-1).uid
+    const [base, lastNum] = lastItemUid.split(/_(\d+)$/)
+
+    const newDynamicGroup = []
+    const newDraftGroup = {}
+
+    fieldData.group.forEach((item, idx) => {
+      const newUid = `${base}_${+lastNum + idx + 1}`
+      newDynamicGroup.push({
+        ...item,
+        uid: newUid,
+      })
+      newDraftGroup[newUid] = {
+        value: '',
+        error: '',
+      }
+    })
+
+    const toSet = {
+      dynamicGroups: {
+        ...dynamicGroups,
+        [fieldUid]: [...(dynamicGroups[fieldUid] ?? []), newDynamicGroup],
+      },
+
+      // Update Draft
+      draftDeal: {
+        ...draftDeal,
+        [field]: {
+          ...draftDeal[field],
+          group: [...draftDeal[field]?.group, newDraftGroup],
+        },
+      },
+    }
+
+    set(toSet)
+  },
+
+  udpateSectionConfig: (direction) => {
+    const prev = get().sectionConfig
+    const draftDeal = get().draftDeal
+
+    if (direction === 'next' && prev.isLast) return
+
+    const { hasErrors, updatedDraft } = validate(draftDeal, prev.fields)
+
+    // TEMP
+    // if (hasErrors) {
+    //   set({ ifFormHasError: true, draftDeal: updatedDraft })
+    //   return
+    // }
+
+    const targetSection = SectionMap[prev.key][direction]
+    if (!targetSection) return { ...prev, isLast: true }
+    const updatedConfig = {
+      isLast: targetSection === CreateDealSections.AdditionalInfo.key,
+      key: targetSection,
+      fields: CreateDealForm[targetSection].fields,
+      title: CreateDealForm[targetSection].title,
+    }
+    set({ sectionConfig: { ...updatedConfig } })
+    window.scrollTo(0, 0)
+  },
+
+  handleCreateDeal: async () => {
+    const newDeal = get().draftDeal
+    console.log(newDeal)
+  },
+
+  handleOnChangeField: (e, field, groupIdx = null, grpItemUid = null) => {
+    const existingDraftDealData = get().draftDeal
+
+    const fieldToUpdate = existingDraftDealData?.[field]
+    const isCheckBox = e.target.type === 'checkbox'
+
+    if (fieldToUpdate?.isGroupedField) {
+      if (!groupIdx && !grpItemUid) return
+      let fieldData = fieldToUpdate.group.at(groupIdx)
+
+      fieldData[grpItemUid] = {
+        error: '',
+        value: isCheckBox ? e.target.checked : e.target.value,
+      }
+      fieldToUpdate.group[groupIdx] = fieldData
+
+      const updatedDraft = {
+        ...existingDraftDealData,
+        [field]: {
+          ...fieldToUpdate,
+          group: fieldToUpdate.group,
+        },
+      }
+      set({ draftDeal: updatedDraft })
+      return
+    }
+
+    const value = isCheckBox ? e.target.checked : e.target.value
+
+    const newDealData = {
+      ...existingDraftDealData,
+      [field]: { isGroupedField: false, group: [], value, error: '' },
+    }
+    set({ draftDeal: newDealData })
+  },
+
+  // APIs
   fetchDeals: async () => {
     /*
       TODO:

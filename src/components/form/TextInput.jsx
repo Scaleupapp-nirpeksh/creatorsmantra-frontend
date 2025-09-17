@@ -25,9 +25,9 @@ const TextInput = ({
   className = '',
   ...rest
 }) => {
-  const ifCheckBox = type === 'checkbox'
+  const isCheckBox = type === 'checkbox'
 
-  const mergedStyles = ifCheckBox
+  const mergedStyles = isCheckBox
     ? {}
     : {
         ...baseStyle,
@@ -35,54 +35,65 @@ const TextInput = ({
         ...style,
       }
 
+  const inputElement = (
+    <input
+      id={name}
+      name={name}
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      style={mergedStyles}
+      {...rest}
+    />
+  )
+
+  const labelElement = label && (
+    <label
+      htmlFor={name}
+      style={{
+        fontSize: '0.875rem',
+        ...(isCheckBox ? { whiteSpace: 'nowrap', marginLeft: '0.5rem' } : {}),
+      }}
+    >
+      {label}
+      {required && <span style={{ color: '#ef4444' }}>*</span>}
+    </label>
+  )
+
   return (
     <div
       className={`text-input-wrapper ${className}`}
       style={
-        ifCheckBox
+        isCheckBox
           ? {
               display: 'flex',
-              alignIems: 'center',
+              alignItems: 'center',
               gap: '0.5rem',
             }
           : {}
       }
     >
-      {label && (
-        <div style={{ marginBottom: '0.25rem' }}>
-          <label
-            htmlFor={name}
-            style={{
-              fontSize: '0.875rem',
-              ...(ifCheckBox ? { whiteSpace: 'nowrap' } : {}),
-            }}
-          >
-            {label}
-          </label>
-          {required && (
-            <span
-              style={{
-                color: '#ef4444',
-              }}
-            >
-              *
-            </span>
-          )}
-        </div>
+      {isCheckBox ? (
+        <>
+          {inputElement}
+          {labelElement}
+        </>
+      ) : (
+        <>
+          {labelElement && <div style={{ marginBottom: '0.25rem' }}>{labelElement}</div>}
+          {inputElement}
+        </>
       )}
-      <input
-        id={name}
-        name={name}
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        style={mergedStyles}
-        {...rest}
-      />
+
       {error && (
         <span
-          style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}
+          style={{
+            color: '#ef4444',
+            fontSize: '0.75rem',
+            marginTop: '0.25rem',
+            display: 'block',
+          }}
         >
           {typeof error === 'string' ? error : 'This field is required'}
         </span>

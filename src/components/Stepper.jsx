@@ -14,7 +14,7 @@ const styles = {
   connectorBase: {
     flex: 1,
     height: '2px',
-    backgroundColor: '#e2e8f0', // default gray
+    backgroundColor: '#e2e8f0',
     marginBottom: '25px',
     transition: 'background-color 0.3s ease',
   },
@@ -31,7 +31,8 @@ const styles = {
     height: '40px',
     borderRadius: '50%',
     backgroundColor: '#ffffff',
-    border: '2px solid #e2e8f0',
+    border: '2px solid',
+    borderColor: '#e2e8f0',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -58,25 +59,32 @@ const styles = {
   },
 }
 
-const RenderStepper = ({ currentStep = 1, totalSteps = 5 }) => {
-  const stepLabels = Object.values(DealsConstants.Steps).slice(0, totalSteps)
+const RenderStepper = ({ currentSectionKey }) => {
+  const { SectionMap, CreateDealSections } = DealsConstants
+  const sectionSequence = []
+  let key = Object.keys(SectionMap).find((k) => SectionMap[k].prev === null)
+  while (key) {
+    sectionSequence.push(key)
+    key = SectionMap[key].next
+  }
 
   return (
     <div style={styles.progressBar}>
-      {stepLabels.map((label, index) => {
-        const stepNumber = index + 1
-        const isCompleted = currentStep > stepNumber
-        const isActive = currentStep === stepNumber
+      {sectionSequence.map((key, index) => {
+        const activeIndex = sectionSequence.indexOf(currentSectionKey)
+        const isCompleted = index < activeIndex
+        const isActive = index === activeIndex
+        const label = Object.values(CreateDealSections).find((s) => s.key === key).label
 
         let circleStyle = { ...styles.progressCircleBase }
         if (isCompleted) circleStyle = { ...circleStyle, ...styles.progressCircleCompleted }
         else if (isActive) circleStyle = { ...circleStyle, ...styles.progressCircleActive }
 
         return (
-          <React.Fragment key={label}>
+          <React.Fragment key={key}>
             {/* Step */}
             <div style={styles.progressStep}>
-              <div style={circleStyle}>{isCompleted ? <Check size={18} /> : stepNumber}</div>
+              <div style={circleStyle}>{isCompleted ? <Check size={18} /> : index + 1}</div>
               <span
                 style={{
                   ...styles.progressLabel,
@@ -87,17 +95,12 @@ const RenderStepper = ({ currentStep = 1, totalSteps = 5 }) => {
               </span>
             </div>
 
-            {/* Connector (only between steps, not before first or after last) */}
-            {index < stepLabels.length - 1 && (
+            {/* Connector */}
+            {index < sectionSequence.length - 1 && (
               <div
                 style={{
                   ...styles.connectorBase,
-                  backgroundColor:
-                    currentStep > stepNumber
-                      ? '#10b981' // green if step completed
-                      : currentStep === stepNumber
-                        ? '#6366f1' // blue if active
-                        : '#e2e8f0', // gray otherwise
+                  backgroundColor: isCompleted ? '#10b981' : isActive ? '#6366f1' : '#e2e8f0',
                 }}
               />
             )}

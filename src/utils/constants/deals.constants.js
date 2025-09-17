@@ -20,6 +20,21 @@ const StepsMap = {
   PAYMENT: 'Payment',
   ADDITIONAL: 'Additional',
 }
+const StepsMapRefs = {
+  BASIC_INFO: 'basic_info',
+  CONTACT_INFO: 'contact_info',
+  DELIVERABLES_INFO: 'deliverables_info',
+  PAYMENT_INFO: 'payment_info',
+  ADDITIONAL_INFO: 'additional_info',
+}
+
+const DEAL_SECTIONS = {
+  BasicInfo: { label: 'Basic Information', key: 'basic_info' },
+  ContactInfo: { label: 'Contact Details', key: 'contact_info' },
+  DeliverablesInfo: { label: 'Deliverables & Timeline', key: 'deliverables_info' },
+  PaymentInfo: { label: 'Payment & Terms', key: 'payment_info' },
+  AdditionalInfo: { label: 'Additional Details', key: 'additional_info' },
+}
 
 export const DealsConstants = {
   stages: [
@@ -193,29 +208,30 @@ export const DealsConstants = {
 
   // Steps
   Steps: StepsMap,
+  StepRefs: StepsMapRefs,
 
-  SectionsSequence: {
-    [StepsMap.BASIC_INFO]: {
-      next: StepsMap.CONTACT,
+  SectionMap: {
+    [DEAL_SECTIONS.BasicInfo.key]: {
+      next: DEAL_SECTIONS.ContactInfo.key,
       prev: null,
     },
-    [StepsMap.CONTACT]: {
-      next: StepsMap.DELIVERABLES,
-      prev: StepsMap.BASIC_INFO,
+    [DEAL_SECTIONS.ContactInfo.key]: {
+      next: DEAL_SECTIONS.DeliverablesInfo.key,
+      prev: DEAL_SECTIONS.BasicInfo.key,
     },
-    [StepsMap.DELIVERABLES]: {
-      next: StepsMap.PAYMENT,
-      prev: StepsMap.CONTACT,
+    [DEAL_SECTIONS.DeliverablesInfo.key]: {
+      next: DEAL_SECTIONS.PaymentInfo.key,
+      prev: DEAL_SECTIONS.ContactInfo.key,
     },
-    [StepsMap.PAYMENT]: {
-      next: StepsMap.ADDITIONAL,
-      prev: StepsMap.DELIVERABLES,
+    [DEAL_SECTIONS.PaymentInfo.key]: {
+      next: DEAL_SECTIONS.AdditionalInfo.key,
+      prev: DEAL_SECTIONS.DeliverablesInfo.key,
     },
-    [StepsMap.ADDITIONAL]: {
+    [DEAL_SECTIONS.AdditionalInfo.key]: {
       next: null,
-      prev: StepsMap.PAYMENT,
+      prev: DEAL_SECTIONS.PaymentInfo.key,
     },
   },
 
-  TotalSteps: 5,
+  CreateDealSections: DEAL_SECTIONS,
 }

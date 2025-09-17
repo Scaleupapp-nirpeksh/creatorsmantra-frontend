@@ -7,9 +7,19 @@
  */
 
 // Dependencies
-import { ArrowLeft, ArrowRight, Check, Clock, Save } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'react-hot-toast'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Calculator,
+  Check,
+  Clock,
+  Delete,
+  Info,
+  Plus,
+  Save,
+  Trash,
+} from 'lucide-react'
+import { Fragment, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 // Store Imports
@@ -17,38 +27,22 @@ import useDealsStore from '../../../store/dealsStore'
 
 // Constants
 import { DealsConstants } from '../../../utils/constants'
-import { CreateDealFields as FormFields, generateInitialState } from '../formFields'
+import { CreateDealForm } from '../formFields'
 
 // Components
 import {
-  Dropdown,
   GridContainer,
   GridItem,
+  RenderPricingBreakDown,
+  RenderSection,
   RenderStepper,
-  TextArea,
-  TextInput,
 } from '../../../components'
-import { checkCondition, validateSection } from '../../../utils/helpers'
 
 const styles = {
   container: {
     minHeight: '100vh',
     backgroundColor: '#f8fafc',
     padding: '2rem',
-  },
-  secondaryButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.75rem 1.5rem',
-    backgroundColor: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '0.5rem',
-    fontSize: '0.875rem',
-    fontWeight: '500',
-    color: '#475569',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
   },
   header: {
     maxWidth: '1200px',
@@ -82,14 +76,6 @@ const styles = {
     fontSize: '0.875rem',
     color: '#64748b',
   },
-  progressBar: {
-    maxWidth: '1200px',
-    margin: '0 auto 3rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    position: 'relative',
-  },
   formContainer: {
     maxWidth: '800px',
     margin: '0 auto',
@@ -105,6 +91,20 @@ const styles = {
     marginTop: '2rem',
     paddingTop: '2rem',
     borderTop: '1px solid #e2e8f0',
+  },
+  secondaryButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.75rem 1.5rem',
+    backgroundColor: '#ffffff',
+    border: '1px solid #e2e8f0',
+    borderRadius: '0.5rem',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    color: '#475569',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   primaryButton: {
     display: 'flex',
@@ -127,82 +127,46 @@ const styles = {
 }
 
 const CreateDealPage = () => {
-  // TEMP
-  console.count('Rendered')
   /*
     TODO:
     1. Refactor Component - DONE
     2. Optimize Stepper - DONE
     3. Refactor Forms Handling - DONE
     4. Fix the logic of API Calls
-    5. Get Info About Templates - Template Selector 
-    6. Handle Deal Health Score - keep it onclick - reduces rerenders
+    5. Get Info About Templates - Template Selector - Remove
+    6. Handle Deal Health Score - keep it onclick - reduces rerenders - Remove
     7. Handle Draft mode Logic
     9. Refactor AutoSave Draft Feature
     10. Refactor Form Logic to update Global state and not local state
+    11. Refactor Form rendering - DONE
   */
 
   // Constants
-  const { Steps, SectionsSequence, TotalSteps: totalSteps } = DealsConstants
+  const { CreateDealSections } = DealsConstants
 
   // Hooks
   const navigate = useNavigate()
-  const { createDeal, creating } = useDealsStore()
+  const {
+    creating,
+    sectionConfig,
+    draftDeal,
+    udpateSectionConfig,
+    handleCreateDeal,
+    handleOnChangeField,
+    initiateDraftState,
+    dynamicGroups,
+    modifyDynamicGroups,
+  } = useDealsStore()
 
   // State Variables
-  const [formSection, setFormSection] = useState({
-    section: Steps.BASIC_INFO,
-    formFields: FormFields[Steps.BASIC_INFO],
-    isLast: false,
-  })
-  const [formState, setFormState] = useState(generateInitialState())
-  const [ifFormHasError, setIfFormHasError] = useState(false)
-
-  const [currentStep, setCurrentStep] = useState(1)
-
-  // Auto-save draft
   const [lastSaved, setLastSaved] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  // Handlers
-  const changeSection = (direction) => {
-    if (direction === 'next' && formSection.isLast) return
-
-    if (direction === 'next') {
-      setIfFormHasError(false)
-      const { formValues, hasError } = validateSection(formState, formSection.formFields.fields)
-      setFormState(formValues)
-      if (hasError) {
-        setIfFormHasError(hasError)
-        return
-      }
-    }
-
-    setFormSection((prev) => {
-      const targetSection = SectionsSequence[prev.section][direction]
-      if (!targetSection) return { ...prev, isLast: true }
-      return {
-        isLast: targetSection === Steps.ADDITIONAL,
-        section: targetSection,
-        formFields: FormFields[targetSection],
-      }
-    })
-    window.scrollTo(0, 0)
-  }
-
-  const handleCreateDeal = () => {
-    if (ifFormHasError) return
-
-    setIfFormHasError(false)
-    const { formValues, hasError } = validateSection(formState, formSection.formFields.fields)
-    setFormState(formValues)
-    if (hasError) {
-      setIfFormHasError(hasError)
-      return
-    }
-
-    console.log(formState)
-  }
+  // Effects
+  useEffect(() => {
+    if (!sectionConfig?.fields?.length) return
+    initiateDraftState()
+  }, [sectionConfig])
 
   return (
     <div style={styles.container}>
@@ -231,117 +195,150 @@ const CreateDealPage = () => {
       </div>
 
       {/* Stepper */}
-      <RenderStepper currentStep={currentStep} totalSteps={totalSteps} />
-
-      {/* Temp Deal Health Score */}
-      {/* <RenderDealHealthScore dealHealth={dealHealth} /> */}
+      <RenderStepper currentSectionKey={sectionConfig.key} />
 
       {/* Form */}
       <div style={styles.formContainer}>
         <form>
           {/* --------------------- New Render --------------------- */}
 
+          {/* Form Heading */}
+          <h2
+            style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#0f172a',
+              marginBottom: '2rem',
+              paddingBottom: '1rem',
+              borderBottom: '1px solid #e2e8f0',
+            }}
+          >
+            {sectionConfig.title}
+          </h2>
+
+          {/* 
+            TODO:
+              1. Implement the logic of render components conditionally using config
+              2. Pricing Breakdown Section - PaymentInfo
+          */}
+
           {true && (
             <div>
-              {/* Section heading */}
-              <h2
-                style={{
-                  fontSize: '1.25rem',
-                  fontWeight: '600',
-                  color: '#0f172a',
-                  marginBottom: '2rem',
-                  paddingBottom: '1rem',
-                  borderBottom: '1px solid #e2e8f0',
-                }}
-              >
-                {formSection.formFields.title}
-              </h2>
-
-              {/* Fields */}
+              {/* Form Fields */}
               <GridContainer>
-                {formSection.formFields.fields.map(
-                  ({
-                    id,
-                    isRequired,
-                    label,
-                    name,
-                    field,
-                    type,
-                    customStyle,
-                    placeholder,
-                    options,
-                    showIf,
-                    defaultValue,
-                  }) => {
-                    if (!checkCondition(showIf, formState)) return null
+                {sectionConfig.fields.map((attrs, idx) => {
+                  const isComponentGrouped = attrs.component === 'group'
+                  let canAddFields = false
+
+                  if ('group' in attrs.config) {
+                    canAddFields =
+                      'canAddFields' in attrs.config.group ? attrs.config.group.canAddFields : false
+                  }
+
+                  if (isComponentGrouped) {
+                    const groupsToRender = canAddFields ? dynamicGroups[attrs.uid] : [attrs.group]
 
                     return (
-                      <GridItem key={id} customStyleCls={customStyle}>
-                        {field === 'text' && (
-                          <TextInput
-                            name={name}
-                            label={label}
-                            type={type}
-                            placeholder={placeholder}
-                            required={isRequired}
-                            error={formState?.[name].error}
-                            value={formState?.[name].value}
-                            onChange={(e) => {
-                              setFormState((prev) => ({
-                                ...prev,
-                                [name]: {
-                                  value: e.target.value,
-                                  error: '',
-                                },
-                              }))
-                            }}
-                          />
-                        )}
-                        {field === 'dropdown' && (
-                          <Dropdown
-                            name={name}
-                            label={label}
-                            options={options}
-                            placeholder={placeholder}
-                            required={isRequired}
-                            value={formState[name].value}
-                            error={formState?.[name].error}
-                            onChange={(e) => {
-                              setFormState((prev) => ({
-                                ...prev,
-                                [name]: {
-                                  value: e.target.value,
-                                },
-                              }))
-                            }}
-                          />
-                        )}
-                        {field === 'textarea' && (
-                          <TextArea
-                            name={name}
-                            label={label}
-                            placeholder={placeholder}
-                            required={isRequired}
-                            error={formState?.[name].error}
-                            value={formState?.[name].value}
-                            onChange={(e) => {
-                              setFormState((prev) => ({
-                                ...prev,
-                                [name]: {
-                                  value: e.target.value,
-                                  error: '',
-                                },
-                              }))
-                            }}
-                          />
-                        )}
+                      <GridItem span={12} key={attrs.uid}>
+                        <GridContainer className={attrs.style}>
+                          <h6 className="span-12">{`${attrs.label} ${canAddFields ? `# ${groupsToRender?.length}` : ''}`}</h6>
+                          {groupsToRender?.map((group, groupIdx) => {
+                            const showDeleteBtn =
+                              canAddFields && dynamicGroups?.[attrs.uid].length > 1
+
+                            return (
+                              <Fragment key={`${attrs.uid}_${groupIdx}`}>
+                                {group?.map((groupAttrs) => {
+                                  return (
+                                    <GridItem span={groupAttrs.colSpan} key={groupAttrs.uid}>
+                                      <RenderSection
+                                        attrs={groupAttrs}
+                                        onChange={(e) => {
+                                          handleOnChangeField(
+                                            e,
+                                            attrs.name,
+                                            groupIdx,
+                                            groupAttrs.uid
+                                          )
+                                        }}
+                                        formState={draftDeal}
+                                        parentKey={attrs.name}
+                                      />
+                                    </GridItem>
+                                  )
+                                })}
+                                {showDeleteBtn && (
+                                  <GridItem span={12}>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        modifyDynamicGroups(
+                                          'remove',
+                                          attrs.uid,
+                                          attrs.name,
+                                          groupIdx
+                                        )
+                                      }
+                                      style={{
+                                        ...styles.secondaryButton,
+                                        width: '100%',
+                                        justifyContent: 'center',
+                                        borderColor: '#E53935',
+                                      }}
+                                    >
+                                      Delete
+                                      <Trash size={18} />
+                                    </button>
+                                  </GridItem>
+                                )}
+                              </Fragment>
+                            )
+                          })}
+
+                          {canAddFields && (
+                            <GridItem span={12}>
+                              <div style={{ border: '1px solid #e2e8f0', width: '100%' }}></div>
+                            </GridItem>
+                          )}
+
+                          {canAddFields && (
+                            <GridItem span={12}>
+                              <button
+                                type="button"
+                                onClick={() => modifyDynamicGroups('add', attrs.uid, attrs.name)}
+                                style={{
+                                  ...styles.primaryButton,
+                                  width: '100%',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                Add
+                                <Plus size={18} />
+                              </button>
+                            </GridItem>
+                          )}
+                        </GridContainer>
                       </GridItem>
                     )
                   }
-                )}
+
+                  return (
+                    <GridItem key={attrs.uid} span={attrs.colSpan}>
+                      <RenderSection
+                        key={attrs.uid}
+                        attrs={attrs}
+                        onChange={(e) => handleOnChangeField(e, attrs.name)}
+                        formState={draftDeal}
+                      />
+                    </GridItem>
+                  )
+                })}
               </GridContainer>
             </div>
           )}
+
+          {/* Pricing BreakDown Component */}
+          {sectionConfig.key === CreateDealSections.PaymentInfo.key && <RenderPricingBreakDown />}
 
           {/* --------------------- New Render --------------------- */}
 
@@ -349,11 +346,11 @@ const CreateDealPage = () => {
           <div style={styles.footerActions}>
             {/* Previous Button */}
             <div>
-              {formSection.section !== Steps.BASIC_INFO && (
+              {sectionConfig.key !== CreateDealSections.BasicInfo.key && (
                 <>
                   <button
                     type="button"
-                    onClick={() => changeSection('prev')}
+                    onClick={() => udpateSectionConfig('prev')}
                     style={styles.secondaryButton}
                   >
                     <ArrowLeft size={18} />
@@ -365,10 +362,10 @@ const CreateDealPage = () => {
 
             {/* Next Button */}
 
-            {!formSection.isLast && (
+            {!sectionConfig.isLast && (
               <button
                 type="button"
-                onClick={() => changeSection('next')}
+                onClick={() => udpateSectionConfig('next')}
                 style={styles.primaryButton}
               >
                 Next
@@ -376,8 +373,7 @@ const CreateDealPage = () => {
               </button>
             )}
             {/* Submit Button */}
-            {formSection.isLast && (
-              // {formSection.isLast && (
+            {sectionConfig.isLast && (
               <button
                 type="button"
                 disabled={creating}

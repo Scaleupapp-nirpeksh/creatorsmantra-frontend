@@ -387,3 +387,11 @@
 .show {
   display: block;
 }
+
+/* Custom Css */
+.bg-form-group {
+  background: #fbfbfb;
+  border: 1px solid #e5e5e5;
+  padding: 20px;
+  border-radius: 5px;
+}

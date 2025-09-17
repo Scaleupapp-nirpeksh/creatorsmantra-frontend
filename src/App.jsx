@@ -32,7 +32,13 @@ import {
 import { PageLoader, ProtectedRoutesWrapper } from './components'
 
 // Features
-import { PublicRateCard, RenderDealsListing, RenderCreateDeal, RenderDealDetails } from './features'
+import {
+  PublicRateCard,
+  RenderDealsListing,
+  RenderCreateDeal,
+  RenderDealDetails,
+  RenderInvoiceDashboard,
+} from './features'
 
 // Styles
 import './styles/index.css'
@@ -113,6 +119,18 @@ function App() {
                     element={
                       <Suspense fallback={<PageLoader />}>
                         <RenderDealDetails />
+                      </Suspense>
+                    }
+                  />
+                </Route>
+
+                {/* Invoices Route */}
+                <Route path="/invoices">
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderInvoiceDashboard />
                       </Suspense>
                     }
                   />

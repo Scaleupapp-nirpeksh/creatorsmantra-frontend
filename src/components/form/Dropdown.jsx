@@ -50,9 +50,6 @@ const Dropdown = ({
       )}
 
       <select id={name} name={name} style={mergedStyles} {...rest}>
-        {/* <option value="" disabled>
-          {placeholder}
-        </option> */}
         {options.map((opt, i) => (
           <option key={i} value={opt.value}>
             {opt.label}
