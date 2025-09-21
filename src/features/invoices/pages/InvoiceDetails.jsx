@@ -1,7 +1,7 @@
 /**
  * Invoice Details Page
  * Complete invoice view with payment tracking and actions
- * 
+ *
  * Features:
  * - Full invoice information display
  * - Payment status and history
@@ -10,78 +10,58 @@
  * - Payment recording modal
  * - Tax breakdown visualization
  * - Deal references display
- * 
+ *
  * Path: src/features/invoices/pages/InvoiceDetails.jsx
  */
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { 
+import { invoiceHelpers } from '@/api/endpoints/invoices'
+import useAuthStore from '@/store/authStore'
+import useInvoiceStore from '@/store/invoiceStore'
+import {
+  Activity,
+  AlertCircle,
+  AlertTriangle,
   ArrowLeft,
+  Building,
+  Calculator,
+  Check,
+  CheckCircle,
+  Clock,
+  Copy,
+  CreditCard,
+  DollarSign,
   Download,
   Edit2,
-  Send,
-  CreditCard,
-  Copy,
-  MoreVertical,
-  Calendar,
-  Building,
-  IndianRupee,
   FileText,
-  CheckCircle,
-  AlertTriangle,
-  Clock,
   Mail,
-  Phone,
-  MapPin,
-  Hash,
   Package,
-  ChevronRight,
-  ExternalLink,
-  Receipt,
-  TrendingUp,
-  Info,
-  X,
-  Check,
-  AlertCircle,
   Printer,
-  Share2,
-  RefreshCw,
-  User,
-  Activity,
-  DollarSign,
-  Calculator
-} from 'lucide-react';
-import { invoicesAPI, invoiceHelpers } from '@/api/endpoints/invoices';
-import useInvoiceStore from '@/store/invoiceStore';
-import useAuthStore from '@/store/authStore';
-import { toast } from 'react-hot-toast';
+  Receipt,
+  Send,
+  X,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 const InvoiceDetails = () => {
-  const { invoiceId } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useAuthStore();
-  
-  const {
-    currentInvoice,
-    fetchInvoiceById,
-    fetchPaymentHistory,
-    recordPayment,
-    generateInvoicePDF,
-    downloadInvoicePDF,
-    scheduleReminders
-  } = useInvoiceStore();
+  const { invoiceId } = useParams()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { user } = useAuthStore()
+
+  const { fetchInvoiceById, recordPayment, downloadInvoicePDF, scheduleReminders } =
+    useInvoiceStore()
 
   // State
-  const [invoice, setInvoice] = useState(null);
-  const [payments, setPayments] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showActions, setShowActions] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  
+  const [invoice, setInvoice] = useState(null)
+  const [payments, setPayments] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showActions, setShowActions] = useState(false)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+
   // Payment form state
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
@@ -90,103 +70,103 @@ const InvoiceDetails = () => {
     transactionId: '',
     referenceNumber: '',
     payerName: '',
-    notes: ''
-  });
+    notes: '',
+  })
 
   // Load invoice data
   useEffect(() => {
-    loadInvoiceData();
-    
+    loadInvoiceData()
+
     // Check if we need to open payment modal from navigation
     if (location.hash === '#payment') {
-      setShowPaymentModal(true);
+      setShowPaymentModal(true)
     }
-  }, [invoiceId]);
+  }, [invoiceId])
 
   const loadInvoiceData = async () => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      const result = await fetchInvoiceById(invoiceId);
+      const result = await fetchInvoiceById(invoiceId)
       if (result.success) {
-        setInvoice(result.invoice);
-        setPayments(result.payments || []);
-        
+        setInvoice(result.invoice)
+        setPayments(result.payments || [])
+
         // Set initial payment amount
-        const remainingAmount = calculateRemainingAmount(result.invoice, result.payments);
-        setPaymentForm(prev => ({ ...prev, amount: remainingAmount }));
+        const remainingAmount = calculateRemainingAmount(result.invoice, result.payments)
+        setPaymentForm((prev) => ({ ...prev, amount: remainingAmount }))
       } else {
-        toast.error('Invoice not found');
-        navigate('/invoices');
+        toast.error('Invoice not found')
+        navigate('/invoices')
       }
     } catch (error) {
-      toast.error('Failed to load invoice');
-      navigate('/invoices');
+      toast.error('Failed to load invoice')
+      navigate('/invoices')
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   // Calculate remaining amount
   const calculateRemainingAmount = (inv, pmts) => {
-    const totalAmount = inv?.taxSettings?.taxCalculation?.finalAmount || inv?.amount || 0;
-    const paidAmount = pmts.reduce((sum, p) => sum + (p.amount || 0), 0);
-    return Math.max(0, totalAmount - paidAmount);
-  };
+    const totalAmount = inv?.taxSettings?.taxCalculation?.finalAmount || inv?.amount || 0
+    const paidAmount = pmts.reduce((sum, p) => sum + (p.amount || 0), 0)
+    return Math.max(0, totalAmount - paidAmount)
+  }
 
   // Handle PDF download
   const handleDownloadPDF = async () => {
-    setIsGeneratingPDF(true);
+    setIsGeneratingPDF(true)
     try {
-      await downloadInvoicePDF(invoiceId);
+      await downloadInvoicePDF(invoiceId)
     } catch (error) {
-      toast.error('Failed to download PDF');
+      toast.error('Failed to download PDF')
     } finally {
-      setIsGeneratingPDF(false);
+      setIsGeneratingPDF(false)
     }
-  };
+  }
 
   // Handle payment recording
   const handleRecordPayment = async () => {
     if (!paymentForm.amount || paymentForm.amount <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
+      toast.error('Please enter a valid amount')
+      return
     }
 
     try {
-      const result = await recordPayment(invoiceId, paymentForm);
+      const result = await recordPayment(invoiceId, paymentForm)
       if (result.success) {
-        toast.success('Payment recorded successfully');
-        setShowPaymentModal(false);
-        loadInvoiceData();
+        toast.success('Payment recorded successfully')
+        setShowPaymentModal(false)
+        loadInvoiceData()
       }
     } catch (error) {
-      toast.error('Failed to record payment');
+      toast.error('Failed to record payment')
     }
-  };
+  }
 
   // Handle send invoice
   const handleSendInvoice = async () => {
     // This would integrate with email service
-    toast.success('Invoice sent successfully');
-  };
+    toast.success('Invoice sent successfully')
+  }
 
   // Handle schedule reminders
   const handleScheduleReminders = async () => {
     try {
-      const result = await scheduleReminders(invoiceId);
+      const result = await scheduleReminders(invoiceId)
       if (result.success) {
-        toast.success('Payment reminders scheduled');
+        toast.success('Payment reminders scheduled')
       }
     } catch (error) {
-      toast.error('Failed to schedule reminders');
+      toast.error('Failed to schedule reminders')
     }
-  };
+  }
 
   // Copy invoice number
   const copyInvoiceNumber = () => {
-    navigator.clipboard.writeText(invoice?.invoiceNumber || '');
-    toast.success('Invoice number copied');
-  };
+    navigator.clipboard.writeText(invoice?.invoiceNumber || '')
+    toast.success('Invoice number copied')
+  }
 
   // Format currency
   const formatCurrency = (amount) => {
@@ -194,19 +174,19 @@ const InvoiceDetails = () => {
       style: 'currency',
       currency: 'INR',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount || 0);
-  };
+      maximumFractionDigits: 0,
+    }).format(amount || 0)
+  }
 
   // Format date
   const formatDate = (date) => {
-    if (!date) return 'N/A';
+    if (!date) return 'N/A'
     return new Date(date).toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric'
-    });
-  };
+      year: 'numeric',
+    })
+  }
 
   // Get status config
   const getStatusConfig = (status) => {
@@ -214,21 +194,26 @@ const InvoiceDetails = () => {
       draft: { bg: '#f1f5f9', color: '#64748b', icon: FileText, label: 'Draft' },
       sent: { bg: '#dbeafe', color: '#2563eb', icon: Send, label: 'Sent' },
       viewed: { bg: '#e0f2fe', color: '#0ea5e9', icon: Mail, label: 'Viewed' },
-      partially_paid: { bg: '#fed7aa', color: '#ea580c', icon: CreditCard, label: 'Partially Paid' },
+      partially_paid: {
+        bg: '#fed7aa',
+        color: '#ea580c',
+        icon: CreditCard,
+        label: 'Partially Paid',
+      },
       paid: { bg: '#bbf7d0', color: '#16a34a', icon: CheckCircle, label: 'Paid' },
       overdue: { bg: '#fecaca', color: '#dc2626', icon: AlertTriangle, label: 'Overdue' },
-      cancelled: { bg: '#f3f4f6', color: '#6b7280', icon: X, label: 'Cancelled' }
-    };
-    return configs[status] || configs.draft;
-  };
+      cancelled: { bg: '#f3f4f6', color: '#6b7280', icon: X, label: 'Cancelled' },
+    }
+    return configs[status] || configs.draft
+  }
 
   // Calculate payment progress
   const calculatePaymentProgress = () => {
-    if (!invoice) return 0;
-    const total = invoice.taxSettings?.taxCalculation?.finalAmount || invoice.amount || 0;
-    const paid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    return total > 0 ? Math.min(100, (paid / total) * 100) : 0;
-  };
+    if (!invoice) return 0
+    const total = invoice.taxSettings?.taxCalculation?.finalAmount || invoice.amount || 0
+    const paid = payments.reduce((sum, p) => sum + (p.amount || 0), 0)
+    return total > 0 ? Math.min(100, (paid / total) * 100) : 0
+  }
 
   // Styles
   const styles = {
@@ -237,24 +222,24 @@ const InvoiceDetails = () => {
       flexDirection: 'column',
       height: '100%',
       backgroundColor: '#f1f5f9',
-      overflow: 'hidden'
+      overflow: 'hidden',
     },
     header: {
       backgroundColor: '#ffffff',
       borderBottom: '1px solid #e2e8f0',
       padding: '1.25rem 1.5rem',
-      flexShrink: 0
+      flexShrink: 0,
     },
     headerTop: {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: '1.25rem'
+      marginBottom: '1.25rem',
     },
     headerLeft: {
       display: 'flex',
       alignItems: 'center',
-      gap: '1rem'
+      gap: '1rem',
     },
     backButton: {
       width: '36px',
@@ -267,13 +252,13 @@ const InvoiceDetails = () => {
       borderRadius: '0.5rem',
       color: '#64748b',
       cursor: 'pointer',
-      transition: 'all 0.2s'
+      transition: 'all 0.2s',
     },
     invoiceNumber: {
       fontSize: '1.5rem',
       fontWeight: '700',
       color: '#0f172a',
-      margin: 0
+      margin: 0,
     },
     statusBadge: {
       display: 'inline-flex',
@@ -282,12 +267,12 @@ const InvoiceDetails = () => {
       padding: '0.375rem 1rem',
       borderRadius: '0.625rem',
       fontSize: '0.875rem',
-      fontWeight: '600'
+      fontWeight: '600',
     },
     headerActions: {
       display: 'flex',
       gap: '0.625rem',
-      alignItems: 'center'
+      alignItems: 'center',
     },
     button: {
       display: 'flex',
@@ -299,28 +284,28 @@ const InvoiceDetails = () => {
       fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.2s',
-      border: 'none'
+      border: 'none',
     },
     primaryButton: {
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: '#ffffff',
-      boxShadow: '0 2px 4px rgba(102, 126, 234, 0.25)'
+      boxShadow: '0 2px 4px rgba(102, 126, 234, 0.25)',
     },
     secondaryButton: {
       backgroundColor: '#ffffff',
       color: '#475569',
-      border: '2px solid #e2e8f0'
+      border: '2px solid #e2e8f0',
     },
     successButton: {
       backgroundColor: '#10b981',
-      color: '#ffffff'
+      color: '#ffffff',
     },
     tabs: {
       display: 'flex',
       gap: '0.25rem',
       padding: '0 1.5rem',
       borderBottom: '1px solid #e2e8f0',
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
     },
     tab: {
       padding: '1rem 1.5rem',
@@ -331,16 +316,16 @@ const InvoiceDetails = () => {
       fontWeight: '600',
       color: '#64748b',
       cursor: 'pointer',
-      transition: 'all 0.2s'
+      transition: 'all 0.2s',
     },
     activeTab: {
       color: '#6366f1',
-      borderBottomColor: '#6366f1'
+      borderBottomColor: '#6366f1',
     },
     content: {
       flex: 1,
       padding: '1.5rem',
-      overflow: 'auto'
+      overflow: 'auto',
     },
     grid: {
       display: 'grid',
@@ -348,20 +333,20 @@ const InvoiceDetails = () => {
       gap: '1.5rem',
       maxWidth: '1400px',
       margin: '0 auto',
-      width: '100%'
+      width: '100%',
     },
     card: {
       backgroundColor: '#ffffff',
       borderRadius: '0.875rem',
       border: '1px solid #e2e8f0',
-      overflow: 'hidden'
+      overflow: 'hidden',
     },
     cardHeader: {
       padding: '1rem 1.25rem',
       borderBottom: '1px solid #f1f5f9',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between'
+      justifyContent: 'space-between',
     },
     cardTitle: {
       fontSize: '0.9375rem',
@@ -369,32 +354,32 @@ const InvoiceDetails = () => {
       color: '#0f172a',
       display: 'flex',
       alignItems: 'center',
-      gap: '0.5rem'
+      gap: '0.5rem',
     },
     cardContent: {
-      padding: '1.25rem'
+      padding: '1.25rem',
     },
     detailRow: {
       display: 'flex',
       justifyContent: 'space-between',
       padding: '0.75rem 0',
-      borderBottom: '1px solid #f8fafc'
+      borderBottom: '1px solid #f8fafc',
     },
     detailLabel: {
       fontSize: '0.8125rem',
       color: '#64748b',
-      fontWeight: '500'
+      fontWeight: '500',
     },
     detailValue: {
       fontSize: '0.875rem',
       fontWeight: '600',
       color: '#334155',
-      textAlign: 'right'
+      textAlign: 'right',
     },
     table: {
       width: '100%',
       borderCollapse: 'separate',
-      borderSpacing: 0
+      borderSpacing: 0,
     },
     tableHeader: {
       backgroundColor: '#f8fafc',
@@ -405,15 +390,15 @@ const InvoiceDetails = () => {
       letterSpacing: '0.025em',
       padding: '0.75rem',
       textAlign: 'left',
-      borderBottom: '1px solid #e2e8f0'
+      borderBottom: '1px solid #e2e8f0',
     },
     tableCell: {
       padding: '0.875rem',
       borderBottom: '1px solid #f1f5f9',
-      fontSize: '0.875rem'
+      fontSize: '0.875rem',
     },
     paymentProgress: {
-      marginTop: '1rem'
+      marginTop: '1rem',
     },
     progressBar: {
       width: '100%',
@@ -421,20 +406,20 @@ const InvoiceDetails = () => {
       backgroundColor: '#e2e8f0',
       borderRadius: '4px',
       overflow: 'hidden',
-      marginTop: '0.5rem'
+      marginTop: '0.5rem',
     },
     progressFill: {
       height: '100%',
       backgroundColor: '#10b981',
       borderRadius: '4px',
-      transition: 'width 0.3s'
+      transition: 'width 0.3s',
     },
     progressText: {
       display: 'flex',
       justifyContent: 'space-between',
       marginTop: '0.5rem',
       fontSize: '0.8125rem',
-      color: '#64748b'
+      color: '#64748b',
     },
     modal: {
       position: 'fixed',
@@ -446,7 +431,7 @@ const InvoiceDetails = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000
+      zIndex: 1000,
     },
     modalContent: {
       backgroundColor: '#ffffff',
@@ -454,39 +439,39 @@ const InvoiceDetails = () => {
       width: '90%',
       maxWidth: '500px',
       maxHeight: '90vh',
-      overflow: 'auto'
+      overflow: 'auto',
     },
     modalHeader: {
       padding: '1.5rem',
       borderBottom: '1px solid #e2e8f0',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between'
+      justifyContent: 'space-between',
     },
     modalTitle: {
       fontSize: '1.125rem',
       fontWeight: '700',
-      color: '#0f172a'
+      color: '#0f172a',
     },
     modalBody: {
-      padding: '1.5rem'
+      padding: '1.5rem',
     },
     modalFooter: {
       padding: '1.5rem',
       borderTop: '1px solid #e2e8f0',
       display: 'flex',
       justifyContent: 'flex-end',
-      gap: '0.625rem'
+      gap: '0.625rem',
     },
     formGroup: {
-      marginBottom: '1.25rem'
+      marginBottom: '1.25rem',
     },
     label: {
       display: 'block',
       fontSize: '0.8125rem',
       fontWeight: '600',
       color: '#475569',
-      marginBottom: '0.375rem'
+      marginBottom: '0.375rem',
     },
     input: {
       width: '100%',
@@ -495,7 +480,7 @@ const InvoiceDetails = () => {
       borderRadius: '0.5rem',
       fontSize: '0.875rem',
       outline: 'none',
-      transition: 'all 0.2s'
+      transition: 'all 0.2s',
     },
     select: {
       width: '100%',
@@ -505,7 +490,7 @@ const InvoiceDetails = () => {
       fontSize: '0.875rem',
       outline: 'none',
       backgroundColor: '#ffffff',
-      cursor: 'pointer'
+      cursor: 'pointer',
     },
     textarea: {
       width: '100%',
@@ -515,17 +500,17 @@ const InvoiceDetails = () => {
       fontSize: '0.875rem',
       outline: 'none',
       resize: 'vertical',
-      minHeight: '80px'
+      minHeight: '80px',
     },
     timeline: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '1rem'
+      gap: '1rem',
     },
     timelineItem: {
       display: 'flex',
       gap: '1rem',
-      position: 'relative'
+      position: 'relative',
     },
     timelineIcon: {
       width: '36px',
@@ -534,26 +519,26 @@ const InvoiceDetails = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      flexShrink: 0
+      flexShrink: 0,
     },
     timelineContent: {
       flex: 1,
-      paddingBottom: '1rem'
+      paddingBottom: '1rem',
     },
     timelineTitle: {
       fontSize: '0.875rem',
       fontWeight: '600',
       color: '#0f172a',
-      marginBottom: '0.25rem'
+      marginBottom: '0.25rem',
     },
     timelineDate: {
       fontSize: '0.75rem',
-      color: '#94a3b8'
+      color: '#94a3b8',
     },
     emptyState: {
       padding: '2rem',
       textAlign: 'center',
-      color: '#94a3b8'
+      color: '#94a3b8',
     },
     loading: {
       display: 'flex',
@@ -561,7 +546,7 @@ const InvoiceDetails = () => {
       alignItems: 'center',
       justifyContent: 'center',
       height: '400px',
-      gap: '1rem'
+      gap: '1rem',
     },
     loadingSpinner: {
       width: '40px',
@@ -569,9 +554,9 @@ const InvoiceDetails = () => {
       border: '3px solid #e2e8f0',
       borderTop: '3px solid #6366f1',
       borderRadius: '50%',
-      animation: 'spin 1s linear infinite'
-    }
-  };
+      animation: 'spin 1s linear infinite',
+    },
+  }
 
   if (isLoading) {
     return (
@@ -587,7 +572,7 @@ const InvoiceDetails = () => {
           }
         `}</style>
       </div>
-    );
+    )
   }
 
   if (!invoice) {
@@ -598,14 +583,14 @@ const InvoiceDetails = () => {
           <h3 style={{ marginTop: '1rem' }}>Invoice not found</h3>
         </div>
       </div>
-    );
+    )
   }
 
-  const statusConfig = getStatusConfig(invoice.status);
-  const StatusIcon = statusConfig.icon;
-  const paymentProgress = calculatePaymentProgress();
-  const remainingAmount = calculateRemainingAmount(invoice, payments);
-  const taxCalc = invoice.taxSettings?.taxCalculation || {};
+  const statusConfig = getStatusConfig(invoice.status)
+  const StatusIcon = statusConfig.icon
+  const paymentProgress = calculatePaymentProgress()
+  const remainingAmount = calculateRemainingAmount(invoice, payments)
+  const taxCalc = invoice.taxSettings?.taxCalculation || {}
 
   return (
     <div style={styles.container}>
@@ -613,13 +598,10 @@ const InvoiceDetails = () => {
       <div style={styles.header}>
         <div style={styles.headerTop}>
           <div style={styles.headerLeft}>
-            <button
-              style={styles.backButton}
-              onClick={() => navigate('/invoices')}
-            >
+            <button style={styles.backButton} onClick={() => navigate('/invoices')}>
               <ArrowLeft size={18} />
             </button>
-            
+
             <div>
               <h1 style={styles.invoiceNumber}>{invoice.invoiceNumber}</h1>
               <div style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.25rem' }}>
@@ -627,11 +609,13 @@ const InvoiceDetails = () => {
               </div>
             </div>
 
-            <div style={{
-              ...styles.statusBadge,
-              backgroundColor: statusConfig.bg,
-              color: statusConfig.color
-            }}>
+            <div
+              style={{
+                ...styles.statusBadge,
+                backgroundColor: statusConfig.bg,
+                color: statusConfig.color,
+              }}
+            >
               <StatusIcon size={16} />
               {statusConfig.label}
             </div>
@@ -647,7 +631,7 @@ const InvoiceDetails = () => {
                 Edit
               </button>
             )}
-            
+
             <button
               style={{ ...styles.button, ...styles.secondaryButton }}
               onClick={handleDownloadPDF}
@@ -666,7 +650,7 @@ const InvoiceDetails = () => {
                   <Send size={16} />
                   Send Invoice
                 </button>
-                
+
                 <button
                   style={{ ...styles.button, ...styles.primaryButton }}
                   onClick={() => setShowPaymentModal(true)}
@@ -725,15 +709,11 @@ const InvoiceDetails = () => {
                   </div>
                   <div style={styles.detailRow}>
                     <span style={styles.detailLabel}>Email</span>
-                    <span style={styles.detailValue}>
-                      {invoice.clientDetails?.email || 'N/A'}
-                    </span>
+                    <span style={styles.detailValue}>{invoice.clientDetails?.email || 'N/A'}</span>
                   </div>
                   <div style={styles.detailRow}>
                     <span style={styles.detailLabel}>Phone</span>
-                    <span style={styles.detailValue}>
-                      {invoice.clientDetails?.phone || 'N/A'}
-                    </span>
+                    <span style={styles.detailValue}>{invoice.clientDetails?.phone || 'N/A'}</span>
                   </div>
                   <div style={styles.detailRow}>
                     <span style={styles.detailLabel}>GST Number</span>
@@ -791,7 +771,7 @@ const InvoiceDetails = () => {
                     <span style={styles.detailLabel}>Subtotal</span>
                     <span style={styles.detailValue}>{formatCurrency(taxCalc.subtotal)}</span>
                   </div>
-                  
+
                   {taxCalc.totalDiscount > 0 && (
                     <div style={styles.detailRow}>
                       <span style={styles.detailLabel}>Discount</span>
@@ -811,19 +791,25 @@ const InvoiceDetails = () => {
                       {taxCalc.cgstAmount > 0 && (
                         <div style={styles.detailRow}>
                           <span style={styles.detailLabel}>CGST (9%)</span>
-                          <span style={styles.detailValue}>{formatCurrency(taxCalc.cgstAmount)}</span>
+                          <span style={styles.detailValue}>
+                            {formatCurrency(taxCalc.cgstAmount)}
+                          </span>
                         </div>
                       )}
                       {taxCalc.sgstAmount > 0 && (
                         <div style={styles.detailRow}>
                           <span style={styles.detailLabel}>SGST (9%)</span>
-                          <span style={styles.detailValue}>{formatCurrency(taxCalc.sgstAmount)}</span>
+                          <span style={styles.detailValue}>
+                            {formatCurrency(taxCalc.sgstAmount)}
+                          </span>
                         </div>
                       )}
                       {taxCalc.igstAmount > 0 && (
                         <div style={styles.detailRow}>
                           <span style={styles.detailLabel}>IGST (18%)</span>
-                          <span style={styles.detailValue}>{formatCurrency(taxCalc.igstAmount)}</span>
+                          <span style={styles.detailValue}>
+                            {formatCurrency(taxCalc.igstAmount)}
+                          </span>
                         </div>
                       )}
                     </>
@@ -840,17 +826,17 @@ const InvoiceDetails = () => {
                     </div>
                   )}
 
-                  <div style={{
-                    ...styles.detailRow,
-                    borderBottom: 'none',
-                    paddingTop: '1rem',
-                    fontSize: '1.125rem',
-                    fontWeight: '700'
-                  }}>
+                  <div
+                    style={{
+                      ...styles.detailRow,
+                      borderBottom: 'none',
+                      paddingTop: '1rem',
+                      fontSize: '1.125rem',
+                      fontWeight: '700',
+                    }}
+                  >
                     <span>Total Amount</span>
-                    <span style={{ color: '#059669' }}>
-                      {formatCurrency(taxCalc.finalAmount)}
-                    </span>
+                    <span style={{ color: '#059669' }}>{formatCurrency(taxCalc.finalAmount)}</span>
                   </div>
                 </div>
               </div>
@@ -869,9 +855,7 @@ const InvoiceDetails = () => {
                 <div style={styles.cardContent}>
                   <div style={styles.detailRow}>
                     <span style={styles.detailLabel}>Total Amount</span>
-                    <span style={styles.detailValue}>
-                      {formatCurrency(taxCalc.finalAmount)}
-                    </span>
+                    <span style={styles.detailValue}>{formatCurrency(taxCalc.finalAmount)}</span>
                   </div>
                   <div style={styles.detailRow}>
                     <span style={styles.detailLabel}>Paid Amount</span>
@@ -881,7 +865,12 @@ const InvoiceDetails = () => {
                   </div>
                   <div style={styles.detailRow}>
                     <span style={styles.detailLabel}>Remaining</span>
-                    <span style={{ ...styles.detailValue, color: remainingAmount > 0 ? '#ef4444' : '#10b981' }}>
+                    <span
+                      style={{
+                        ...styles.detailValue,
+                        color: remainingAmount > 0 ? '#ef4444' : '#10b981',
+                      }}
+                    >
                       {formatCurrency(remainingAmount)}
                     </span>
                   </div>
@@ -957,21 +946,21 @@ const InvoiceDetails = () => {
                       ...styles.secondaryButton,
                       width: '100%',
                       justifyContent: 'center',
-                      marginBottom: '0.625rem'
+                      marginBottom: '0.625rem',
                     }}
                     onClick={copyInvoiceNumber}
                   >
                     <Copy size={16} />
                     Copy Invoice Number
                   </button>
-                  
+
                   <button
                     style={{
                       ...styles.button,
                       ...styles.secondaryButton,
                       width: '100%',
                       justifyContent: 'center',
-                      marginBottom: '0.625rem'
+                      marginBottom: '0.625rem',
                     }}
                     onClick={handleScheduleReminders}
                     disabled={invoice.status === 'paid' || invoice.status === 'cancelled'}
@@ -985,7 +974,7 @@ const InvoiceDetails = () => {
                       ...styles.button,
                       ...styles.secondaryButton,
                       width: '100%',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
                     }}
                     onClick={() => window.print()}
                   >
@@ -1032,9 +1021,7 @@ const InvoiceDetails = () => {
                               {payment.paymentId}
                             </span>
                           </td>
-                          <td style={styles.tableCell}>
-                            {formatDate(payment.paymentDate)}
-                          </td>
+                          <td style={styles.tableCell}>{formatDate(payment.paymentDate)}</td>
                           <td style={{ ...styles.tableCell, fontWeight: '600', color: '#059669' }}>
                             {formatCurrency(payment.amount)}
                           </td>
@@ -1043,26 +1030,30 @@ const InvoiceDetails = () => {
                           </td>
                           <td style={styles.tableCell}>
                             {payment.isVerified ? (
-                              <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.25rem',
-                                color: '#10b981',
-                                fontSize: '0.8125rem',
-                                fontWeight: '600'
-                              }}>
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  color: '#10b981',
+                                  fontSize: '0.8125rem',
+                                  fontWeight: '600',
+                                }}
+                              >
                                 <CheckCircle size={14} />
                                 Verified
                               </span>
                             ) : (
-                              <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.25rem',
-                                color: '#f59e0b',
-                                fontSize: '0.8125rem',
-                                fontWeight: '600'
-                              }}>
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  color: '#f59e0b',
+                                  fontSize: '0.8125rem',
+                                  fontWeight: '600',
+                                }}
+                              >
                                 <Clock size={14} />
                                 Pending
                               </span>
@@ -1090,28 +1081,30 @@ const InvoiceDetails = () => {
               <div style={styles.cardContent}>
                 <div style={styles.timeline}>
                   <div style={styles.timelineItem}>
-                    <div style={{
-                      ...styles.timelineIcon,
-                      backgroundColor: '#f0f9ff',
-                      color: '#0284c7'
-                    }}>
+                    <div
+                      style={{
+                        ...styles.timelineIcon,
+                        backgroundColor: '#f0f9ff',
+                        color: '#0284c7',
+                      }}
+                    >
                       <FileText size={16} />
                     </div>
                     <div style={styles.timelineContent}>
                       <div style={styles.timelineTitle}>Invoice Created</div>
-                      <div style={styles.timelineDate}>
-                        {formatDate(invoice.createdAt)}
-                      </div>
+                      <div style={styles.timelineDate}>{formatDate(invoice.createdAt)}</div>
                     </div>
                   </div>
 
                   {invoice.status !== 'draft' && (
                     <div style={styles.timelineItem}>
-                      <div style={{
-                        ...styles.timelineIcon,
-                        backgroundColor: '#dbeafe',
-                        color: '#2563eb'
-                      }}>
+                      <div
+                        style={{
+                          ...styles.timelineIcon,
+                          backgroundColor: '#dbeafe',
+                          color: '#2563eb',
+                        }}
+                      >
                         <Send size={16} />
                       </div>
                       <div style={styles.timelineContent}>
@@ -1125,38 +1118,38 @@ const InvoiceDetails = () => {
 
                   {payments.map((payment, index) => (
                     <div key={payment.id} style={styles.timelineItem}>
-                      <div style={{
-                        ...styles.timelineIcon,
-                        backgroundColor: '#dcfce7',
-                        color: '#22c55e'
-                      }}>
+                      <div
+                        style={{
+                          ...styles.timelineIcon,
+                          backgroundColor: '#dcfce7',
+                          color: '#22c55e',
+                        }}
+                      >
                         <CreditCard size={16} />
                       </div>
                       <div style={styles.timelineContent}>
                         <div style={styles.timelineTitle}>
                           Payment Received - {formatCurrency(payment.amount)}
                         </div>
-                        <div style={styles.timelineDate}>
-                          {formatDate(payment.paymentDate)}
-                        </div>
+                        <div style={styles.timelineDate}>{formatDate(payment.paymentDate)}</div>
                       </div>
                     </div>
                   ))}
 
                   {invoice.status === 'paid' && (
                     <div style={styles.timelineItem}>
-                      <div style={{
-                        ...styles.timelineIcon,
-                        backgroundColor: '#bbf7d0',
-                        color: '#16a34a'
-                      }}>
+                      <div
+                        style={{
+                          ...styles.timelineIcon,
+                          backgroundColor: '#bbf7d0',
+                          color: '#16a34a',
+                        }}
+                      >
                         <CheckCircle size={16} />
                       </div>
                       <div style={styles.timelineContent}>
                         <div style={styles.timelineTitle}>Invoice Paid in Full</div>
-                        <div style={styles.timelineDate}>
-                          {formatDate(invoice.updatedAt)}
-                        </div>
+                        <div style={styles.timelineDate}>{formatDate(invoice.updatedAt)}</div>
                       </div>
                     </div>
                   )}
@@ -1187,10 +1180,12 @@ const InvoiceDetails = () => {
                   type="number"
                   style={styles.input}
                   value={paymentForm.amount}
-                  onChange={(e) => setPaymentForm(prev => ({
-                    ...prev,
-                    amount: parseFloat(e.target.value) || 0
-                  }))}
+                  onChange={(e) =>
+                    setPaymentForm((prev) => ({
+                      ...prev,
+                      amount: parseFloat(e.target.value) || 0,
+                    }))
+                  }
                   placeholder="Enter amount"
                   max={remainingAmount}
                 />
@@ -1205,10 +1200,12 @@ const InvoiceDetails = () => {
                   type="date"
                   style={styles.input}
                   value={paymentForm.paymentDate}
-                  onChange={(e) => setPaymentForm(prev => ({
-                    ...prev,
-                    paymentDate: e.target.value
-                  }))}
+                  onChange={(e) =>
+                    setPaymentForm((prev) => ({
+                      ...prev,
+                      paymentDate: e.target.value,
+                    }))
+                  }
                 />
               </div>
 
@@ -1217,10 +1214,12 @@ const InvoiceDetails = () => {
                 <select
                   style={styles.select}
                   value={paymentForm.paymentMethod}
-                  onChange={(e) => setPaymentForm(prev => ({
-                    ...prev,
-                    paymentMethod: e.target.value
-                  }))}
+                  onChange={(e) =>
+                    setPaymentForm((prev) => ({
+                      ...prev,
+                      paymentMethod: e.target.value,
+                    }))
+                  }
                 >
                   <option value="bank_transfer">Bank Transfer</option>
                   <option value="upi">UPI</option>
@@ -1238,10 +1237,12 @@ const InvoiceDetails = () => {
                   type="text"
                   style={styles.input}
                   value={paymentForm.transactionId}
-                  onChange={(e) => setPaymentForm(prev => ({
-                    ...prev,
-                    transactionId: e.target.value
-                  }))}
+                  onChange={(e) =>
+                    setPaymentForm((prev) => ({
+                      ...prev,
+                      transactionId: e.target.value,
+                    }))
+                  }
                   placeholder="Enter transaction ID"
                 />
               </div>
@@ -1251,10 +1252,12 @@ const InvoiceDetails = () => {
                 <textarea
                   style={styles.textarea}
                   value={paymentForm.notes}
-                  onChange={(e) => setPaymentForm(prev => ({
-                    ...prev,
-                    notes: e.target.value
-                  }))}
+                  onChange={(e) =>
+                    setPaymentForm((prev) => ({
+                      ...prev,
+                      notes: e.target.value,
+                    }))
+                  }
                   placeholder="Add any notes..."
                 />
               </div>
@@ -1301,7 +1304,7 @@ const InvoiceDetails = () => {
         }
       `}</style>
     </div>
-  );
-};
+  )
+}
 
-export default InvoiceDetails;
+export default InvoiceDetails

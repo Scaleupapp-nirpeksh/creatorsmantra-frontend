@@ -38,6 +38,22 @@ import {
   RenderCreateDeal,
   RenderDealDetails,
   RenderInvoiceDashboard,
+  RenderCreateInvoice,
+  ConsolidatedInvoiceWizard,
+  RenderInvoiceDetails,
+  RenderEditInvoice,
+  ScriptsPriorityDashboard,
+  ScriptCreationWizard,
+  ScriptAnalyticsPerformance,
+  ScriptDetailsEditor,
+  RateCardDashboard,
+  CreateRateCard,
+  RateCardAnalytics,
+  EditRateCard,
+  RateCardHistory,
+  ContractsDashboard,
+  ContractDetails,
+  RenderInvoiceAnalytics,
 } from './features'
 
 // Styles
@@ -131,6 +147,170 @@ function App() {
                     element={
                       <Suspense fallback={<PageLoader />}>
                         <RenderInvoiceDashboard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderCreateInvoice />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="create-consolidated"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ConsolidatedInvoiceWizard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="analytics"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderInvoiceAnalytics />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":invoiceId"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderInvoiceDetails />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":invoiceId/edit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderEditInvoice />
+                      </Suspense>
+                    }
+                  />
+                </Route>
+
+                {/* Scripts Routes */}
+                <Route path="/scripts">
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ScriptsPriorityDashboard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ScriptCreationWizard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="analytics"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ScriptAnalyticsPerformance />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":scriptId"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ScriptDetailsEditor />
+                      </Suspense>
+                    }
+                  />
+                </Route>
+
+                {/* RateCard Routes*/}
+                <Route path="/dashboard/rate-cards">
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RateCardDashboard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <CreateRateCard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="new"
+                    element={<Navigate to="/dashboard/rate-cards/create" replace />}
+                  />
+                  <Route
+                    path="builder"
+                    element={<Navigate to="/dashboard/rate-cards/create" replace />}
+                  />
+                  <Route
+                    path="analytics"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RateCardAnalytics />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":rateCardId"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <EditRateCard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":rateCardId/edit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <EditRateCard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":rateCardId/history"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RateCardHistory />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":rateCardId/analytics"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RateCardAnalytics />
+                      </Suspense>
+                    }
+                  />
+                </Route>
+
+                {/* Contract Routes */}
+                <Route path="/contracts">
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ContractsDashboard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":contractId"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ContractDetails />
                       </Suspense>
                     }
                   />

@@ -180,27 +180,27 @@ export const MainLayoutConstants = {
         },
       ],
     },
-    {
-      id: 'performance',
-      label: 'Performance',
-      icon: TrendingUp,
-      path: '/performance',
-      subItems: [
-        { id: 'performance-overview', label: 'Overview', path: '/performance', icon: BarChart3 },
-        {
-          id: 'performance-analytics',
-          label: 'Analytics',
-          path: '/performance/analytics',
-          icon: PieChart,
-        },
-        {
-          id: 'performance-reports',
-          label: 'Reports',
-          path: '/performance/reports',
-          icon: FileText,
-        },
-      ],
-    },
+    // {
+    //   id: 'performance',
+    //   label: 'Performance',
+    //   icon: TrendingUp,
+    //   path: '/performance',
+    //   subItems: [
+    //     { id: 'performance-overview', label: 'Overview', path: '/performance', icon: BarChart3 },
+    //     {
+    //       id: 'performance-analytics',
+    //       label: 'Analytics',
+    //       path: '/performance/analytics',
+    //       icon: PieChart,
+    //     },
+    //     {
+    //       id: 'performance-reports',
+    //       label: 'Reports',
+    //       path: '/performance/reports',
+    //       icon: FileText,
+    //     },
+    //   ],
+    // },
     {
       id: 'contracts',
       label: 'Contracts',

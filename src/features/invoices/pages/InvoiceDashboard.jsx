@@ -46,6 +46,9 @@ import { toast } from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useInvoiceStore } from '../../../store'
 
+// Styles
+import '../../../styles/animateSpin.css'
+
 const InvoiceDashboard = () => {
   const navigate = useNavigate()
   const { user, subscription } = useAuthStore()
@@ -82,8 +85,8 @@ const InvoiceDashboard = () => {
   // Load dashboard and invoices data
   const loadDashboardData = async () => {
     try {
-      // await Promise.all([fetchDashboard(), fetchInvoices()])
       await fetchInvoices()
+      // await Promise.all([fetchDashboard(), fetchInvoices()])
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
     }
@@ -1134,13 +1137,6 @@ const InvoiceDashboard = () => {
           </span>
         </div>
       )}
-
-      <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
     </div>
   )
 }

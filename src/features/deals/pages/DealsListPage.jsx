@@ -88,7 +88,7 @@ const DealsListPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [draggedDeal, setDraggedDeal] = useState(null)
   const [dragOverStage, setDragOverStage] = useState(null)
-  const [showActions, setShowActions] = useState(null)
+  const [showActions, setShowActions] = useState(false)
 
   // Cosntants
   const { stages } = DealsConstants
@@ -682,7 +682,9 @@ const DealsListPage = () => {
               {deal.brand?.name || 'No brand'}
             </div>
           </div>
-          <button
+
+          {/* TEMP */}
+          {/* <button
             style={styles.dealMoreButton}
             onClick={(e) => {
               e.stopPropagation()
@@ -690,7 +692,7 @@ const DealsListPage = () => {
             }}
           >
             <MoreVertical size={14} />
-          </button>
+          </button> */}
 
           {showActions === deal._id && (
             <div style={styles.dealActions}>
