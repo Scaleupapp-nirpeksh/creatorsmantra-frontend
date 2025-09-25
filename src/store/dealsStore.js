@@ -30,6 +30,85 @@ const storeWrapper = (f) => (ifProd ? (f) => f : devtools(f, { name: 'dealsStore
 
 const { CreateDealSections, SectionMap } = DealsConstants
 
+const getVal = (field) => field?.value ?? ''
+
+function generatePayload(state) {
+  return {
+    title: getVal(state.title),
+
+    brand: {
+      name: getVal(state.brandName),
+      website: getVal(state.brandWebsite),
+      industry: getVal(state.brandIndustry),
+      companySize: getVal(state.brandCompanySize),
+      contactPerson: {
+        name: getVal(state.contactName),
+        email: getVal(state.contactEmail),
+        phone: getVal(state.contactPhone),
+        designation: getVal(state.contactDesignation),
+      },
+    },
+
+    platform: getVal(state.platform),
+
+    deliverables: (state.deliverables.group || []).map((d) => ({
+      type: Object.values(d)[0]?.value ?? '', // map subField_1 etc → type
+      quantity: Number(Object.values(d)[1]?.value ?? 1),
+      description: Object.values(d)[2]?.value ?? '',
+    })),
+
+    dealValue: {
+      amount: Number(getVal(state.value)),
+      currency: getVal(state.currency),
+      paymentTerms: getVal(state.paymentTerms),
+      customPaymentTerms: getVal(state.customPaymentTerms),
+      gstApplicable: state.gstApplicable?.value ?? false,
+      tdsApplicable: state.tdsApplicable?.value ?? false,
+    },
+
+    timeline: {
+      responseDeadline: getVal(state.deadline),
+      contentDeadline: getVal(state.deadline), // or campaignStartDate if that's intended
+      goLiveDate: getVal(state.campaignStartDate),
+      paymentDueDate: getVal(state.campaignEndDate),
+    },
+
+    campaignRequirements: {
+      contentGuidelines: state.contentGuidelines.group?.length
+        ? {
+            tone: state.contentGuidelines.group[0]['deliverables_info.tone.subField_1'].value,
+            style: state.contentGuidelines.group[0]['deliverables_info.style.subField_2'].value,
+          }
+        : undefined,
+
+      performanceTargets: state.performance.group?.length
+        ? {
+            minViews: Number(
+              state.performance.group[0]['deliverables_info.min_views.subField_2'].value
+            ),
+            minLikes: Number(
+              state.performance.group[0]['deliverables_info.min_likes.subField_3'].value
+            ),
+            minComments: Number(
+              state.performance.group[0]['deliverables_info.min_comments.subField_4'].value
+            ),
+            minShares: Number(
+              state.performance.group[0]['deliverables_info.min_likes.subField_5'].value
+            ),
+          }
+        : undefined,
+    },
+
+    source: getVal(state.source),
+
+    priority: getVal(state.priority),
+
+    tags: Array.isArray(state.tags.value) ? state.tags.value : [],
+
+    internalNotes: getVal(state.internalNotes),
+  }
+}
+
 /*
     TODO:
     1. Add Reset Mechanism if user leaves the page in between
@@ -194,11 +273,10 @@ const useDealsStore = create((set, get) => ({
 
     const { hasErrors, updatedDraft } = validate(draftDeal, prev.fields)
 
-    // TEMP
-    // if (hasErrors) {
-    //   set({ ifFormHasError: true, draftDeal: updatedDraft })
-    //   return
-    // }
+    if (hasErrors) {
+      set({ ifFormHasError: true, draftDeal: updatedDraft })
+      return
+    }
 
     const targetSection = SectionMap[prev.key][direction]
     if (!targetSection) return { ...prev, isLast: true }
@@ -212,9 +290,11 @@ const useDealsStore = create((set, get) => ({
     window.scrollTo(0, 0)
   },
 
-  handleCreateDeal: async () => {
-    const newDeal = get().draftDeal
-    console.log(newDeal)
+  handleCreateDealq: async () => {
+    // const newDeal = get().draftDeal
+    const _payload = generatePayload(get().draftDeal)
+    const response = await dealsAPI.createDeal(_payload)
+    console.log(_payload)
   },
 
   handleOnChangeField: (e, field, groupIdx = null, grpItemUid = null) => {
@@ -330,12 +410,14 @@ const useDealsStore = create((set, get) => ({
       set({ error: 'Failed to update deals', isLoading: false })
     }
   },
-  createDeal: async (dealData) => {
+  handleCreateDeal: async () => {
     set({ creating: true, error: null })
 
     try {
       // Call API
-      const response = await dealsAPI.createDeal(dealData)
+      const _payload = generatePayload(get().draftDeal)
+
+      const response = await dealsAPI.createDeal(_payload)
 
       // Handle different response structures
       let newDeal
@@ -344,7 +426,7 @@ const useDealsStore = create((set, get) => ({
         newDeal = response.data.data
         if (response.data.deal) newDeal = response.data.deal
         else newDeal = response.data
-      } else newDeal = response
+      } else newDeal = response.data
 
       // CHANGE 1: Check for dealId as well (your backend uses dealId, not just id)
       if (newDeal && (newDeal.dealId || newDeal._id || newDeal.id)) {
@@ -364,9 +446,9 @@ const useDealsStore = create((set, get) => ({
         })
 
         // Refresh analytics in background
-        setTimeout(() => {
-          get().fetchAnalytics()
-        }, 1000)
+        // setTimeout(() => {
+        //   get().fetchAnalytics()
+        // }, 1000)
 
         // CHANGE 3: Return proper structure for navigation
         return {

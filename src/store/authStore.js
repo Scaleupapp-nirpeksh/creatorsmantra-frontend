@@ -34,6 +34,7 @@ const useAuthStore = create(
         subscription: null,
         permissions: [],
         lastActivity: null,
+        profileData: null,
 
         // ============================================
         // Initialization
@@ -314,6 +315,24 @@ const useAuthStore = create(
           } catch (error) {
             console.error('Failed to refresh profile:', error)
             return { success: false }
+          }
+        },
+
+        getProfile: async () => {
+          set({ isLoading: true })
+
+          try {
+            const response = await authAPI.getProfile()
+            if (!response.success) {
+              toast.error('Failed to fetch profile data')
+              return
+            }
+            set({
+              profileData: response.data.user,
+              isLoading: false,
+            })
+          } catch (error) {
+            toast.error('Failed to fetch profile data')
           }
         },
 

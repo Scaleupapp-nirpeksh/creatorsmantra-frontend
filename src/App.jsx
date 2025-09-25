@@ -29,7 +29,7 @@ import {
 } from './pages'
 
 // Components
-import { PageLoader, ProtectedRoutesWrapper } from './components'
+import { PageLoader, ProtectedRoutesWrapper, RenderProfileOverview } from './components'
 
 // Features
 import {
@@ -54,6 +54,7 @@ import {
   ContractsDashboard,
   ContractDetails,
   RenderInvoiceAnalytics,
+  TaxSettings,
 } from './features'
 
 // Styles
@@ -315,6 +316,75 @@ function App() {
                     }
                   />
                 </Route>
+
+                {/* Profile Route */}
+                <Route path="/profile">
+                  <Route
+                    index
+                    element={
+                      <div style={styles.comingSoon}>
+                        <RenderProfileOverview />
+                      </div>
+                    }
+                  />
+                  {/* <Route
+                    path="settings"
+                    element={
+                      <div style={styles.comingSoon}>
+                        <h2>Settings</h2>
+                        <p>Coming Soon</p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="subscription"
+                    element={
+                      <div style={styles.comingSoon}>
+                        <h2>Subscription</h2>
+                        <p>Coming Soon</p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="team"
+                    element={
+                      <div style={styles.comingSoon}>
+                        <h2>Team Management</h2>
+                        <p>Coming Soon</p>
+                      </div>
+                    }
+                  /> */}
+                </Route>
+
+                {/* Settings Routes */}
+                {/* <Route path="/settings">
+                  <Route
+                    index
+                    element={
+                      <div style={styles.comingSoon}>
+                        <h2>Settings</h2>
+                        <p>Coming Soon</p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="tax-preferences"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <TaxSettings />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="subscription"
+                    element={
+                      <div style={styles.comingSoon}>
+                        <h2>Subscription</h2>
+                        <p>Coming Soon</p>
+                      </div>
+                    }
+                  />
+                </Route> */}
               </Route>
             </Route>
 

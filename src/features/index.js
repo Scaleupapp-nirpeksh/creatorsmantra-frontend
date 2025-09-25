@@ -1,8 +1,5 @@
 import { lazy } from 'react'
 
-// Rate Cards
-export const PublicRateCard = lazy(() => import('./rateCard/pages/PublicRateCard'))
-
 // Deals
 export const RenderDealsListing = lazy(() => import('./deals/pages/DealsListPage'))
 export const RenderCreateDeal = lazy(() => import('./deals/pages/CreateDealPage'))
@@ -17,6 +14,7 @@ export const ConsolidatedInvoiceWizard = lazy(
 export const RenderInvoiceDetails = lazy(() => import('./invoices/pages/InvoiceDetails'))
 export const RenderEditInvoice = lazy(() => import('./invoices/pages/EditInvoice'))
 export const RenderInvoiceAnalytics = lazy(() => import('./invoices/pages/InvoiceAnalytics'))
+export const TaxSettings = lazy(() => import('./invoices/pages/TaxSettings'))
 
 // Scripts
 export const ScriptsPriorityDashboard = lazy(
@@ -34,6 +32,8 @@ export const CreateRateCard = lazy(() => import('./rateCard/pages/CreateRateCard
 export const RateCardAnalytics = lazy(() => import('./rateCard/pages/RateCardAnalytics'))
 export const EditRateCard = lazy(() => import('./rateCard/pages/EditRateCard'))
 export const RateCardHistory = lazy(() => import('./rateCard/pages/RateCardHistory'))
+// Public Rate Card
+export const PublicRateCard = lazy(() => import('./rateCard/pages/PublicRateCard'))
 
 // Contract
 export const ContractsDashboard = lazy(() => import('./contracts/pages/ContractsDashboard'))

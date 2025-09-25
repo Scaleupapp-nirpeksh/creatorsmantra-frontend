@@ -27,7 +27,6 @@ import useDealsStore from '../../../store/dealsStore'
 
 // Constants
 import { DealsConstants } from '../../../utils/constants'
-import { CreateDealForm } from '../formFields'
 
 // Components
 import {
@@ -222,120 +221,108 @@ const CreateDealPage = () => {
               2. Pricing Breakdown Section - PaymentInfo
           */}
 
-          {true && (
-            <div>
-              {/* Form Fields */}
-              <GridContainer>
-                {sectionConfig.fields.map((attrs, idx) => {
-                  const isComponentGrouped = attrs.component === 'group'
-                  let canAddFields = false
+          <div>
+            {/* Form Fields */}
+            <GridContainer>
+              {sectionConfig.fields.map((attrs, idx) => {
+                const isComponentGrouped = attrs.component === 'group'
+                let canAddFields = false
 
-                  if ('group' in attrs.config) {
-                    canAddFields =
-                      'canAddFields' in attrs.config.group ? attrs.config.group.canAddFields : false
-                  }
+                if ('group' in attrs.config) {
+                  canAddFields =
+                    'canAddFields' in attrs.config.group ? attrs.config.group.canAddFields : false
+                }
 
-                  if (isComponentGrouped) {
-                    const groupsToRender = canAddFields ? dynamicGroups[attrs.uid] : [attrs.group]
-
-                    return (
-                      <GridItem span={12} key={attrs.uid}>
-                        <GridContainer className={attrs.style}>
-                          <h6 className="span-12">{`${attrs.label} ${canAddFields ? `# ${groupsToRender?.length}` : ''}`}</h6>
-                          {groupsToRender?.map((group, groupIdx) => {
-                            const showDeleteBtn =
-                              canAddFields && dynamicGroups?.[attrs.uid].length > 1
-
-                            return (
-                              <Fragment key={`${attrs.uid}_${groupIdx}`}>
-                                {group?.map((groupAttrs) => {
-                                  return (
-                                    <GridItem span={groupAttrs.colSpan} key={groupAttrs.uid}>
-                                      <RenderSection
-                                        attrs={groupAttrs}
-                                        onChange={(e) => {
-                                          handleOnChangeField(
-                                            e,
-                                            attrs.name,
-                                            groupIdx,
-                                            groupAttrs.uid
-                                          )
-                                        }}
-                                        formState={draftDeal}
-                                        parentKey={attrs.name}
-                                      />
-                                    </GridItem>
-                                  )
-                                })}
-                                {showDeleteBtn && (
-                                  <GridItem span={12}>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        modifyDynamicGroups(
-                                          'remove',
-                                          attrs.uid,
-                                          attrs.name,
-                                          groupIdx
-                                        )
-                                      }
-                                      style={{
-                                        ...styles.secondaryButton,
-                                        width: '100%',
-                                        justifyContent: 'center',
-                                        borderColor: '#E53935',
-                                      }}
-                                    >
-                                      Delete
-                                      <Trash size={18} />
-                                    </button>
-                                  </GridItem>
-                                )}
-                              </Fragment>
-                            )
-                          })}
-
-                          {canAddFields && (
-                            <GridItem span={12}>
-                              <div style={{ border: '1px solid #e2e8f0', width: '100%' }}></div>
-                            </GridItem>
-                          )}
-
-                          {canAddFields && (
-                            <GridItem span={12}>
-                              <button
-                                type="button"
-                                onClick={() => modifyDynamicGroups('add', attrs.uid, attrs.name)}
-                                style={{
-                                  ...styles.primaryButton,
-                                  width: '100%',
-                                  justifyContent: 'center',
-                                }}
-                              >
-                                Add
-                                <Plus size={18} />
-                              </button>
-                            </GridItem>
-                          )}
-                        </GridContainer>
-                      </GridItem>
-                    )
-                  }
+                if (isComponentGrouped) {
+                  const groupsToRender = canAddFields ? dynamicGroups[attrs.uid] : [attrs.group]
 
                   return (
-                    <GridItem key={attrs.uid} span={attrs.colSpan}>
-                      <RenderSection
-                        key={attrs.uid}
-                        attrs={attrs}
-                        onChange={(e) => handleOnChangeField(e, attrs.name)}
-                        formState={draftDeal}
-                      />
+                    <GridItem span={12} key={attrs.uid}>
+                      <GridContainer className={attrs.style}>
+                        <h6 className="span-12">{`${attrs.label} ${canAddFields ? `# ${groupsToRender?.length}` : ''}`}</h6>
+                        {groupsToRender?.map((group, groupIdx) => {
+                          const showDeleteBtn =
+                            canAddFields && dynamicGroups?.[attrs.uid].length > 1
+
+                          return (
+                            <Fragment key={`${attrs.uid}_${groupIdx}`}>
+                              {group?.map((groupAttrs) => {
+                                return (
+                                  <GridItem span={groupAttrs.colSpan} key={groupAttrs.uid}>
+                                    <RenderSection
+                                      attrs={groupAttrs}
+                                      onChange={(e) => {
+                                        handleOnChangeField(e, attrs.name, groupIdx, groupAttrs.uid)
+                                      }}
+                                      formState={draftDeal}
+                                      parentKey={attrs.name}
+                                    />
+                                  </GridItem>
+                                )
+                              })}
+                              {showDeleteBtn && (
+                                <GridItem span={12}>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      modifyDynamicGroups('remove', attrs.uid, attrs.name, groupIdx)
+                                    }
+                                    style={{
+                                      ...styles.secondaryButton,
+                                      width: '100%',
+                                      justifyContent: 'center',
+                                      borderColor: '#E53935',
+                                    }}
+                                  >
+                                    Delete
+                                    <Trash size={18} />
+                                  </button>
+                                </GridItem>
+                              )}
+                            </Fragment>
+                          )
+                        })}
+
+                        {canAddFields && (
+                          <GridItem span={12}>
+                            <div style={{ border: '1px solid #e2e8f0', width: '100%' }}></div>
+                          </GridItem>
+                        )}
+
+                        {canAddFields && (
+                          <GridItem span={12}>
+                            <button
+                              type="button"
+                              onClick={() => modifyDynamicGroups('add', attrs.uid, attrs.name)}
+                              style={{
+                                ...styles.primaryButton,
+                                width: '100%',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              Add
+                              <Plus size={18} />
+                            </button>
+                          </GridItem>
+                        )}
+                      </GridContainer>
                     </GridItem>
                   )
-                })}
-              </GridContainer>
-            </div>
-          )}
+                }
+
+                return (
+                  <GridItem key={attrs.uid} span={attrs.colSpan}>
+                    <RenderSection
+                      key={attrs.uid}
+                      attrs={attrs}
+                      onChange={(e) => handleOnChangeField(e, attrs.name)}
+                      formState={draftDeal}
+                    />
+                  </GridItem>
+                )
+              })}
+            </GridContainer>
+          </div>
 
           {/* Pricing BreakDown Component */}
           {sectionConfig.key === CreateDealSections.PaymentInfo.key && <RenderPricingBreakDown />}
@@ -377,7 +364,10 @@ const CreateDealPage = () => {
               <button
                 type="button"
                 disabled={creating}
-                onClick={handleCreateDeal}
+                onClick={async () => {
+                  await handleCreateDeal()
+                  navigate(`/deals`)
+                }}
                 style={{
                   ...styles.primaryButton,
                   ...(creating ? styles.primaryButtonDisabled : {}),

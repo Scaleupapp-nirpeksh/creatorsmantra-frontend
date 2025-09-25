@@ -19,3 +19,6 @@ export { default as Dropdown } from './form/Dropdown'
 export { default as TextArea } from './form/TextArea'
 export { default as TagsInput } from './form/TagsInput'
 export { RenderFields, RenderCompoundFields, RenderSection } from './form/RenderFields'
+
+// Profile
+export { default as RenderProfileOverview } from './RenderProfileOverview'
