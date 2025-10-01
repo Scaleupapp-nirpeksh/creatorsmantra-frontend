@@ -250,16 +250,18 @@ const ContractsDashboard = () => {
           cursor: 'pointer',
           position: 'relative',
         }}
-        onClick={() => {
-          if (isSelected) {
-            setSelectedContracts((prev) => prev.filter((id) => id !== contract.id))
-          } else {
-            setSelectedContracts((prev) => [...prev, contract.id])
-          }
-        }}
+        // TEMP
+        // REASON: Bulk Update API is not built in Backend
+        // onClick={() => {
+        //   if (isSelected) {
+        //     setSelectedContracts((prev) => prev.filter((id) => id !== contract.id))
+        //   } else {
+        //     setSelectedContracts((prev) => [...prev, contract.id])
+        //   }
+        // }}
       >
         {/* Selection Checkbox */}
-        <div
+        {/* <div
           style={{
             position: 'absolute',
             top: '1rem',
@@ -285,7 +287,7 @@ const ContractsDashboard = () => {
               />
             </svg>
           )}
-        </div>
+        </div> */}
 
         {/* Contract Header */}
         <div style={{ marginBottom: '1rem' }}>
@@ -654,7 +656,11 @@ const ContractsDashboard = () => {
       </div>
 
       {/* Bulk Actions */}
-      {selectedContracts.length > 0 && (
+      {/* 
+          TEMP
+          REASON: Bulk Update API is not built
+      */}
+      {false && selectedContracts.length > 0 && (
         <div
           style={{
             display: 'flex',

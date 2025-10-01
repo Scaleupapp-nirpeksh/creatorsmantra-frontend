@@ -238,7 +238,7 @@ const CreateInvoice = () => {
         }))
 
         console.log('Mapped deals:', mappedDeals)
-        setAllDeals(mappedDeals)
+        setAllDeals(mappedDeals.filter((item) => item.stage === 'completed'))
         return
       }
 
@@ -268,7 +268,7 @@ const CreateInvoice = () => {
         }))
 
         console.log('Mapped deals from API:', mappedDeals)
-        setAllDeals(mappedDeals)
+        setAllDeals(mappedDeals.filter((item) => item.stage === 'completed'))
       } else {
         console.error('Invalid response format:', response)
         toast.error('No deals found')
@@ -295,8 +295,6 @@ const CreateInvoice = () => {
       console.error('Deal not found in availableDeals:', selectedDeals[0])
       return
     }
-
-    console.log('Found first deal:', firstDeal)
 
     // Check if all deals are from same brand
     const sameBrand = selectedDeals.every((dealId) => {

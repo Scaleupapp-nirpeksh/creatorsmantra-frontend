@@ -1,4 +1,4 @@
-import { BarChart3, Briefcase, DollarSign, FileText, MessageSquare } from 'lucide-react'
+import { Briefcase, DollarSign, FileText, MessageSquare } from 'lucide-react'
 
 export const DashboardConstants = {
   // Sample data structure for charts (to be replaced with real API data)
@@ -120,12 +120,12 @@ export const DashboardConstants = {
       color: '#f59e0b',
       path: '/scripts/create',
     },
-    {
-      id: 'view-analytics',
-      label: 'Analytics',
-      icon: BarChart3,
-      color: '#06b6d4',
-      path: '/performance',
-    },
+    // {
+    //   id: 'view-analytics',
+    //   label: 'Analytics',
+    //   icon: BarChart3,
+    //   color: '#06b6d4',
+    //   path: '/performance',
+    // },
   ],
 }

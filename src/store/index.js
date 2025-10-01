@@ -17,6 +17,7 @@ export { default as useScriptsStore } from './scriptsStore'
 export { default as useInvoiceStore } from './invoiceStore'
 export { default as useRateCardStore } from './ratecardStore'
 export { default as useContractsStore } from './contractsStore'
+export { default as useDashboardStore } from './dashboardStore'
 
 // // ============================================
 // // Store Selectors (for optimized re-renders)

@@ -227,6 +227,14 @@ function App() {
                       </Suspense>
                     }
                   />
+                  <Route
+                    path=":scriptId/edit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ScriptDetailsEditor editMode={true} />
+                      </Suspense>
+                    }
+                  />
                 </Route>
 
                 {/* RateCard Routes*/}

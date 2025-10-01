@@ -122,23 +122,24 @@ const useDealsStore = create((set, get) => ({
   loading: false,
   error: null,
   viewType: 'pipeline', // pipeline, table, calendar
-  analytics: {
-    totalDeals: 0,
-    totalValue: 0,
-    avgDealValue: 0,
-    conversionRate: 0,
-    avgTimeToClose: 0,
-    dealsWon: 0,
-    dealsLost: 0,
-    dealsByMonth: [],
-    revenueByMonth: [],
-    topBrands: [],
-    performanceByStage: {},
+  analytics: {},
+  // analytics: {
+  //   totalDeals: 0,
+  //   totalValue: 0,
+  //   avgDealValue: 0,
+  //   conversionRate: 0,
+  //   avgTimeToClose: 0,
+  //   dealsWon: 0,
+  //   dealsLost: 0,
+  //   dealsByMonth: [],
+  //   revenueByMonth: [],
+  //   topBrands: [],
+  //   performanceByStage: {},
 
-    // Calculated Fields
-    completedDeals: 0,
-    overdueDeals: 0,
-  },
+  //   // Calculated Fields
+  //   completedDeals: 0,
+  //   overdueDeals: 0,
+  // },
 
   // Create Deals Operations
   sectionConfig: {
@@ -445,11 +446,6 @@ const useDealsStore = create((set, get) => ({
           creating: false,
         })
 
-        // Refresh analytics in background
-        // setTimeout(() => {
-        //   get().fetchAnalytics()
-        // }, 1000)
-
         // CHANGE 3: Return proper structure for navigation
         return {
           id: newDeal._id, // MongoDB ID for navigation
@@ -525,6 +521,17 @@ const useDealsStore = create((set, get) => ({
       })
 
       throw error
+    }
+  },
+  // Fetch analytics
+  fetchAnalytics: async () => {
+    try {
+      const response = await dealsAPI.getAnalytics()
+      set({ analytics: response.data })
+      return response.data
+    } catch (error) {
+      console.error('Error fetching analytics:', error)
+      return null
     }
   },
 }))

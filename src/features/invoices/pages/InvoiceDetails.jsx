@@ -43,6 +43,7 @@ import {
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useDealsStore } from '../../../store'
 
 const InvoiceDetails = () => {
   const { invoiceId } = useParams()
@@ -52,6 +53,7 @@ const InvoiceDetails = () => {
 
   const { fetchInvoiceById, recordPayment, downloadInvoicePDF, scheduleReminders } =
     useInvoiceStore()
+  const { updateStage } = useDealsStore()
 
   // State
   const [invoice, setInvoice] = useState(null)
@@ -136,6 +138,14 @@ const InvoiceDetails = () => {
       const result = await recordPayment(invoiceId, paymentForm)
       if (result.success) {
         toast.success('Payment recorded successfully')
+
+        // Update Deals Status
+        const results = await Promise.all(
+          invoice?.dealReferences?.dealIds?.map((item) => updateStage(item._id, 'paid'))
+        )
+
+        console.log(results)
+
         setShowPaymentModal(false)
         loadInvoiceData()
       }
@@ -632,24 +642,24 @@ const InvoiceDetails = () => {
               </button>
             )}
 
-            <button
+            {/* <button
               style={{ ...styles.button, ...styles.secondaryButton }}
               onClick={handleDownloadPDF}
               disabled={isGeneratingPDF}
             >
               <Download size={16} />
               {isGeneratingPDF ? 'Generating...' : 'Download PDF'}
-            </button>
+            </button> */}
 
             {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
               <>
-                <button
+                {/* <button
                   style={{ ...styles.button, ...styles.secondaryButton }}
                   onClick={handleSendInvoice}
                 >
                   <Send size={16} />
                   Send Invoice
-                </button>
+                </button> */}
 
                 <button
                   style={{ ...styles.button, ...styles.primaryButton }}

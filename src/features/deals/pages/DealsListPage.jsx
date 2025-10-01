@@ -827,7 +827,7 @@ const DealsListPage = () => {
           </div>
 
           <div style={styles.headerActions}>
-            <div style={styles.searchBar}>
+            {/* <div style={styles.searchBar}>
               <Search style={styles.searchIcon} size={16} />
               <input
                 type="text"
@@ -837,12 +837,12 @@ const DealsListPage = () => {
                 onKeyUp={(e) => e.key === 'Enter' && fetchDeals()}
                 style={styles.searchInput}
               />
-            </div>
+            </div> */}
 
-            <button style={styles.filterButton}>
+            {/* <button style={styles.filterButton}>
               <Filter size={14} />
               Filters
-            </button>
+            </button> */}
 
             <button style={styles.createButton} onClick={() => navigate('/deals/create')}>
               <Plus size={16} />

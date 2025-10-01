@@ -36,6 +36,8 @@ export const dealsAPI = {
     return api.get('/deals', { params: cleanParams })
   },
 
+  getAnalytics: () => api.get('/deals/analytics/revenue'),
+
   // Get single deal by ID
   getDeal: (dealId) => api.get(`/deals/${dealId}`),
 

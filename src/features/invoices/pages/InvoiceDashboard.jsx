@@ -918,13 +918,13 @@ const InvoiceDashboard = () => {
                     </div>
 
                     <div style={styles.invoiceActions}>
-                      <button
+                      {/* <button
                         style={styles.actionButton}
                         onClick={(e) => handleDownloadPDF(e, invoice.id || invoice._id)}
                         title="Download PDF"
                       >
                         <Download size={16} />
-                      </button>
+                      </button> */}
 
                       {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
                         <button

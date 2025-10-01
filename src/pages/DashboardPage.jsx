@@ -1,5 +1,5 @@
 // src/pages/DashboardPage.jsx
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -7,14 +7,13 @@ import {
   Briefcase,
   FileText,
   ArrowUpRight,
-  RefreshCw,
   ChevronRight,
   Zap,
-  Download,
   MessageSquare,
   Brain,
-  BarChart3,
   ClipboardList, // Added Icon for Rate Cards
+  Newspaper,
+  PercentCircle,
 } from 'lucide-react'
 import {
   Line,
@@ -33,11 +32,16 @@ import {
 } from 'recharts'
 import useAuthStore from '../store/authStore'
 import useUIStore from '../store/uiStore'
-import toast from 'react-hot-toast'
 
 // Styles
 import '../styles/animateSpin.css'
 import { DashboardConstants } from '../utils/constants'
+import { useDashboardStore } from '../store'
+
+// Component
+import { Loading } from '../components/index'
+import { formatCurrency } from '../utils/helpers'
+import { useState } from 'react'
 
 const DashboardPage = () => {
   const navigate = useNavigate()
@@ -45,20 +49,29 @@ const DashboardPage = () => {
   // Get data from stores with safe defaults
   const user = useAuthStore((state) => state.user) || {}
   const subscription = useAuthStore((state) => state.subscription)
+  const {
+    fetchDashboardAnalytics,
+    stats: Analytics,
+    dealPipelineStats,
+    revenueData,
+    recentActivities,
+    upcomingTasks,
+    isLoading,
+  } = useDashboardStore((state) => ({
+    fetchDashboardAnalytics: state.fetchDashboardAnalytics,
+    stats: state.stats,
+    dealPipelineStats: state.dealPipelineStats,
+    revenueData: state.revenueData,
+    recentActivities: state.recentActivities,
+    upcomingTasks: state.upcomingTasks,
+    isLoading: state.isLoading,
+  }))
 
   // UI Store - with safe access
   const viewport = useUIStore((state) => state.viewport) || { isMobile: false }
 
   // Constants
-  const {
-    dealStageData,
-    platformData,
-    quickActions,
-    recentActivities,
-    revenueData,
-    stats,
-    upcomingTasks,
-  } = DashboardConstants
+  const { quickActions } = DashboardConstants
 
   const styles = {
     container: {
@@ -490,65 +503,95 @@ const DashboardPage = () => {
     },
   }
 
-  const statsConfig = (stats) => [
-    {
-      label: 'Total Revenue',
-      value: `₹${(stats.totalRevenue / 100000).toFixed(1)}L`,
-      change: `+${stats.revenueGrowth}% from last month`,
-      changeIcon: <ArrowUpRight size={16} />,
-      changeStyle: { ...styles.statChange, ...styles.statChangePositive },
-      icon: <DollarSign size={24} color="#10b981" />,
-      iconBg: 'rgba(16, 185, 129, 0.1)',
-      route: '/analytics/revenue',
-    },
-    {
-      label: 'Active Deals',
-      value: stats.activeDeals,
-      change: `+${stats.dealsGrowth}% from last month`,
-      changeIcon: <ArrowUpRight size={16} />,
-      changeStyle: { ...styles.statChange, ...styles.statChangePositive },
-      icon: <Briefcase size={24} color="#667eea" />,
-      iconBg: 'rgba(102, 126, 234, 0.1)',
-      route: '/deals',
-    },
-    {
-      label: 'Pending Invoices',
-      value: stats.pendingInvoices,
-      change: `₹${(stats.invoiceAmount / 1000).toFixed(0)}K pending`,
-      changeStyle: { ...styles.statChange, color: '#f59e0b' },
-      icon: <FileText size={24} color="#f59e0b" />,
-      iconBg: 'rgba(251, 191, 36, 0.1)',
-      route: '/invoices',
-    },
-    {
-      label: 'Active Rate Cards',
-      value: stats.activeRateCards,
-      change: (
-        <>
-          <FileText size={16} />
-          &nbsp;out of {stats.totalRateCards} total
-        </>
-      ),
-      changeStyle: { ...styles.statChange, color: '#06b6d4' },
-      icon: <ClipboardList size={24} color="#06b6d4" />,
-      iconBg: 'rgba(6, 182, 212, 0.1)',
-      route: '/dashboard/rate-cards',
-    },
-    {
-      label: 'AI Scripts',
-      value: stats.totalScripts,
-      change: (
-        <>
-          <Brain size={16} />
-          &nbsp;{stats.scriptsGenerated} generated
-        </>
-      ),
-      changeStyle: { ...styles.statChange, ...styles.statChangePositive },
-      icon: <MessageSquare size={24} color="#8b5cf6" />,
-      iconBg: 'rgba(139, 92, 246, 0.1)',
-      route: '/scripts',
-    },
-  ]
+  useEffect(() => {
+    fetchDashboardAnalytics()
+  }, [])
+
+  const StatsData = useMemo(() => {
+    let Stats = []
+    if (Object.entries(Analytics).length == 0) return Stats
+
+    const { dealsReport, invoiceReport, scriptsReport, rateCardsReport, contractsReport } =
+      Analytics
+
+    Stats = [
+      {
+        label: 'Total Revenue',
+        value: `₹ ${(dealsReport?.totalRevenue / 100000).toFixed(1)}L`,
+        change: `${formatCurrency((dealsReport?.avgDealValue).toFixed(0))} Avg. Deal Value`,
+        changeIcon: <ArrowUpRight size={16} />,
+        changeStyle: { ...styles.statChange, ...styles.statChangePositive },
+        icon: <DollarSign size={24} color="#10b981" />,
+        iconBg: 'rgba(16, 185, 129, 0.1)',
+        route: '/deals',
+      },
+      {
+        label: 'Active Deals',
+        value: dealsReport?.activeDeals,
+        change: `${(dealsReport?.conversionRate).toFixed(2)}% conversion rate`,
+        changeIcon: <ArrowUpRight size={16} />,
+        changeStyle: { ...styles.statChange, ...styles.statChangePositive },
+        icon: <Briefcase size={24} color="#667eea" />,
+        iconBg: 'rgba(102, 126, 234, 0.1)',
+        route: '/deals',
+      },
+      {
+        label: 'Pending Invoices',
+        value: invoiceReport?.pendingInvoices,
+        change: `${formatCurrency(invoiceReport?.pendingAmount)} pending amount`,
+        changeStyle: { ...styles.statChange, color: '#f59e0b' },
+        icon: <FileText size={24} color="#f59e0b" />,
+        iconBg: 'rgba(251, 191, 36, 0.1)',
+        route: '/invoices',
+      },
+      {
+        label: 'Active Rate Cards',
+        value: rateCardsReport.activeRateCards ?? 0,
+        change: (
+          <>
+            <FileText size={16} />
+            &nbsp;out of {rateCardsReport.totalRateCards} total
+          </>
+        ),
+        changeStyle: { ...styles.statChange, color: '#06b6d4' },
+        icon: <ClipboardList size={24} color="#06b6d4" />,
+        iconBg: 'rgba(6, 182, 212, 0.1)',
+        route: '/dashboard/rate-cards',
+      },
+      {
+        label: 'AI Scripts',
+        value: scriptsReport?.totalScripts,
+        change: (
+          <>
+            <Brain size={16} />
+            &nbsp;{scriptsReport?.generatedScripts} generated
+          </>
+        ),
+        changeStyle: { ...styles.statChange, ...styles.statChangePositive },
+        icon: <MessageSquare size={24} color="#8b5cf6" />,
+        iconBg: 'rgba(139, 92, 246, 0.1)',
+        route: '/scripts',
+      },
+      {
+        label: 'Contracts',
+        value: contractsReport?.totalContracts,
+        change: (
+          <>
+            <PercentCircle size={16} />
+            &nbsp; Avg. risk score {contractsReport?.averageRiskScore}%
+          </>
+        ),
+        changeStyle: { ...styles.statChange, ...styles.statChangePositive },
+        icon: <Newspaper size={24} color="#06b6d4" />,
+        iconBg: 'rgba(102, 126, 234, 0.1)',
+        route: '/contracts',
+      },
+    ]
+
+    return Stats
+  }, [Analytics])
+
+  if (isLoading) return <Loading page={'Dashboard'} />
 
   return (
     <div style={styles.container}>
@@ -564,12 +607,13 @@ const DashboardPage = () => {
           </div>
 
           {/* Sort Actions */}
-          <div style={styles.headerActions}>
+          {/* TEMP */}
+          {/* <div style={styles.headerActions}>
             <button style={styles.downloadButton} onClick={() => toast.success('TODO: Export CSV')}>
               <Download size={18} />
               Export
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -594,7 +638,7 @@ const DashboardPage = () => {
       {/* Stats Grid */}
       {/* TODO: Convert this to map() */}
       <div style={styles.statsGrid}>
-        {statsConfig(stats).map((item, i) => (
+        {StatsData.map((item, i) => (
           <motion.div
             key={i}
             style={styles.statCard}
@@ -656,7 +700,7 @@ const DashboardPage = () => {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
                 <Area
                   type="monotone"
@@ -671,43 +715,45 @@ const DashboardPage = () => {
           </div>
 
           {/* Deal Pipeline */}
-          <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
-            <div style={styles.chartHeader}>
-              <h3 style={styles.chartTitle}>Deal Pipeline</h3>
-              <Link to="/deals" style={styles.viewAllLink}>
-                View all
-                <ChevronRight size={16} />
-              </Link>
+          {
+            <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
+              <div style={styles.chartHeader}>
+                <h3 style={styles.chartTitle}>Deal Pipeline</h3>
+                <Link to="/deals" style={styles.viewAllLink}>
+                  View all
+                  <ChevronRight size={16} />
+                </Link>
+              </div>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={dealPipelineStats}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                    {dealPipelineStats?.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={'#10b981'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={dealStageData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                  {dealStageData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          }
 
           {/* Recent Activities */}
           <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
             <div style={styles.sectionHeader}>
               <h3 style={styles.sectionTitle}>Recent Activities</h3>
-              <Link to="/activities" style={styles.viewAllLink}>
+              {/* <Link to="/activities" style={styles.viewAllLink}>
                 View all
                 <ChevronRight size={16} />
-              </Link>
+              </Link> */}
             </div>
             <div style={styles.activityList}>
-              {recentActivities.map((activity) => {
+              {recentActivities.map((activity, idx) => {
                 const Icon = activity.icon
                 return (
-                  <div key={activity.id} style={styles.activityItem}>
+                  <div key={idx + 1} style={styles.activityItem}>
                     <div
                       style={{
                         ...styles.activityIcon,
@@ -754,7 +800,7 @@ const DashboardPage = () => {
           </div>
 
           {/* Platform Distribution */}
-          <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
+          {/* <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
             <h3 style={styles.sectionTitle}>Platform Distribution</h3>
             <ResponsiveContainer width="100%" height={200}>
               <RePieChart>
@@ -794,7 +840,7 @@ const DashboardPage = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Upcoming Tasks */}
           <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
@@ -806,9 +852,9 @@ const DashboardPage = () => {
               </Link>
             </div>
             <div style={styles.tasksList}>
-              {upcomingTasks.map((task) => (
-                <div key={task.id} style={styles.taskItem}>
-                  <div style={styles.taskCheckbox} />
+              {upcomingTasks?.map((task, idx) => (
+                <div key={idx + 1} style={styles.taskItem}>
+                  {/* <div style={styles.taskCheckbox} /> */}
                   <div style={styles.taskContent}>
                     <div style={styles.taskTitle}>{task.title}</div>
                     <div style={styles.taskDue}>{task.dueDate}</div>
