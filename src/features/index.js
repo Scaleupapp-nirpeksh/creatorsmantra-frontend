@@ -24,7 +24,7 @@ export const ScriptCreationWizard = lazy(() => import('./scripts/pages/ScriptCre
 export const ScriptAnalyticsPerformance = lazy(
   () => import('./scripts/pages/ScriptAnalyticsPerformance')
 )
-export const ScriptDetailsEditor = lazy(() => import('./scripts/pages/ScriptsPriorityDashboard'))
+export const ScriptDetailsEditor = lazy(() => import('./scripts/pages/ScriptDetailsEditor'))
 
 // RateCards
 export const RateCardDashboard = lazy(() => import('./rateCard/pages/RateCardDashboard'))

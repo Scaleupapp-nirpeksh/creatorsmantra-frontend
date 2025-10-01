@@ -220,14 +220,6 @@ function App() {
                     }
                   />
                   <Route
-                    path=":scriptId"
-                    element={
-                      <Suspense fallback={<PageLoader />}>
-                        <ScriptDetailsEditor />
-                      </Suspense>
-                    }
-                  />
-                  <Route
                     path=":scriptId/edit"
                     element={
                       <Suspense fallback={<PageLoader />}>

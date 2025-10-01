@@ -1043,7 +1043,10 @@ const ContractsDashboard = () => {
       </h2>
 
       {/* Upload Limits */}
-      {uploadLimits && (
+      {/* TEMP:
+          REASON: No API Built for this in backend
+      */}
+      {/* {uploadLimits && (
         <div
           style={{
             backgroundColor: '#F5F3FF',
@@ -1100,7 +1103,7 @@ const ContractsDashboard = () => {
             </div>
           )}
         </div>
-      )}
+      )} */}
 
       {/* Upload Area */}
       <div
