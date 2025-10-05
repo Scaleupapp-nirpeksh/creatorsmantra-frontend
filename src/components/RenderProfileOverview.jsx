@@ -1,104 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuthStore } from '../store'
 import Loading from './loaders/Loading'
-
-// const user = {
-//   id: '68c15a0849358eefd652067c',
-//   fullName: 'John Doe',
-//   email: 'john.doe@example.com',
-//   phone: '9876543210',
-//   profilePicture: null,
-//   gender: 'male',
-//   address: {
-//     country: 'USA',
-//   },
-//   userType: 'creator',
-//   role: 'creator',
-//   accountStatus: 'active',
-//   isEmailVerified: true,
-//   isPhoneVerified: true,
-//   subscriptionTier: 'pro',
-//   subscriptionStatus: 'active',
-//   subscriptionStartDate: '2025-09-10T10:59:20.421Z',
-//   subscriptionEndDate: '2025-09-24T10:59:20.421Z',
-//   profileCompletion: 75,
-//   lastLogin: '2025-09-24T10:57:02.699Z',
-//   createdAt: '2025-09-10T10:59:32.165Z',
-//   preferences: {
-//     notifications: {
-//       email: true,
-//       sms: true,
-//       push: true,
-//     },
-//     language: 'en',
-//     timezone: 'Asia/Kolkata',
-//   },
-//   creatorProfile: {
-//     creatorType: 'tech',
-//     experienceLevel: 'intermediate',
-//     socialProfiles: {
-//       instagram: {
-//         username: 'john_tech',
-//         followersCount: 1200,
-//         avgLikes: 150,
-//         avgComments: 10,
-//         engagementRate: 12.5,
-//         lastUpdated: '2025-09-10T10:59:55.282Z',
-//       },
-//       youtube: {
-//         channelName: 'JohnTechYT',
-//         subscribersCount: 5000,
-//         avgViews: 2000,
-//         totalVideos: 50,
-//         lastUpdated: '2025-09-10T10:59:55.282Z',
-//       },
-//     },
-//     contentCategories: ['tech', 'programming'],
-//     languages: ['English'],
-//     targetAudience: {
-//       ageGroup: '18-35',
-//       gender: 'balanced',
-//       geography: 'global',
-//     },
-//     rateCard: {
-//       instagram: {
-//         igtv: 50,
-//         post: 30,
-//         reel: 40,
-//         story: 20,
-//       },
-//       youtube: {
-//         shorts: 100,
-//         integration: 200,
-//         dedicated: 300,
-//       },
-//       lastUpdated: '2025-09-25T16:01:02.060Z',
-//     },
-//     bankDetails: {},
-//     upiDetails: {},
-//     gstDetails: {
-//       hasGst: false,
-//     },
-//     panDetails: {},
-//     managers: [],
-//     stats: {
-//       totalDeals: 5,
-//       completedDeals: 3,
-//       totalEarnings: 500,
-//       avgDealValue: 100,
-//       topBrands: ['Brand A', 'Brand B'],
-//     },
-//     workPreferences: {
-//       availabilityStatus: 'open_for_collaborations',
-//       preferredBrands: [],
-//       excludedBrands: [],
-//       minimumBudget: 0,
-//       turnaroundTime: 5,
-//       workingDays: [],
-//     },
-//     socialPresenceScore: 80,
-//   },
-// }
+import TextInput from './form/TextInput'
 
 const styles = {
   card: {
@@ -118,6 +21,7 @@ const styles = {
     alignItems: 'center',
     gap: '1rem',
     backgroundColor: '#f8fafc',
+    justifyContent: 'space-between',
   },
   avatar: {
     width: '60px',
@@ -160,6 +64,7 @@ const styles = {
     justifyContent: 'space-between',
     borderBottom: '1px solid #f1f5f9',
     padding: '0.5rem 0',
+    alignItems: 'center',
   },
   label: {
     fontWeight: '600',
@@ -177,16 +82,50 @@ const styles = {
     backgroundColor: '#d1fae5',
     color: '#10b981',
   },
+  editButton: {
+    backgroundColor: '#3b82f6',
+    color: '#fff',
+    border: 'none',
+    padding: '0.4rem 0.9rem',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: 600,
+  },
 }
 
 const RenderProfileOverview = () => {
-  const { getProfile, profileData: user, isLoading } = useAuthStore()
-
-  console.log(user)
+  const { getProfile, profileData: user, isLoading, updateProfile } = useAuthStore()
+  const [editMode, setEditMode] = useState(false)
+  const [formData, setFormData] = useState(null)
 
   useEffect(() => {
     getProfile()
   }, [])
+
+  useEffect(() => {
+    if (user) setFormData({ ...user })
+  }, [user])
+
+  const handleChange = (path, value) => {
+    setFormData((prev) => {
+      const updated = { ...prev }
+      const keys = path.split('.')
+      let ref = updated
+      for (let i = 0; i < keys.length - 1; i++) {
+        ref = ref[keys[i]]
+      }
+      ref[keys[keys.length - 1]] = value
+      return updated
+    })
+  }
+
+  const handleEditToggle = () => {
+    if (editMode) {
+      console.log('Saving data:', formData)
+      updateProfile(formData)
+    }
+    setEditMode(!editMode)
+  }
 
   return (
     <>
@@ -195,29 +134,65 @@ const RenderProfileOverview = () => {
       ) : (
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <div style={styles.avatar}>{user.fullName?.charAt(0) || 'U'}</div>
-            <div style={styles.headerText}>
-              <p style={styles.name}>{user.fullName || 'Default FullName'}</p>
-              <p style={styles.email}>{user.email || 'default@gmail.com'}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={styles.avatar}>{user.fullName?.charAt(0) || 'U'}</div>
+              <div style={styles.headerText}>
+                <p style={styles.name}>{user.fullName || 'Default FullName'}</p>
+                <p style={styles.email}>{user.email || 'default@gmail.com'}</p>
+              </div>
             </div>
+            <button style={styles.editButton} onClick={handleEditToggle}>
+              {editMode ? 'Save' : 'Edit'}
+            </button>
           </div>
 
           <div style={styles.cardContent}>
+            {/* Type */}
             <div style={styles.row}>
               <span style={styles.label}>Type:</span>
-              <span style={styles.value}>{user.userType || 'Creator'}</span>
+              {editMode ? (
+                <TextInput
+                  label="Type"
+                  value={formData.userType || ''}
+                  onChange={(e) => handleChange('userType', e.target.value)}
+                  key={formData.userType}
+                />
+              ) : (
+                <span style={styles.value}>{user.userType || 'Creator'}</span>
+              )}
             </div>
 
+            {/* Experience */}
             <div style={styles.row}>
               <span style={styles.label}>Experience:</span>
-              <span style={styles.value}>{user.creatorProfile.experienceLevel || 'Beginner'}</span>
+              {editMode ? (
+                <TextInput
+                  label="Experience"
+                  value={formData.creatorProfile?.experienceLevel || ''}
+                  onChange={(e) => handleChange('creatorProfile.experienceLevel', e.target.value)}
+                />
+              ) : (
+                <span style={styles.value}>
+                  {user.creatorProfile.experienceLevel || 'Beginner'}
+                </span>
+              )}
             </div>
 
+            {/* Location */}
             <div style={styles.row}>
               <span style={styles.label}>Location:</span>
-              <span style={styles.value}>{user.address?.country || 'India'}</span>
+              {editMode ? (
+                <TextInput
+                  label="Location"
+                  value={formData.address?.country || ''}
+                  onChange={(e) => handleChange('address.country', e.target.value)}
+                />
+              ) : (
+                <span style={styles.value}>{user.address?.country || 'India'}</span>
+              )}
             </div>
 
+            {/* Subscription (static) */}
             <div style={styles.row}>
               <span style={styles.label}>Subscription:</span>
               <span style={styles.badge}>
@@ -225,6 +200,7 @@ const RenderProfileOverview = () => {
               </span>
             </div>
 
+            {/* Expiry */}
             <div style={styles.row}>
               <span style={styles.label}>Expiry:</span>
               <span style={styles.value}>
@@ -236,25 +212,90 @@ const RenderProfileOverview = () => {
               </span>
             </div>
 
+            {/* Profile Completion */}
             <div style={styles.row}>
               <span style={styles.label}>Profile Completion:</span>
-              <span style={styles.value}>{user.profileCompletion}%</span>
+              {editMode ? (
+                <TextInput
+                  label="Profile Completion"
+                  type="number"
+                  value={formData.profileCompletion || 0}
+                  onChange={(e) => handleChange('profileCompletion', e.target.value)}
+                />
+              ) : (
+                <span style={styles.value}>{user.profileCompletion}%</span>
+              )}
             </div>
 
+            {/* Social Presence */}
             <div style={styles.row}>
               <span style={styles.label}>Social Presence:</span>
-              <span style={styles.value}>
-                Instagram: {user.creatorProfile.socialProfiles.instagram.followersCount} | YouTube:{' '}
-                {user.creatorProfile.socialProfiles.youtube.subscribersCount}
-              </span>
+              {editMode ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <TextInput
+                    label="Instagram Followers"
+                    value={formData.creatorProfile?.socialProfiles?.instagram?.followersCount || ''}
+                    onChange={(e) =>
+                      handleChange(
+                        'creatorProfile.socialProfiles.instagram.followersCount',
+                        e.target.value
+                      )
+                    }
+                  />
+                  <TextInput
+                    label="YouTube Subscribers"
+                    value={formData.creatorProfile?.socialProfiles?.youtube?.subscribersCount || ''}
+                    onChange={(e) =>
+                      handleChange(
+                        'creatorProfile.socialProfiles.youtube.subscribersCount',
+                        e.target.value
+                      )
+                    }
+                  />
+                </div>
+              ) : (
+                <span style={styles.value}>
+                  Instagram: {user.creatorProfile.socialProfiles.instagram.followersCount} |
+                  YouTube: {user.creatorProfile.socialProfiles.youtube.subscribersCount}
+                </span>
+              )}
             </div>
 
+            {/* Availability */}
             <div style={styles.row}>
               <span style={styles.label}>Availability:</span>
-              <span style={styles.value}>
-                {user.creatorProfile.workPreferences.availabilityStatus.replace(/_/g, ' ')} |
-                Turnaround: {user.creatorProfile.workPreferences.turnaroundTime} days
-              </span>
+              {editMode ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <TextInput
+                    label="Availability Status"
+                    value={
+                      formData.creatorProfile?.workPreferences?.availabilityStatus?.replace(
+                        /_/g,
+                        ' '
+                      ) || ''
+                    }
+                    onChange={(e) =>
+                      handleChange(
+                        'creatorProfile.workPreferences.availabilityStatus',
+                        e.target.value
+                      )
+                    }
+                  />
+                  <TextInput
+                    label="Turnaround Time (days)"
+                    type="number"
+                    value={formData.creatorProfile?.workPreferences?.turnaroundTime || ''}
+                    onChange={(e) =>
+                      handleChange('creatorProfile.workPreferences.turnaroundTime', e.target.value)
+                    }
+                  />
+                </div>
+              ) : (
+                <span style={styles.value}>
+                  {user.creatorProfile.workPreferences.availabilityStatus.replace(/_/g, ' ')} |
+                  Turnaround: {user.creatorProfile.workPreferences.turnaroundTime} days
+                </span>
+              )}
             </div>
           </div>
         </div>
