@@ -73,15 +73,15 @@ const LandingPage = () => {
             <button onClick={() => scrollToSection('features')} className={styles.navLink}>
               Features
             </button>
-            <button onClick={() => scrollToSection('pricing')} className={styles.navLink}>
+            {/* <button onClick={() => scrollToSection('pricing')} className={styles.navLink}>
               Pricing
-            </button>
+            </button> */}
             <Link to="/login" className={styles.navLink}>
               Login
             </Link>
-            <button onClick={handleStartFreeTrial} className={styles.ctaButton}>
+            {/* <button onClick={handleStartFreeTrial} className={styles.ctaButton}>
               Start Free Trial
-            </button>
+            </button> */}
           </div>
 
           <button
@@ -241,7 +241,7 @@ const LandingPage = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className={styles.pricing} id="pricing" ref={pricingRef}>
+      {/* <section className={styles.pricing} id="pricing" ref={pricingRef}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>
             Simple Pricing,
@@ -299,7 +299,7 @@ const LandingPage = () => {
             </motion.div>
           ))}
         </div>
-      </section>
+      </section> */}
 
       {/* CTA Section */}
       <section className={styles.finalCta}>
