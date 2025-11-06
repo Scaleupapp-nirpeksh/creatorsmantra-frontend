@@ -518,7 +518,7 @@ const DashboardPage = () => {
       {
         label: 'Total Revenue',
         value: `₹ ${(dealsReport?.totalRevenue / 100000).toFixed(1)}L`,
-        change: `${formatCurrency((dealsReport?.avgDealValue).toFixed(0))} Avg. Deal Value`,
+        change: `${formatCurrency(dealsReport?.avgDealValue?.toFixed(0) ?? 0)} Avg. Deal Value`,
         changeIcon: <ArrowUpRight size={16} />,
         changeStyle: { ...styles.statChange, ...styles.statChangePositive },
         icon: <DollarSign size={24} color="#10b981" />,
