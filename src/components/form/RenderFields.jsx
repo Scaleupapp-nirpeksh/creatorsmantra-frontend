@@ -20,10 +20,14 @@ const RenderSection = ({ attrs, onChange, formState, parentKey = null }) => {
 
   let value = formState?.[name]?.value ?? ''
   if (parentKey && formState?.[parentKey]?.isGroupedField) {
-    value = formState?.[parentKey].group
-      ?.flatMap((g) => g)
-      ?.map((f) => f?.[uid])
-      ?.find((x) => x !== undefined)?.value
+    const flatMapData = formState?.[parentKey].group?.flatMap((g) => Object.entries(g))
+    const flatMapDotMap = flatMapData?.filter((f) => f?.[0] === uid)
+    value = flatMapDotMap?.find((x) => x !== undefined)?.[1]?.value
+
+    // value = formState?.[parentKey].group
+    //   ?.flatMap((g) => g)
+    //   ?.map((f) => f?.[uid])
+    //   ?.find((x) => x !== undefined)?.value
   }
 
   return (

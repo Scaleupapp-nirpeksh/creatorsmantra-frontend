@@ -317,6 +317,16 @@ function App() {
                   />
                 </Route>
 
+                <Route
+                  path="/help"
+                  element={
+                    <div style={styles.comingSoon}>
+                      <h2>Contact for any queries</h2>
+                      <p>nirpkesh@scaleup.club</p>
+                    </div>
+                  }
+                />
+
                 {/* Profile Route */}
                 <Route path="/profile">
                   <Route

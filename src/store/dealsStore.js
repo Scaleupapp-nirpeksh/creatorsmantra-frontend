@@ -168,13 +168,36 @@ const useDealsStore = create((set, get) => ({
     sectionConfig.fields.forEach((f) => {
       if (f.component === 'group') {
         // Generate Dynamic Group Fields
-        dynamicGrps[f.uid] = f.config?.group?.canAddFields ? [f.group] : []
 
-        const grp = Object.fromEntries(f.group.map((g) => [g.uid, { value: '', error: '' }]))
+        const existingGrp = newDraftDeal?.[f.name]?.group ?? []
+
+        // dynamicGrps[f.uid] = f.config?.group?.canAddFields ? [f.group] : []
+        if (f.config?.group?.canAddFields) {
+          dynamicGrps[f.uid] =
+            existingGrp?.length > 0
+              ? existingGrp.map((grpItem) =>
+                  f.group.map((g) => ({
+                    ...g,
+                    uid: Object.keys(grpItem).find((k) => k.includes(g.name)) || g.uid,
+                  }))
+                )
+              : [f.group]
+        } else {
+          dynamicGrps[f.uid] = []
+        }
+
+        // const grp = Object.fromEntries(f.group.map((g) => [g.uid, { value: '', error: '' }]))
+        const grp = Object.fromEntries(
+          f.group.map((g) => {
+            const item = { value: '', error: '' }
+            item.value = 'default' in g ? g?.default : ''
+            return [g.uid, item]
+          })
+        )
 
         newDraftDeal[f.name] = {
           isGroupedField: true,
-          group: [grp],
+          group: existingGrp?.length > 0 ? existingGrp : [grp],
           value: '',
           error: '',
         }
@@ -272,11 +295,13 @@ const useDealsStore = create((set, get) => ({
 
     if (direction === 'next' && prev.isLast) return
 
-    const { hasErrors, updatedDraft } = validate(draftDeal, prev.fields)
+    if (direction !== 'prev') {
+      const { hasErrors, updatedDraft } = validate(draftDeal, prev.fields)
 
-    if (hasErrors) {
-      set({ ifFormHasError: true, draftDeal: updatedDraft })
-      return
+      if (hasErrors) {
+        set({ ifFormHasError: true, draftDeal: updatedDraft })
+        return
+      }
     }
 
     const targetSection = SectionMap[prev.key][direction]

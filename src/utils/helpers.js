@@ -1,3 +1,5 @@
+import { FieldValidationRules } from '../features/deals/formFields'
+
 export const calculatePasswordStrength = (password) => {
   if (!password) return 0
   let strength = 0
@@ -101,6 +103,16 @@ export const validate = (draft, fieldsConfig) => {
   }
 
   fieldsConfig.forEach((field) => {
+    const validations = FieldValidationRules[field.name]
+    if (validations && !validations(draft[field.name]?.value)) {
+      result.updatedDraft[field.name] = {
+        ...draft[field.name],
+        error: `Please enter a valid value.`,
+      }
+      result.hasErrors = true
+      return
+    }
+
     if (!field?.required) return
     if (draft[field.name]?.value !== '') return
 

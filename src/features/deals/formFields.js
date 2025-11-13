@@ -258,7 +258,7 @@ CreateDealForm[CreateDealSections.ContactInfo.key] = {
       type: '',
       style: '',
       required: false,
-      default: '',
+      default: brandCategories[0].value,
       placeholder: '',
       colSpan: null,
       options: brandCategories,
@@ -363,7 +363,7 @@ CreateDealForm[CreateDealSections.DeliverablesInfo.key] = {
       type: '',
       style: '',
       required: true,
-      default: '',
+      default: { label: 'Low', value: 'low' },
       placeholder: '',
       colSpan: null,
       default: 'low',
@@ -565,7 +565,7 @@ CreateDealForm[CreateDealSections.PaymentInfo.key] = {
       type: '',
       style: '',
       required: true,
-      default: 'bank_transfer',
+      default: { label: 'Bank Transfer', value: 'bank_transfer' },
       placeholder: '',
       options: [
         { label: 'Bank Transfer', value: 'bank_transfer' },
@@ -723,4 +723,10 @@ CreateDealForm[CreateDealSections.AdditionalInfo.key] = {
   ],
 }
 
-export { CreateDealForm }
+const FieldValidationRules = {
+  contactEmail: (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+  contactPhone: (val) => /^[6-9]\d{9}$/.test(val),
+  brandWebsite: (val) => /^https?:\/\/.+\..+/.test(val),
+}
+
+export { CreateDealForm, FieldValidationRules }

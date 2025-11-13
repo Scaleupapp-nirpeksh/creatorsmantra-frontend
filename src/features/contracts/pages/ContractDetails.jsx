@@ -276,7 +276,7 @@ const ContractDetails = ({ contractId: propContractId }) => {
 
   useEffect(() => {
     // Load negotiation points when contract is analyzed
-    if (contract && contract.status === 'analyzed' && contract.riskScore !== undefined) {
+    if (contract && contract.status === 'analyzed' && contract?.analysis?.riskScore !== undefined) {
       loadNegotiationPoints()
     }
   }, [contract?.status, contract?.riskScore])
@@ -611,7 +611,7 @@ const ContractDetails = ({ contractId: propContractId }) => {
                         color: getRiskLevelColor(contract.riskLevel),
                       }}
                     >
-                      {contract.riskScore}/100
+                      {contract?.analysis?.riskScore}/100
                     </span>
                     <div
                       style={{
@@ -1438,44 +1438,44 @@ const ContractDetails = ({ contractId: propContractId }) => {
                   <span style={{ color: '#71717A' }}>Payment Terms</span>
                   <span
                     style={{
-                      color: contract.riskScore > 50 ? '#EF4444' : '#10B981',
+                      color: contract?.analysis?.riskScore > 50 ? '#EF4444' : '#10B981',
                       fontWeight: '500',
                     }}
                   >
-                    {contract.riskScore > 50 ? 'Concerning' : 'Good'}
+                    {contract?.analysis?.riskScore > 50 ? 'Concerning' : 'Good'}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#71717A' }}>Usage Rights</span>
                   <span
                     style={{
-                      color: contract.riskScore > 60 ? '#EF4444' : '#10B981',
+                      color: contract?.analysis?.riskScore > 60 ? '#EF4444' : '#10B981',
                       fontWeight: '500',
                     }}
                   >
-                    {contract.riskScore > 60 ? 'Review Needed' : 'Acceptable'}
+                    {contract?.analysis?.riskScore > 60 ? 'Review Needed' : 'Acceptable'}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#71717A' }}>Termination Clause</span>
                   <span
                     style={{
-                      color: contract.riskScore > 70 ? '#EF4444' : '#10B981',
+                      color: contract?.analysis?.riskScore > 70 ? '#EF4444' : '#10B981',
                       fontWeight: '500',
                     }}
                   >
-                    {contract.riskScore > 70 ? 'Unfavorable' : 'Fair'}
+                    {contract?.analysis?.riskScore > 70 ? 'Unfavorable' : 'Fair'}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#71717A' }}>Liability Terms</span>
                   <span
                     style={{
-                      color: contract.riskScore > 80 ? '#EF4444' : '#F59E0B',
+                      color: contract?.analysis?.riskScore > 80 ? '#EF4444' : '#F59E0B',
                       fontWeight: '500',
                     }}
                   >
-                    {contract.riskScore > 80 ? 'High Risk' : 'Moderate'}
+                    {contract?.analysis?.riskScore > 80 ? 'High Risk' : 'Moderate'}
                   </span>
                 </div>
               </div>
@@ -1511,12 +1511,12 @@ const ContractDetails = ({ contractId: propContractId }) => {
                 <div
                   style={{
                     padding: '0.75rem',
-                    backgroundColor: contract.riskScore > 60 ? '#FEE2E2' : '#D1FAE5',
+                    backgroundColor: contract?.analysis?.riskScore > 60 ? '#FEE2E2' : '#D1FAE5',
                     borderRadius: '0.5rem',
-                    color: contract.riskScore > 60 ? '#991B1B' : '#065F46',
+                    color: contract?.analysis?.riskScore > 60 ? '#991B1B' : '#065F46',
                   }}
                 >
-                  {contract.riskScore > 60
+                  {contract?.analysis?.riskScore > 60
                     ? '⚠️ Negotiate key terms before signing'
                     : '✅ Contract appears favorable to creators'}
                 </div>
@@ -1945,7 +1945,7 @@ const ContractDetails = ({ contractId: propContractId }) => {
               {contract.status?.replace('_', ' ')}
             </div>
 
-            {contract.riskScore !== undefined && (
+            {contract?.analysis?.riskScore !== undefined && (
               <div
                 style={{
                   display: 'inline-flex',
@@ -1959,7 +1959,7 @@ const ContractDetails = ({ contractId: propContractId }) => {
                   textTransform: 'capitalize',
                 }}
               >
-                {contract.riskLevel} Risk • {contract.riskScore}/100
+                {contract.riskLevel} Risk • {contract?.analysis?.riskScore}/100
               </div>
             )}
           </div>

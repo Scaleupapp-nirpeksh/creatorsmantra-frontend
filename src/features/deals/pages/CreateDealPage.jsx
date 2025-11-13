@@ -348,7 +348,6 @@ const CreateDealPage = () => {
             </div>
 
             {/* Next Button */}
-
             {!sectionConfig.isLast && (
               <button
                 type="button"
