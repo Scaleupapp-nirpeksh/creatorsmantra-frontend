@@ -1,393 +1,416 @@
 /**
  * Main App Component - Integrated with Deals, Scripts, and Rate Cards Modules
  * Path: src/App.jsx
- * * This integrates all modules including the new Rate Card management system
- * with proper routing, lazy loading, and store initialization.
+ * This integrates all modules including the new Rate Card management system
+ * with proper routing, and store initialization.
  */
 
-import React, { useEffect, useState, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { AnimatePresence } from 'framer-motion';
+// Dependencies
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
+import { Toaster } from 'react-hot-toast'
+import { Suspense } from 'react'
 
-// Store imports
-import useAuthStore from './store/authStore';
-import useUIStore from './store/uiStore';
-import useDealsStore from './store/dealsStore'; 
-import useInvoiceStore from './store/invoiceStore';
-import useScriptsStore from './store/scriptsStore';
-import useRateCardStore from './store/ratecardStore'; 
-import useContractsStore from './store/contractsStore';
+// Store Hooks
+import { useAuthStore, useUIStore } from './store'
 
-// Layout imports
-import MainLayout from './layouts/MainLayout';
-import AuthLayout from './layouts/AuthLayout';
+// Layouts
+import { AuthLayout, MainLayout } from './layouts'
 
-// Page imports
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import OTPVerificationPage from './pages/auth/OTPVerificationPage';
-import DashboardPage from './pages/DashboardPage';
-import DemoPage from './pages/DemoPage';
+// Pages
+import {
+  LandingPage,
+  LoginPage,
+  NotFound,
+  OTPVerificationPage,
+  RegisterPage,
+  DemoPage,
+  DashboardPage,
+} from './pages'
 
-// Protected Route Component
-import ProtectedRoute from './routes/ProtectedRoute';
+// Components
+import { PageLoader, ProtectedRoutesWrapper, RenderProfileOverview } from './components'
 
-// Lazy load Deals Module pages
-const DealsListPage = lazy(() => import('./features/deals/pages/DealsListPage'));
-const CreateDealPage = lazy(() => import('./features/deals/pages/CreateDealPage'));
-const DealDetailsPage = lazy(() => import('./features/deals/pages/DealDetailsPage'));
+// Features
+import {
+  PublicRateCard,
+  RenderDealsListing,
+  RenderCreateDeal,
+  RenderDealDetails,
+  RenderInvoiceDashboard,
+  RenderCreateInvoice,
+  ConsolidatedInvoiceWizard,
+  RenderInvoiceDetails,
+  RenderEditInvoice,
+  ScriptsPriorityDashboard,
+  ScriptCreationWizard,
+  ScriptAnalyticsPerformance,
+  ScriptDetailsEditor,
+  RateCardDashboard,
+  CreateRateCard,
+  RateCardAnalytics,
+  EditRateCard,
+  RateCardHistory,
+  ContractsDashboard,
+  ContractDetails,
+  RenderInvoiceAnalytics,
+  TaxSettings,
+} from './features'
 
-// Lazy load Invoice Module pages
-const InvoiceDashboard = lazy(() => import('./features/invoices/pages/InvoiceDashboard'));
-const CreateInvoice = lazy(() => import('./features/invoices/pages/CreateInvoice'));
-const InvoiceDetails = lazy(() => import('./features/invoices/pages/InvoiceDetails'));
-const EditInvoice = lazy(() => import('./features/invoices/pages/EditInvoice'));
-const TaxSettings = lazy(() => import('./features/invoices/pages/TaxSettings'));
-const InvoiceAnalytics = lazy(() => import('./features/invoices/pages/InvoiceAnalytics'));
-const ConsolidatedInvoiceWizard = lazy(() => import('./features/invoices/pages/ConsolidatedInvoiceWizard'));
-
-// Lazy load Scripts Module pages
-const ScriptsPriorityDashboard = lazy(() => import('./features/scripts/pages/ScriptsPriorityDashboard'));
-const ScriptCreationWizard = lazy(() => import('./features/scripts/pages/ScriptCreationWizard'));
-const ScriptDetailsEditor = lazy(() => import('./features/scripts/pages/ScriptDetailsEditor'));
-const ScriptAnalyticsPerformance = lazy(() => import('./features/scripts/pages/ScriptAnalyticsPerformance'));
-
-// Lazy load Rate Card Module pages - ADD THESE IMPORTS
-const RateCardDashboard = lazy(() => import('./features/rateCard/pages/RateCardDashboard'));
-const CreateRateCard = lazy(() => import('./features/rateCard/pages/CreateRateCard'));
-const EditRateCard = lazy(() => import('./features/rateCard/pages/EditRateCard'));
-const RateCardHistory = lazy(() => import('./features/rateCard/pages/RateCardHistory'));
-const RateCardAnalytics = lazy(() => import('./features/rateCard/pages/RateCardAnalytics'));
-const PublicRateCard = lazy(() => import('./features/rateCard/pages/PublicRateCard'));
-
-// Lazy load Contracts Module pages
-const ContractsDashboard = lazy(() => import('./features/contracts/pages/ContractsDashboard'));
-const ContractDetails = lazy(() => import('./features/contracts/pages/ContractDetails'));
-
-// Import styles
-import './styles/index.css';
-
-// Loading component for lazy loaded pages
-const PageLoader = () => (
-  <div style={styles.pageLoadingContainer}>
-    <div style={styles.pageSpinner}>
-      <div style={styles.pageSpinnerGradient}></div>
-    </div>
-    <p style={styles.pageLoadingText}>Loading...</p>
-  </div>
-);
+// Styles
+import './styles/index.css'
+import './styles/layouts.css'
 
 function App() {
-  const [appReady, setAppReady] = useState(false);
-  const { initialize, isAuthenticated, isInitialized } = useAuthStore();
-  const { theme, setTheme, updateViewport, initializeViewport } = useUIStore();
-  const { init: initDeals } = useDealsStore(); 
-  const { init: initInvoices } = useInvoiceStore();
-  const { initialize: initScripts } = useScriptsStore();
-  const { clearCurrentRateCard } = useRateCardStore();
-  const { init: initContracts } = useContractsStore();
-
-  // Initialize app
-  useEffect(() => {
-    const initApp = async () => {
-      try {
-        const storedTheme = localStorage.getItem('cm_ui-storage');
-        if (storedTheme) {
-          try {
-            const parsed = JSON.parse(storedTheme);
-            if (parsed.state?.theme) {
-              setTheme(parsed.state.theme);
-            }
-          } catch (e) {
-            console.error('Error parsing stored theme:', e);
-          }
-        }
-        
-        const cleanupViewport = initializeViewport();
-        await initialize();
-        setAppReady(true);
-        return cleanupViewport;
-      } catch (error) {
-        console.error('App initialization error:', error);
-        setAppReady(true);
-      }
-    };
-
-    const cleanup = initApp();
-
-    return () => {
-      if (cleanup && typeof cleanup === 'function') {
-        cleanup();
-      }
-    };
-  }, [initialize, setTheme, initializeViewport]);
-
-  // Initialize stores when authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      initDeals();
-      initInvoices();
-      initScripts();
-      initContracts(); // Add this line
-    }
-  }, [isAuthenticated, initDeals, initInvoices, initScripts, initContracts]);
-
-  if (!appReady || !isInitialized) {
-    return (
-      <div style={styles.loadingContainer}>
-        <div style={styles.loadingContent}>
-          <div style={styles.spinner}>
-            <div style={styles.spinnerGradient}></div>
-          </div>
-          <h2 style={styles.loadingTitle}>CreatorsMantra</h2>
-          <p style={styles.loadingText}>Preparing your workspace...</p>
-        </div>
-      </div>
-    );
-  }
+  const { isAuthenticated } = useAuthStore()
+  const { theme } = useUIStore()
 
   return (
     <Router>
       <div className="app" data-theme={theme}>
         <AnimatePresence mode="wait">
           <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={
-              isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />
-            } />
-            
-            {/* Auth Routes */}
-            <Route element={<AuthLayout />}>
-              <Route path="/login" element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />
-              } />
-              <Route path="/register" element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />
-              } />
-              <Route path="/verify-otp" element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <OTPVerificationPage />
-              } />
-            </Route>
+            {/* -------------- Landing Page -------------- */}
+            <Route
+              path="/"
+              element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />}
+            />
 
-            {/* Demo Route - No authentication required */}
+            {/*  -------------- Demo Route -------------- */}
             <Route path="/demo" element={<DemoPage />} />
 
-            {/* Public Rate Card Route - No authentication required */}
-            <Route path="/card/:publicId" element={
-              <Suspense fallback={<PageLoader />}>
-                <PublicRateCard />
-              </Suspense>
-            } />
+            {/* -------------- Rate Card Route -------------- */}
+            <Route
+              path="/card/:publicId"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <PublicRateCard />
+                </Suspense>
+              }
+            />
 
-            {/* Protected Routes */}
-            <Route element={<ProtectedRoute />}>
+            {/* -------------- Auth Routes -------------- */}
+            <Route element={<AuthLayout />}>
+              <Route
+                path="/login"
+                element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+              />
+              <Route
+                path="/register"
+                element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />}
+              />
+              <Route
+                path="/verify-otp"
+                element={
+                  isAuthenticated ? <Navigate to="/dashboard" replace /> : <OTPVerificationPage />
+                }
+              />
+            </Route>
+
+            {/* -------------- Protected Routes -------------- */}
+            <Route element={<ProtectedRoutesWrapper />}>
               <Route element={<MainLayout />}>
+                {/* Dashboard Page */}
                 <Route path="/dashboard" element={<DashboardPage />} />
-                
-                {/* Deals Routes */}
+
+                {/* Deals Route */}
                 <Route path="/deals">
-                  <Route index element={
-                    <Suspense fallback={<PageLoader />}>
-                      <DealsListPage />
-                    </Suspense>
-                  } />
-                  <Route path="create" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <CreateDealPage />
-                    </Suspense>
-                  } />
-                  <Route path="new" element={<Navigate to="/deals/create" replace />} />
-                  <Route path=":dealId" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <DealDetailsPage />
-                    </Suspense>
-                  } />
-                  <Route path=":dealId/edit" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <DealDetailsPage editMode={true} />
-                    </Suspense>
-                  } />
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderDealsListing />{' '}
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderCreateDeal />{' '}
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":dealId"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderDealDetails />
+                      </Suspense>
+                    }
+                  />
                 </Route>
 
-                {/* Invoices Routes */}
+                {/* Invoices Route */}
                 <Route path="/invoices">
-                  <Route index element={
-                    <Suspense fallback={<PageLoader />}>
-                      <InvoiceDashboard />
-                    </Suspense>
-                  } />
-                  <Route path="create" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <CreateInvoice />
-                    </Suspense>
-                  } />
-                  <Route path="create-consolidated" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ConsolidatedInvoiceWizard />
-                    </Suspense>
-                  } />
-                  <Route path="analytics" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <InvoiceAnalytics />
-                    </Suspense>
-                  } />
-                  <Route path=":invoiceId" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <InvoiceDetails />
-                    </Suspense>
-                  } />
-                  <Route path=":invoiceId/edit" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <EditInvoice />
-                    </Suspense>
-                  } />
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderInvoiceDashboard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderCreateInvoice />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="create-consolidated"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ConsolidatedInvoiceWizard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="analytics"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderInvoiceAnalytics />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":invoiceId"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderInvoiceDetails />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":invoiceId/edit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RenderEditInvoice />
+                      </Suspense>
+                    }
+                  />
                 </Route>
 
                 {/* Scripts Routes */}
                 <Route path="/scripts">
-                  <Route index element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ScriptsPriorityDashboard />
-                    </Suspense>
-                  } />
-                  <Route path="create" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ScriptCreationWizard />
-                    </Suspense>
-                  } />
-                   <Route path="analytics" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ScriptAnalyticsPerformance />
-                    </Suspense>
-                  } />
-                  <Route path=":scriptId" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ScriptDetailsEditor />
-                    </Suspense>
-                  } />
-                  <Route path=":scriptId/edit" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ScriptDetailsEditor editMode={true} />
-                    </Suspense>
-                  } />
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ScriptsPriorityDashboard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ScriptCreationWizard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="analytics"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ScriptAnalyticsPerformance />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":scriptId/edit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ScriptDetailsEditor editMode={true} />
+                      </Suspense>
+                    }
+                  />
                 </Route>
 
-                {/* =================================================================== */}
-                {/* THE ONLY CHANGE IS HERE: Updated path to match the sidebar links */}
-                {/* =================================================================== */}
+                {/* RateCard Routes*/}
                 <Route path="/dashboard/rate-cards">
-                  <Route index element={
-                    <Suspense fallback={<PageLoader />}>
-                      <RateCardDashboard />
-                    </Suspense>
-                  } />
-                  <Route path="create" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <CreateRateCard />
-                    </Suspense>
-                  } />
-                  <Route path="new" element={<Navigate to="/dashboard/rate-cards/create" replace />} />
-                  <Route path="builder" element={<Navigate to="/dashboard/rate-cards/create" replace />} />
-                  <Route path="analytics" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <RateCardAnalytics />
-                    </Suspense>
-                  } />
-                  <Route path=":rateCardId" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <EditRateCard />
-                    </Suspense>
-                  } />
-                  <Route path=":rateCardId/edit" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <EditRateCard />
-                    </Suspense>
-                  } />
-                  <Route path=":rateCardId/history" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <RateCardHistory />
-                    </Suspense>
-                  } />
-                  <Route path=":rateCardId/analytics" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <RateCardAnalytics />
-                    </Suspense>
-                  } />
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RateCardDashboard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <CreateRateCard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="new"
+                    element={<Navigate to="/dashboard/rate-cards/create" replace />}
+                  />
+                  <Route
+                    path="builder"
+                    element={<Navigate to="/dashboard/rate-cards/create" replace />}
+                  />
+                  <Route
+                    path="analytics"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RateCardAnalytics />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":rateCardId"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <EditRateCard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":rateCardId/edit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <EditRateCard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":rateCardId/history"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RateCardHistory />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":rateCardId/analytics"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <RateCardAnalytics />
+                      </Suspense>
+                    }
+                  />
                 </Route>
 
-                {/* Performance Routes */}
-                <Route path="/performance">
-                  <Route index element={<div style={styles.comingSoon}>
-                    <h2>Performance Dashboard</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path="analytics" element={<div style={styles.comingSoon}>
-                    <h2>Analytics</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path="reports" element={<div style={styles.comingSoon}>
-                    <h2>Reports</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                </Route>
-
-                {/* Contracts Routes */}
+                {/* Contract Routes */}
                 <Route path="/contracts">
-                  <Route index element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ContractsDashboard />
-                    </Suspense>
-                  } />
-                  <Route path=":contractId" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ContractDetails />
-                    </Suspense>
-                  } />
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ContractsDashboard />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":contractId"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ContractDetails />
+                      </Suspense>
+                    }
+                  />
                 </Route>
 
-                {/* Profile Routes */}
+                <Route
+                  path="/help"
+                  element={
+                    <div style={styles.comingSoon}>
+                      <h2>Contact for any queries</h2>
+                      <p>nirpkesh@scaleup.club</p>
+                    </div>
+                  }
+                />
+
+                {/* Profile Route */}
                 <Route path="/profile">
-                  <Route index element={<div style={styles.comingSoon}>
-                    <h2>Profile</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path="settings" element={<div style={styles.comingSoon}>
-                    <h2>Settings</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path="subscription" element={<div style={styles.comingSoon}>
-                    <h2>Subscription</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path="team" element={<div style={styles.comingSoon}>
-                    <h2>Team Management</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
+                  <Route
+                    index
+                    element={
+                      <div style={styles.comingSoon}>
+                        <RenderProfileOverview />
+                      </div>
+                    }
+                  />
+                  {/* <Route
+                    path="settings"
+                    element={
+                      <div style={styles.comingSoon}>
+                        <h2>Settings</h2>
+                        <p>Coming Soon</p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="subscription"
+                    element={
+                      <div style={styles.comingSoon}>
+                        <h2>Subscription</h2>
+                        <p>Coming Soon</p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="team"
+                    element={
+                      <div style={styles.comingSoon}>
+                        <h2>Team Management</h2>
+                        <p>Coming Soon</p>
+                      </div>
+                    }
+                  /> */}
                 </Route>
 
                 {/* Settings Routes */}
-                <Route path="/settings">
-                  <Route index element={<div style={styles.comingSoon}>
-                    <h2>Settings</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                  <Route path="tax-preferences" element={
-                    <Suspense fallback={<PageLoader />}>
-                      <TaxSettings />
-                    </Suspense>
-                  } />
-                  <Route path="subscription" element={<div style={styles.comingSoon}>
-                    <h2>Subscription</h2>
-                    <p>Coming Soon</p>
-                  </div>} />
-                </Route>
+                {/* <Route path="/settings">
+                  <Route
+                    index
+                    element={
+                      <div style={styles.comingSoon}>
+                        <h2>Settings</h2>
+                        <p>Coming Soon</p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="tax-preferences"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <TaxSettings />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="subscription"
+                    element={
+                      <div style={styles.comingSoon}>
+                        <h2>Subscription</h2>
+                        <p>Coming Soon</p>
+                      </div>
+                    }
+                  />
+                </Route> */}
               </Route>
             </Route>
 
+            {/* -------------- Profile Routes -------------- */}
+            <Route
+              path="/profile/subscription"
+              element={
+                <div style={styles.comingSoon}>
+                  <h2>Subscription</h2>
+                  <p>Coming Soon</p>
+                </div>
+              }
+            />
+
             {/* 404 Route */}
-            <Route path="*" element={<NotFoundPage />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </AnimatePresence>
 
@@ -420,26 +443,8 @@ function App() {
         />
       </div>
     </Router>
-  );
+  )
 }
-
-// 404 Page Component
-const NotFoundPage = () => {
-  return (
-    <div style={styles.notFoundContainer}>
-      <div style={styles.notFoundContent}>
-        <h1 style={styles.notFoundTitle}>404</h1>
-        <h2 style={styles.notFoundSubtitle}>Page Not Found</h2>
-        <p style={styles.notFoundText}>
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-        <a href="/" style={styles.notFoundButton}>
-          Go Back Home
-        </a>
-      </div>
-    </div>
-  );
-};
 
 // Inline Styles
 const styles = {
@@ -451,19 +456,19 @@ const styles = {
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   },
-  
+
   loadingContent: {
     textAlign: 'center',
     color: 'white',
   },
-  
+
   spinner: {
     width: '60px',
     height: '60px',
     margin: '0 auto 2rem',
     position: 'relative',
   },
-  
+
   spinnerGradient: {
     width: '100%',
     height: '100%',
@@ -472,100 +477,16 @@ const styles = {
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
   },
-  
+
   loadingTitle: {
     fontSize: '2rem',
     fontWeight: '700',
     marginBottom: '0.5rem',
   },
-  
+
   loadingText: {
     fontSize: '1rem',
     opacity: 0.9,
-  },
-  
-  // 404 Page Styles
-  notFoundContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
-  },
-  
-  notFoundContent: {
-    textAlign: 'center',
-    padding: '2rem',
-  },
-  
-  notFoundTitle: {
-    fontSize: '8rem',
-    fontWeight: '800',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    backgroundClip: 'text',
-    marginBottom: '1rem',
-    lineHeight: '1',
-  },
-  
-  notFoundSubtitle: {
-    fontSize: '2rem',
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: '1rem',
-  },
-  
-  notFoundText: {
-    fontSize: '1.125rem',
-    color: '#6b7280',
-    marginBottom: '2rem',
-    maxWidth: '400px',
-    margin: '0 auto 2rem',
-  },
-  
-  notFoundButton: {
-    display: 'inline-block',
-    padding: '1rem 2rem',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    color: 'white',
-    textDecoration: 'none',
-    borderRadius: '12px',
-    fontWeight: '600',
-    fontSize: '1rem',
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
-  },
-
-  // Page loader styles for lazy loaded components
-  pageLoadingContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '400px',
-    padding: '2rem',
-  },
-
-  pageSpinner: {
-    width: '40px',
-    height: '40px',
-    margin: '0 auto 1rem',
-    position: 'relative',
-  },
-
-  pageSpinnerGradient: {
-    width: '100%',
-    height: '100%',
-    border: '3px solid rgba(102, 126, 234, 0.2)',
-    borderTopColor: '#667eea',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-  },
-
-  pageLoadingText: {
-    fontSize: '0.875rem',
-    color: '#6b7280',
   },
 
   // Coming soon styles
@@ -579,21 +500,6 @@ const styles = {
     textAlign: 'center',
     color: '#6b7280',
   },
-};
-
-// Add global keyframes for spinner
-if (typeof document !== 'undefined') {
-  const existingStyle = document.getElementById('app-keyframes');
-  if (!existingStyle) {
-    const styleSheet = document.createElement('style');
-    styleSheet.id = 'app-keyframes';
-    styleSheet.textContent = `
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-    `;
-    document.head.appendChild(styleSheet);
-  }
 }
 
-export default App;
+export default App

@@ -1,0 +1,45 @@
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sidebar:hover .collapse-button {
+  opacity: 1;
+}
+
+.menu-item:hover {
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.sub-item:hover:not(.sub-item-locked) {
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.icon-button:hover {
+  background: var(--color-neutral-50);
+  border-color: var(--color-neutral-300);
+}
+
+.search-input:focus {
+  border-color: var(--color-primary-300);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.user-profile:hover {
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.logout-button:hover {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 1rem;
+  }
+
+  .search-bar {
+    max-width: none;
+  }
+}

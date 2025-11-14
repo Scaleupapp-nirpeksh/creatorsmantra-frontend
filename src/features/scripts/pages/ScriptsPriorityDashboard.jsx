@@ -1,125 +1,69 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  AlertTriangle,
+import {
+  Activity,
   AlertCircle,
-  Clock,
-  Search,
-  Filter,
-  RefreshCw,
-  TrendingUp,
-  TrendingDown,
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
   BarChart3,
-  Eye,
-  Edit3,
-  Trash2,
-  Link2,
-  Zap,
+  Brain,
   CheckCircle,
-  XCircle,
-  FileText,
-  Upload,
-  Video,
-  Calendar,
-  Tag,
   ChevronDown,
   ChevronUp,
-  MoreHorizontal,
-  Play,
-  Pause,
-  Download,
-  Settings,
-  Info,
-  Cpu,
-  Activity,
-  Target,
-  ArrowUpRight,
-  ArrowDownRight,
-  Shield,
+  Clock,
   Database,
-  HardDrive,
-  Layers,
-  Package,
-  GitBranch,
-  MessageSquare,
-  Users,
-  DollarSign,
-  Percent,
-  Hash,
-  Sparkles,
-  Brain,
-  Timer,
+  Edit3,
+  Eye,
+  FileText,
   Flame,
-  Award,
-  ThumbsUp,
-  ThumbsDown,
-  Star,
-  Bookmark,
-  Bell,
-  BellOff,
-  ExternalLink,
-  Copy,
-  Share2,
-  PlusCircle,
-  MinusCircle,
-  ChevronRight,
-  ChevronLeft,
-  ChevronsUpDown,
+  HardDrive,
+  Hash,
+  Layers,
+  Link2,
   Loader2,
-  ServerCrash,
-  Wifi,
-  WifiOff,
-  CloudOff,
-  CheckSquare,
-  Square,
- 
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
-import useScriptsStore from '../../../store/scriptsStore';
-import { scriptsAPI } from '../../../api/endpoints/scripts';
+  PlusCircle,
+  RefreshCw,
+  Search,
+  Shield,
+  Sparkles,
+  Target,
+  Trash2,
+  TrendingUp,
+  Upload,
+  Video,
+  XCircle,
+} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
+import { scriptsAPI } from '../../../api/endpoints/scripts'
+import useScriptsStore from '../../../store/scriptsStore'
 
 const ScriptsPriorityDashboard = () => {
-  const navigate = useNavigate();
-  
+  const navigate = useNavigate()
+
   // Store state
-  const {
-    scripts,
-    dashboardStats,
-    pagination,
-    isLoading,
-    selectedScripts,
-    bulkActionMode,
-    fetchScripts,
-    fetchDashboardStats,
-    updateFilters,
-    selectScript,
-    selectAllScripts,
-    clearSelection,
-    toggleBulkMode,
-    bulkUpdateStatus,
-    deleteScript,
-    regenerateScript
-  } = useScriptsStore();
+  const { dashboardStats, fetchScripts, fetchDashboardStats, deleteScript, regenerateScript } =
+    useScriptsStore()
 
   // Local state
-  const [attentionScripts, setAttentionScripts] = useState([]);
-  const [scriptsByStatus, setScriptsByStatus] = useState({});
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [isLoadingAttention, setIsLoadingAttention] = useState(false);
-  const [isLoadingByStatus, setIsLoadingByStatus] = useState(false);
-  const [uploadLimits, setUploadLimits] = useState(null);
-  const [scriptsHealth, setScriptsHealth] = useState(null);
-  const [selectedScriptAnalysis, setSelectedScriptAnalysis] = useState(null);
-  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [attentionScripts, setAttentionScripts] = useState([])
+  const [scriptsByStatus, setScriptsByStatus] = useState({})
+  const [selectedStatus, setSelectedStatus] = useState('all')
+  const [isLoadingAttention, setIsLoadingAttention] = useState(false)
+  const [isLoadingByStatus, setIsLoadingByStatus] = useState(false)
+  const [uploadLimits, setUploadLimits] = useState(null)
+  const [scriptsHealth, setScriptsHealth] = useState(null)
+  const [selectedScriptAnalysis, setSelectedScriptAnalysis] = useState(null)
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false)
   const [expandedSections, setExpandedSections] = useState({
     urgent: true,
     pending: true,
     review: true,
-    optimization: true
-  });
-  
+    optimization: true,
+  })
+
   // Advanced search state
-  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
   const [searchCriteria, setSearchCriteria] = useState({
     query: '',
     platform: '',
@@ -132,13 +76,9 @@ const ScriptsPriorityDashboard = () => {
     minComplexity: 0,
     maxComplexity: 100,
     minViews: 0,
-    generationStatus: ''
-  });
-  
-  // Sorting state
-  const [sortBy, setSortBy] = useState('priority');
-  const [sortOrder, setSortOrder] = useState('desc');
-  
+    generationStatus: '',
+  })
+
   // Priority categories
   const priorityCategories = {
     urgent: {
@@ -147,7 +87,7 @@ const ScriptsPriorityDashboard = () => {
       color: '#EF4444',
       bgColor: '#FEE2E2',
       borderColor: '#FECACA',
-      description: 'Scripts requiring immediate action'
+      description: 'Scripts requiring immediate action',
     },
     pending: {
       label: 'Pending Generation',
@@ -155,7 +95,7 @@ const ScriptsPriorityDashboard = () => {
       color: '#F59E0B',
       bgColor: '#FEF3C7',
       borderColor: '#FDE68A',
-      description: 'Waiting for AI processing'
+      description: 'Waiting for AI processing',
     },
     review: {
       label: 'Needs Review',
@@ -163,7 +103,7 @@ const ScriptsPriorityDashboard = () => {
       color: '#3B82F6',
       bgColor: '#DBEAFE',
       borderColor: '#BFDBFE',
-      description: 'Ready for review and approval'
+      description: 'Ready for review and approval',
     },
     optimization: {
       label: 'Optimization Suggested',
@@ -171,9 +111,9 @@ const ScriptsPriorityDashboard = () => {
       color: '#8B5CF6',
       bgColor: '#EDE9FE',
       borderColor: '#DDD6FE',
-      description: 'Performance can be improved'
-    }
-  };
+      description: 'Performance can be improved',
+    },
+  }
 
   // Fetch initial data
   useEffect(() => {
@@ -182,151 +122,157 @@ const ScriptsPriorityDashboard = () => {
         fetchDashboardStats(),
         fetchAttentionScripts(),
         fetchUploadLimits(),
-        fetchScriptsHealth()
-      ]);
-    };
-    
-    initializeDashboard();
-    
+        //  TEMP
+        // No need to call health route, also validation is failing
+        // fetchScriptsHealth(),
+      ])
+    }
+
+    initializeDashboard()
+
     // Set up auto-refresh for attention scripts
     const refreshInterval = setInterval(() => {
-      fetchAttentionScripts();
-    }, 30000); // Refresh every 30 seconds
-    
-    return () => clearInterval(refreshInterval);
-  }, []);
+      fetchAttentionScripts()
+    }, 30000) // Refresh every 30 seconds
+
+    return () => clearInterval(refreshInterval)
+  }, [])
 
   // Fetch scripts needing attention
   const fetchAttentionScripts = async () => {
-    setIsLoadingAttention(true);
+    setIsLoadingAttention(true)
     try {
-      const response = await scriptsAPI.getScriptsNeedingAttention();
+      const response = await scriptsAPI.getScriptsNeedingAttention()
       if (response.success) {
-        setAttentionScripts(response.data.scripts || []);
+        setAttentionScripts(response.data.scripts || [])
       }
     } catch (error) {
-      console.error('Failed to fetch attention scripts:', error);
-      toast.error('Failed to load priority scripts');
+      console.error('Failed to fetch attention scripts:', error)
+      toast.error('Failed to load priority scripts')
     } finally {
-      setIsLoadingAttention(false);
+      setIsLoadingAttention(false)
     }
-  };
+  }
 
   // Fetch scripts by status
   const fetchScriptsByStatus = async (status) => {
     if (status === 'all') {
-      await fetchScripts();
-      return;
+      await fetchScripts()
+      return
     }
-    
-    setIsLoadingByStatus(true);
+
+    setIsLoadingByStatus(true)
     try {
-      const response = await scriptsAPI.getScriptsByStatus(status);
+      const response = await scriptsAPI.getScriptsByStatus(status)
       if (response.success) {
-        setScriptsByStatus(prev => ({
+        setScriptsByStatus((prev) => ({
           ...prev,
-          [status]: response.data.scripts || []
-        }));
+          [status]: response.data.scripts || [],
+        }))
       }
     } catch (error) {
-      console.error(`Failed to fetch scripts with status ${status}:`, error);
-      toast.error('Failed to load scripts by status');
+      console.error(`Failed to fetch scripts with status ${status}:`, error)
+      toast.error('Failed to load scripts by status')
     } finally {
-      setIsLoadingByStatus(false);
+      setIsLoadingByStatus(false)
     }
-  };
+  }
 
   // Fetch upload limits
   const fetchUploadLimits = async () => {
     try {
-      const response = await scriptsAPI.getUploadLimits();
+      const response = await scriptsAPI.getUploadLimits()
       if (response.success) {
-        setUploadLimits(response.data.limits);
+        setUploadLimits(response.data?.limits)
       }
     } catch (error) {
-      console.error('Failed to fetch upload limits:', error);
+      console.error('Failed to fetch upload limits:', error)
     }
-  };
+  }
 
   // Fetch scripts health
   const fetchScriptsHealth = async () => {
     try {
-      const response = await scriptsAPI.getScriptsHealth();
+      const response = await scriptsAPI.getScriptsHealth()
       if (response.success) {
-        setScriptsHealth(response.data.health);
+        setScriptsHealth(response.data.health)
       }
     } catch (error) {
-      console.error('Failed to fetch scripts health:', error);
+      console.error('Failed to fetch scripts health:', error)
     }
-  };
+  }
 
   // Fetch individual script analysis
   const fetchScriptAnalysis = async (scriptId) => {
     try {
-      const response = await scriptsAPI.getScriptAnalysis(scriptId);
+      const response = await scriptsAPI.getScriptAnalysis(scriptId)
       if (response.success) {
-        setSelectedScriptAnalysis(response.data.analysis);
-        setShowAnalysisModal(true);
+        setSelectedScriptAnalysis(response.data.analysis)
+        setShowAnalysisModal(true)
       }
     } catch (error) {
-      console.error('Failed to fetch script analysis:', error);
-      toast.error('Failed to load script analysis');
+      console.error('Failed to fetch script analysis:', error)
+      toast.error('Failed to load script analysis')
     }
-  };
+  }
 
   // Advanced search
   const performAdvancedSearch = async () => {
     try {
       // Clean up search criteria
       const cleanedCriteria = Object.entries(searchCriteria).reduce((acc, [key, value]) => {
-        if (value !== '' && value !== null && value !== 0 && 
-            (!Array.isArray(value) || value.length > 0)) {
-          acc[key] = value;
+        if (
+          value !== '' &&
+          value !== null &&
+          value !== 0 &&
+          (!Array.isArray(value) || value.length > 0)
+        ) {
+          acc[key] = value
         }
-        return acc;
-      }, {});
-      
-      const response = await scriptsAPI.searchScripts(cleanedCriteria);
+        return acc
+      }, {})
+
+      const response = await scriptsAPI.searchScripts(cleanedCriteria)
       if (response.success) {
         // Update store with search results
-        toast.success(`Found ${response.data.scripts.length} scripts`);
-        setShowAdvancedSearch(false);
+        toast.success(`Found ${response.data.scripts.length} scripts`)
+        setShowAdvancedSearch(false)
       }
     } catch (error) {
-      console.error('Advanced search failed:', error);
-      toast.error('Search failed');
+      console.error('Advanced search failed:', error)
+      toast.error('Search failed')
     }
-  };
+  }
 
   // Handle status filter change
   const handleStatusFilter = useCallback((status) => {
-    setSelectedStatus(status);
-    fetchScriptsByStatus(status);
-  }, []);
+    setSelectedStatus(status)
+    fetchScriptsByStatus(status)
+  }, [])
 
   // Handle script actions
   const handleRegenerateScript = async (scriptId) => {
     try {
-      await regenerateScript(scriptId);
-      toast.success('Script regeneration started');
+      await regenerateScript(scriptId)
+      toast.success('Script regeneration started')
       // Refresh attention scripts after regeneration
-      setTimeout(fetchAttentionScripts, 2000);
+      setTimeout(fetchAttentionScripts, 2000)
     } catch (error) {
-      toast.error('Failed to regenerate script');
+      toast.error('Failed to regenerate script')
     }
-  };
+  }
 
   const handleDeleteScript = async (scriptId) => {
     if (window.confirm('Are you sure you want to delete this script?')) {
       try {
-        await deleteScript(scriptId);
-        toast.success('Script deleted successfully');
-        fetchAttentionScripts();
+        await deleteScript(scriptId)
+        toast.success('Script deleted successfully')
+        fetchAttentionScripts()
       } catch (error) {
-        toast.error('Failed to delete script');
+        toast.error('Failed to delete script')
       }
     }
-  };
+  }
 
   // Categorize attention scripts
   const categorizedScripts = useMemo(() => {
@@ -334,53 +280,55 @@ const ScriptsPriorityDashboard = () => {
       urgent: [],
       pending: [],
       review: [],
-      optimization: []
-    };
-    
-    attentionScripts.forEach(script => {
+      optimization: [],
+    }
+
+    attentionScripts.forEach((script) => {
       // Urgent: Failed generation or critical issues
-      if (script.aiGeneration?.status === 'failed' || 
-          script.attentionReason?.includes('critical')) {
-        categories.urgent.push(script);
+      if (
+        script.aiGeneration?.status === 'failed' ||
+        script.attentionReason?.includes('critical')
+      ) {
+        categories.urgent.push(script)
       }
       // Pending: Processing or waiting
-      else if (script.aiGeneration?.status === 'processing' || 
-               script.status === 'draft') {
-        categories.pending.push(script);
+      else if (script.aiGeneration?.status === 'processing' || script.status === 'draft') {
+        categories.pending.push(script)
       }
       // Review: Ready for review or approval
-      else if (script.status === 'generated' || 
-               script.status === 'reviewed') {
-        categories.review.push(script);
+      else if (script.status === 'generated' || script.status === 'reviewed') {
+        categories.review.push(script)
       }
       // Optimization: Low performance or missing elements
-      else if (script.viewCount < 10 || 
-               script.complexityScore < 60 || 
-               !script.dealConnection?.isLinked) {
-        categories.optimization.push(script);
+      else if (
+        script.viewCount < 10 ||
+        script.complexityScore < 60 ||
+        !script.dealConnection?.isLinked
+      ) {
+        categories.optimization.push(script)
       }
-    });
-    
-    return categories;
-  }, [attentionScripts]);
+    })
+
+    return categories
+  }, [attentionScripts])
 
   // Format functions
   const formatDate = (date) => {
-    if (!date) return 'N/A';
+    if (!date) return 'N/A'
     return new Date(date).toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+      minute: '2-digit',
+    })
+  }
 
   const formatFileSize = (bytes) => {
-    if (!bytes) return '0 MB';
-    const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(2)} MB`;
-  };
+    if (!bytes) return '0 MB'
+    const mb = bytes / (1024 * 1024)
+    return `${mb.toFixed(2)} MB`
+  }
 
   const getStatusColor = (status) => {
     const colors = {
@@ -390,43 +338,43 @@ const ScriptsPriorityDashboard = () => {
       approved: '#10b981',
       in_production: '#8b5cf6',
       completed: '#059669',
-      failed: '#ef4444'
-    };
-    return colors[status] || '#64748b';
-  };
+      failed: '#ef4444',
+    }
+    return colors[status] || '#64748b'
+  }
 
   const getInputTypeIcon = (inputType) => {
     const icons = {
       text_brief: FileText,
       file_upload: Upload,
-      video_transcription: Video
-    };
-    return icons[inputType] || FileText;
-  };
+      video_transcription: Video,
+    }
+    return icons[inputType] || FileText
+  }
 
   const getPriorityLevel = (script) => {
-    if (script.aiGeneration?.status === 'failed') return 'critical';
-    if (script.attentionReason?.includes('urgent')) return 'high';
-    if (script.status === 'draft' && script.daysOld > 7) return 'medium';
-    return 'low';
-  };
+    if (script.aiGeneration?.status === 'failed') return 'critical'
+    if (script.attentionReason?.includes('urgent')) return 'high'
+    if (script.status === 'draft' && script.daysOld > 7) return 'medium'
+    return 'low'
+  }
 
   const getPriorityColor = (level) => {
     const colors = {
       critical: '#ef4444',
       high: '#f59e0b',
       medium: '#3b82f6',
-      low: '#10b981'
-    };
-    return colors[level] || '#64748b';
-  };
+      low: '#10b981',
+    }
+    return colors[level] || '#64748b'
+  }
 
   // Render script card
   const renderScriptCard = (script, category) => {
-    const InputIcon = getInputTypeIcon(script.inputType);
-    const priorityLevel = getPriorityLevel(script);
-    const priorityColor = getPriorityColor(priorityLevel);
-    
+    const InputIcon = getInputTypeIcon(script.inputType)
+    const priorityLevel = getPriorityLevel(script)
+    const priorityColor = getPriorityColor(priorityLevel)
+
     return (
       <div
         key={script._id || script.id}
@@ -435,59 +383,53 @@ const ScriptsPriorityDashboard = () => {
       >
         <div className="script-header">
           <div className="script-priority">
-            <div 
-              className="priority-indicator"
-              style={{ backgroundColor: priorityColor }}
-            />
-            <span 
-              className="priority-text" 
-              style={{ color: priorityColor }}
-            >
+            <div className="priority-indicator" style={{ backgroundColor: priorityColor }} />
+            <span className="priority-text" style={{ color: priorityColor }}>
               {priorityLevel.toUpperCase()}
             </span>
           </div>
-          
+
           <div className="script-actions">
             <button
               className="action-btn"
               onClick={(e) => {
-                e.stopPropagation();
-                fetchScriptAnalysis(script._id || script.id);
+                e.stopPropagation()
+                fetchScriptAnalysis(script._id || script.id)
               }}
               title="View Analysis"
             >
               <BarChart3 size={14} />
             </button>
-            
+
             {script.aiGeneration?.status === 'failed' && (
               <button
                 className="action-btn"
                 onClick={(e) => {
-                  e.stopPropagation();
-                  handleRegenerateScript(script._id || script.id);
+                  e.stopPropagation()
+                  handleRegenerateScript(script._id || script.id)
                 }}
                 title="Regenerate"
               >
                 <RefreshCw size={14} />
               </button>
             )}
-            
+
             <button
               className="action-btn"
               onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/scripts/${script._id || script.id}/edit`);
+                e.stopPropagation()
+                navigate(`/scripts/${script._id || script.id}/edit`)
               }}
               title="Edit"
             >
               <Edit3 size={14} />
             </button>
-            
+
             <button
               className="action-btn delete-btn"
               onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteScript(script._id || script.id);
+                e.stopPropagation()
+                handleDeleteScript(script._id || script.id)
               }}
               title="Delete"
             >
@@ -495,51 +437,49 @@ const ScriptsPriorityDashboard = () => {
             </button>
           </div>
         </div>
-        
-        <h3 className="script-title">
-          {script.title || 'Untitled Script'}
-        </h3>
-        
+
+        <h3 className="script-title">{script.title || 'Untitled Script'}</h3>
+
         <div className="script-meta">
           <span className="meta-item">
             <InputIcon size={12} />
             {script.inputType?.replace(/_/g, ' ')}
           </span>
-          
+
           <span className="meta-item">
             <Hash size={12} />
             {script.platform?.replace(/_/g, ' ')}
           </span>
-          
-          <span 
+
+          <span
             className="status-badge"
             style={{
               backgroundColor: `${getStatusColor(script.status)}20`,
-              color: getStatusColor(script.status)
+              color: getStatusColor(script.status),
             }}
           >
             {script.status}
           </span>
         </div>
-        
+
         {script.attentionReason && (
           <div className="attention-reason">
             <AlertCircle size={12} />
             {script.attentionReason}
           </div>
         )}
-        
+
         <div className="script-stats">
           <div className="stat-item">
             <Eye size={12} />
             <span>{script.viewCount || 0} views</span>
           </div>
-          
+
           <div className="stat-item">
             <Target size={12} />
             <span>{script.complexityScore || 0}/100</span>
           </div>
-          
+
           {script.dealConnection?.isLinked && (
             <div className="stat-item">
               <Link2 size={12} />
@@ -547,12 +487,10 @@ const ScriptsPriorityDashboard = () => {
             </div>
           )}
         </div>
-        
+
         <div className="script-footer">
-          <span className="footer-text">
-            Created {formatDate(script.createdAt)}
-          </span>
-          
+          <span className="footer-text">Created {formatDate(script.createdAt)}</span>
+
           {script.aiGeneration?.status === 'processing' && (
             <div className="processing-indicator">
               <Loader2 size={12} className="spin" />
@@ -561,28 +499,25 @@ const ScriptsPriorityDashboard = () => {
           )}
         </div>
       </div>
-    );
-  };
+    )
+  }
 
   // Render analysis modal
   const renderAnalysisModal = () => {
-    if (!showAnalysisModal || !selectedScriptAnalysis) return null;
-    
-    const analysis = selectedScriptAnalysis;
-    
+    if (!showAnalysisModal || !selectedScriptAnalysis) return null
+
+    const analysis = selectedScriptAnalysis
+
     return (
       <div className="modal-overlay">
         <div className="modal">
           <div className="modal-header">
             <h2 className="modal-title">Script Analysis</h2>
-            <button
-              className="modal-close"
-              onClick={() => setShowAnalysisModal(false)}
-            >
+            <button className="modal-close" onClick={() => setShowAnalysisModal(false)}>
               <XCircle size={20} />
             </button>
           </div>
-          
+
           <div className="modal-content">
             {/* Performance Metrics */}
             <div className="analysis-section">
@@ -590,13 +525,11 @@ const ScriptsPriorityDashboard = () => {
                 <Activity size={16} />
                 Performance Metrics
               </h3>
-              
+
               <div className="metrics-grid">
                 <div className="metric-card">
                   <div className="metric-label">Engagement Rate</div>
-                  <div className="metric-value">
-                    {analysis.engagementRate || 0}%
-                  </div>
+                  <div className="metric-value">{analysis.engagementRate || 0}%</div>
                   <div className="metric-trend">
                     {analysis.engagementTrend === 'up' ? (
                       <ArrowUpRight size={14} style={{ color: '#10B981' }} />
@@ -606,30 +539,24 @@ const ScriptsPriorityDashboard = () => {
                     <span>{analysis.engagementChange || 0}%</span>
                   </div>
                 </div>
-                
+
                 <div className="metric-card">
                   <div className="metric-label">Completion Rate</div>
-                  <div className="metric-value">
-                    {analysis.completionRate || 0}%
-                  </div>
+                  <div className="metric-value">{analysis.completionRate || 0}%</div>
                 </div>
-                
+
                 <div className="metric-card">
                   <div className="metric-label">Share Count</div>
-                  <div className="metric-value">
-                    {analysis.shareCount || 0}
-                  </div>
+                  <div className="metric-value">{analysis.shareCount || 0}</div>
                 </div>
-                
+
                 <div className="metric-card">
                   <div className="metric-label">Conversion Rate</div>
-                  <div className="metric-value">
-                    {analysis.conversionRate || 0}%
-                  </div>
+                  <div className="metric-value">{analysis.conversionRate || 0}%</div>
                 </div>
               </div>
             </div>
-            
+
             {/* AI Insights */}
             {analysis.aiInsights && (
               <div className="analysis-section">
@@ -637,7 +564,7 @@ const ScriptsPriorityDashboard = () => {
                   <Brain size={16} />
                   AI Insights
                 </h3>
-                
+
                 <div className="insights-list">
                   {analysis.aiInsights.map((insight, index) => (
                     <div key={index} className="insight-item">
@@ -648,7 +575,7 @@ const ScriptsPriorityDashboard = () => {
                 </div>
               </div>
             )}
-            
+
             {/* Recommendations */}
             {analysis.recommendations && (
               <div className="analysis-section">
@@ -656,7 +583,7 @@ const ScriptsPriorityDashboard = () => {
                   <Target size={16} />
                   Recommendations
                 </h3>
-                
+
                 <div className="recommendations-list">
                   {analysis.recommendations.map((rec, index) => (
                     <div key={index} className="recommendation-item">
@@ -673,19 +600,16 @@ const ScriptsPriorityDashboard = () => {
               </div>
             )}
           </div>
-          
+
           <div className="modal-footer">
-            <button
-              className="btn-secondary"
-              onClick={() => setShowAnalysisModal(false)}
-            >
+            <button className="btn-secondary" onClick={() => setShowAnalysisModal(false)}>
               Close
             </button>
-            
+
             <button
               className="btn-primary"
               onClick={() => {
-                navigate(`/scripts/${selectedScriptAnalysis.scriptId}/edit`);
+                navigate(`/scripts/${selectedScriptAnalysis.scriptId}/edit`)
               }}
             >
               Edit Script
@@ -693,48 +617,49 @@ const ScriptsPriorityDashboard = () => {
           </div>
         </div>
       </div>
-    );
-  };
+    )
+  }
 
   // Render advanced search panel
   const renderAdvancedSearch = () => {
-    if (!showAdvancedSearch) return null;
-    
+    if (!showAdvancedSearch) return null
+
     return (
       <div className="search-panel">
         <div className="search-header">
           <h3 className="search-title">Advanced Search</h3>
-          <button
-            className="close-btn"
-            onClick={() => setShowAdvancedSearch(false)}
-          >
+          <button className="close-btn" onClick={() => setShowAdvancedSearch(false)}>
             <XCircle size={18} />
           </button>
         </div>
-        
+
         <div className="search-grid">
           <div className="search-field">
             <label className="field-label">Search Query</label>
             <input
               type="text"
               value={searchCriteria.query}
-              onChange={(e) => setSearchCriteria(prev => ({ 
-                ...prev, 
-                query: e.target.value 
-              }))}
+              onChange={(e) =>
+                setSearchCriteria((prev) => ({
+                  ...prev,
+                  query: e.target.value,
+                }))
+              }
               placeholder="Enter keywords..."
               className="form-input"
             />
           </div>
-          
+
           <div className="search-field">
             <label className="field-label">Platform</label>
             <select
               value={searchCriteria.platform}
-              onChange={(e) => setSearchCriteria(prev => ({ 
-                ...prev, 
-                platform: e.target.value 
-              }))}
+              onChange={(e) =>
+                setSearchCriteria((prev) => ({
+                  ...prev,
+                  platform: e.target.value,
+                }))
+              }
               className="form-select"
             >
               <option value="">All Platforms</option>
@@ -744,15 +669,17 @@ const ScriptsPriorityDashboard = () => {
               <option value="tiktok_video">TikTok Video</option>
             </select>
           </div>
-          
+
           <div className="search-field">
             <label className="field-label">Status</label>
             <select
               value={searchCriteria.status}
-              onChange={(e) => setSearchCriteria(prev => ({ 
-                ...prev, 
-                status: e.target.value 
-              }))}
+              onChange={(e) =>
+                setSearchCriteria((prev) => ({
+                  ...prev,
+                  status: e.target.value,
+                }))
+              }
               className="form-select"
             >
               <option value="">All Status</option>
@@ -764,15 +691,17 @@ const ScriptsPriorityDashboard = () => {
               <option value="completed">Completed</option>
             </select>
           </div>
-          
+
           <div className="search-field">
             <label className="field-label">Input Type</label>
             <select
               value={searchCriteria.inputType}
-              onChange={(e) => setSearchCriteria(prev => ({ 
-                ...prev, 
-                inputType: e.target.value 
-              }))}
+              onChange={(e) =>
+                setSearchCriteria((prev) => ({
+                  ...prev,
+                  inputType: e.target.value,
+                }))
+              }
               className="form-select"
             >
               <option value="">All Types</option>
@@ -781,41 +710,47 @@ const ScriptsPriorityDashboard = () => {
               <option value="video_transcription">Video Transcription</option>
             </select>
           </div>
-          
+
           <div className="search-field">
             <label className="field-label">Date From</label>
             <input
               type="date"
               value={searchCriteria.dateFrom}
-              onChange={(e) => setSearchCriteria(prev => ({ 
-                ...prev, 
-                dateFrom: e.target.value 
-              }))}
+              onChange={(e) =>
+                setSearchCriteria((prev) => ({
+                  ...prev,
+                  dateFrom: e.target.value,
+                }))
+              }
               className="form-input"
             />
           </div>
-          
+
           <div className="search-field">
             <label className="field-label">Date To</label>
             <input
               type="date"
               value={searchCriteria.dateTo}
-              onChange={(e) => setSearchCriteria(prev => ({ 
-                ...prev, 
-                dateTo: e.target.value 
-              }))}
+              onChange={(e) =>
+                setSearchCriteria((prev) => ({
+                  ...prev,
+                  dateTo: e.target.value,
+                }))
+              }
               className="form-input"
             />
           </div>
-          
+
           <div className="search-field">
             <label className="field-label">Has Deal Connection</label>
             <select
               value={searchCriteria.hasDeals ?? ''}
-              onChange={(e) => setSearchCriteria(prev => ({ 
-                ...prev, 
-                hasDeals: e.target.value === '' ? null : e.target.value === 'true'
-              }))}
+              onChange={(e) =>
+                setSearchCriteria((prev) => ({
+                  ...prev,
+                  hasDeals: e.target.value === '' ? null : e.target.value === 'true',
+                }))
+              }
               className="form-select"
             >
               <option value="">Any</option>
@@ -823,15 +758,17 @@ const ScriptsPriorityDashboard = () => {
               <option value="false">No</option>
             </select>
           </div>
-          
+
           <div className="search-field">
             <label className="field-label">AI Generation Status</label>
             <select
               value={searchCriteria.generationStatus}
-              onChange={(e) => setSearchCriteria(prev => ({ 
-                ...prev, 
-                generationStatus: e.target.value 
-              }))}
+              onChange={(e) =>
+                setSearchCriteria((prev) => ({
+                  ...prev,
+                  generationStatus: e.target.value,
+                }))
+              }
               className="form-select"
             >
               <option value="">Any</option>
@@ -841,42 +778,42 @@ const ScriptsPriorityDashboard = () => {
               <option value="failed">Failed</option>
             </select>
           </div>
-          
+
           <div className="search-field">
-            <label className="field-label">
-              Min Complexity: {searchCriteria.minComplexity}
-            </label>
+            <label className="field-label">Min Complexity: {searchCriteria.minComplexity}</label>
             <input
               type="range"
               min="0"
               max="100"
               value={searchCriteria.minComplexity}
-              onChange={(e) => setSearchCriteria(prev => ({ 
-                ...prev, 
-                minComplexity: parseInt(e.target.value)
-              }))}
+              onChange={(e) =>
+                setSearchCriteria((prev) => ({
+                  ...prev,
+                  minComplexity: parseInt(e.target.value),
+                }))
+              }
               className="form-slider"
             />
           </div>
-          
+
           <div className="search-field">
-            <label className="field-label">
-              Max Complexity: {searchCriteria.maxComplexity}
-            </label>
+            <label className="field-label">Max Complexity: {searchCriteria.maxComplexity}</label>
             <input
               type="range"
               min="0"
               max="100"
               value={searchCriteria.maxComplexity}
-              onChange={(e) => setSearchCriteria(prev => ({ 
-                ...prev, 
-                maxComplexity: parseInt(e.target.value)
-              }))}
+              onChange={(e) =>
+                setSearchCriteria((prev) => ({
+                  ...prev,
+                  maxComplexity: parseInt(e.target.value),
+                }))
+              }
               className="form-slider"
             />
           </div>
         </div>
-        
+
         <div className="search-actions">
           <button
             className="btn-secondary"
@@ -893,24 +830,21 @@ const ScriptsPriorityDashboard = () => {
                 minComplexity: 0,
                 maxComplexity: 100,
                 minViews: 0,
-                generationStatus: ''
-              });
+                generationStatus: '',
+              })
             }}
           >
             Reset
           </button>
-          
-          <button
-            className="btn-primary"
-            onClick={performAdvancedSearch}
-          >
+
+          <button className="btn-primary" onClick={performAdvancedSearch}>
             <Search size={16} />
             Search
           </button>
         </div>
       </div>
-    );
-  };
+    )
+  }
 
   return (
     <div className="dashboard-container">
@@ -921,7 +855,7 @@ const ScriptsPriorityDashboard = () => {
             <Shield size={28} />
             Scripts Priority Dashboard
           </h1>
-          
+
           <div className="header-actions">
             <button
               className="btn-secondary"
@@ -930,29 +864,26 @@ const ScriptsPriorityDashboard = () => {
               <Search size={16} />
               Advanced Search
             </button>
-            
+
             <button
               className="btn-secondary"
               onClick={() => {
-                fetchAttentionScripts();
-                fetchDashboardStats();
-                toast.success('Dashboard refreshed');
+                fetchAttentionScripts()
+                fetchDashboardStats()
+                toast.success('Dashboard refreshed')
               }}
             >
               <RefreshCw size={16} />
               Refresh
             </button>
-            
-            <button
-              className="btn-primary"
-              onClick={() => navigate('/scripts/create')}
-            >
+
+            <button className="btn-primary" onClick={() => navigate('/scripts/create')}>
               <PlusCircle size={16} />
               Create Script
             </button>
           </div>
         </div>
-        
+
         {/* Stats Row */}
         <div className="stats-row">
           <div className="stat-card urgent">
@@ -964,7 +895,7 @@ const ScriptsPriorityDashboard = () => {
               <div className="stat-value">{attentionScripts.length}</div>
             </div>
           </div>
-          
+
           <div className="stat-card warning">
             <div className="stat-icon">
               <Clock size={20} />
@@ -972,11 +903,11 @@ const ScriptsPriorityDashboard = () => {
             <div className="stat-content">
               <div className="stat-label">Processing</div>
               <div className="stat-value">
-                {attentionScripts.filter(s => s.aiGeneration?.status === 'processing').length}
+                {attentionScripts.filter((s) => s.aiGeneration?.status === 'processing').length}
               </div>
             </div>
           </div>
-          
+
           <div className="stat-card success">
             <div className="stat-icon">
               <CheckCircle size={20} />
@@ -986,7 +917,7 @@ const ScriptsPriorityDashboard = () => {
               <div className="stat-value">{dashboardStats?.generationRate || 0}%</div>
             </div>
           </div>
-          
+
           <div className="stat-card primary">
             <div className="stat-icon">
               <Layers size={20} />
@@ -997,29 +928,31 @@ const ScriptsPriorityDashboard = () => {
             </div>
           </div>
         </div>
-        
+
         {/* System Info */}
         {(uploadLimits || scriptsHealth) && (
           <div className="system-info">
             {scriptsHealth && (
               <div className="system-item">
-                <div className={`system-status ${scriptsHealth.status === 'healthy' ? 'healthy' : 'unhealthy'}`} />
+                <div
+                  className={`system-status ${scriptsHealth.status === 'healthy' ? 'healthy' : 'unhealthy'}`}
+                />
                 <span>System {scriptsHealth.status || 'Unknown'}</span>
               </div>
             )}
-            
+
             {uploadLimits && (
               <>
                 <div className="system-item">
                   <HardDrive size={14} />
                   <span>Max file: {formatFileSize(uploadLimits.maxFileSize)}</span>
                 </div>
-                
+
                 <div className="system-item">
                   <Video size={14} />
                   <span>Max video: {formatFileSize(uploadLimits.maxVideoSize)}</span>
                 </div>
-                
+
                 <div className="system-item">
                   <Database size={14} />
                   <span>Storage: {uploadLimits.storageUsed}% used</span>
@@ -1029,32 +962,34 @@ const ScriptsPriorityDashboard = () => {
           </div>
         )}
       </header>
-      
+
       {/* Advanced Search Panel */}
       {renderAdvancedSearch()}
-      
+
       {/* Enhanced Status Filters */}
       <div className="status-filters">
         <div className="filter-tabs">
-          {['all', 'draft', 'generated', 'reviewed', 'approved', 'in_production', 'completed'].map(status => (
-            <button
-              key={status}
-              className={`filter-tab ${selectedStatus === status ? 'active' : ''}`}
-              onClick={() => handleStatusFilter(status)}
-            >
-              <span className="tab-label">
-                {status === 'all' ? 'All Scripts' : status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-              </span>
-              {status !== 'all' && scriptsByStatus[status] && (
-                <span className="tab-count">
-                  {scriptsByStatus[status].length}
+          {['all', 'draft', 'generated', 'reviewed', 'approved', 'in_production', 'completed'].map(
+            (status) => (
+              <button
+                key={status}
+                className={`filter-tab ${selectedStatus === status ? 'active' : ''}`}
+                onClick={() => handleStatusFilter(status)}
+              >
+                <span className="tab-label">
+                  {status === 'all'
+                    ? 'All Scripts'
+                    : status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
                 </span>
-              )}
-            </button>
-          ))}
+                {status !== 'all' && scriptsByStatus[status] && (
+                  <span className="tab-count">{scriptsByStatus[status].length}</span>
+                )}
+              </button>
+            )
+          )}
         </div>
       </div>
-      
+
       {/* Main Content */}
       <main className="dashboard-content">
         {isLoadingAttention || isLoadingByStatus ? (
@@ -1065,27 +1000,29 @@ const ScriptsPriorityDashboard = () => {
         ) : selectedStatus === 'all' ? (
           <div className="priority-sections">
             {Object.entries(priorityCategories).map(([key, category]) => {
-              const scripts = categorizedScripts[key] || [];
-              const Icon = category.icon;
-              const isExpanded = expandedSections[key];
-              
+              const scripts = categorizedScripts[key] || []
+              const Icon = category.icon
+              const isExpanded = expandedSections[key]
+
               return (
                 <div key={key} className="priority-section">
-                  <div 
+                  <div
                     className="section-header"
-                    onClick={() => setExpandedSections(prev => ({
-                      ...prev,
-                      [key]: !prev[key]
-                    }))}
+                    onClick={() =>
+                      setExpandedSections((prev) => ({
+                        ...prev,
+                        [key]: !prev[key],
+                      }))
+                    }
                     style={{ borderLeft: `4px solid ${category.color}` }}
                   >
                     <div className="section-title">
-                      <div 
+                      <div
                         className="section-icon"
-                        style={{ 
+                        style={{
                           backgroundColor: category.bgColor,
                           color: category.color,
-                          border: `1px solid ${category.borderColor}`
+                          border: `1px solid ${category.borderColor}`,
                         }}
                       >
                         <Icon size={18} />
@@ -1095,23 +1032,23 @@ const ScriptsPriorityDashboard = () => {
                         <div className="section-description">{category.description}</div>
                       </div>
                     </div>
-                    
+
                     <div className="section-meta">
                       <div className="section-count">
                         {scripts.length} script{scripts.length !== 1 ? 's' : ''}
                       </div>
-                      
+
                       <button className="expand-btn">
                         {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                       </button>
                     </div>
                   </div>
-                  
+
                   {isExpanded && (
                     <div className="section-content">
                       {scripts.length > 0 ? (
                         <div className="scripts-grid">
-                          {scripts.map(script => renderScriptCard(script, key))}
+                          {scripts.map((script) => renderScriptCard(script, key))}
                         </div>
                       ) : (
                         <div className="empty-section">
@@ -1122,56 +1059,57 @@ const ScriptsPriorityDashboard = () => {
                     </div>
                   )}
                 </div>
-              );
+              )
             })}
           </div>
         ) : (
           <div className="scripts-grid">
-            {(scriptsByStatus[selectedStatus] || []).map(script => 
+            {(scriptsByStatus[selectedStatus] || []).map((script) =>
               renderScriptCard(script, 'filtered')
             )}
           </div>
         )}
       </main>
-      
+
       {/* Analysis Modal */}
       {renderAnalysisModal()}
 
-      <style jsx>{`
+      <style>{`
         /* Design System Variables */
         .dashboard-container {
-          --primary-50: #F5F3FF;
-          --primary-100: #EDE9FE;
-          --primary-500: #8B5CF6;
-          --primary-600: #7C3AED;
-          --primary-700: #6D28D9;
-          
-          --secondary-500: #EC4899;
-          --accent-500: #3B82F6;
-          
-          --neutral-0: #FFFFFF;
-          --neutral-50: #FAFAFA;
-          --neutral-100: #F4F4F5;
-          --neutral-200: #E4E4E7;
-          --neutral-300: #D4D4D8;
-          --neutral-400: #A1A1AA;
-          --neutral-500: #71717A;
-          --neutral-600: #52525B;
-          --neutral-700: #3F3F46;
-          --neutral-800: #27272A;
-          --neutral-900: #18181B;
-          
-          --success: #10B981;
-          --warning: #F59E0B;
-          --error: #EF4444;
-          --info: #3B82F6;
-          
-          --gradient-primary: linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #3B82F6 100%);
-          --gradient-light: linear-gradient(135deg, #FFFFFF 0%, #F3F4F6 100%);
-          --gradient-mesh: radial-gradient(at 40% 20%, hsla(280, 100%, 74%, 0.15) 0px, transparent 50%),
-                           radial-gradient(at 80% 0%, hsla(330, 100%, 71%, 0.1) 0px, transparent 50%),
-                           radial-gradient(at 0% 50%, hsla(217, 100%, 62%, 0.1) 0px, transparent 50%);
-          
+          --primary-50: #f5f3ff;
+          --primary-100: #ede9fe;
+          --primary-500: #8b5cf6;
+          --primary-600: #7c3aed;
+          --primary-700: #6d28d9;
+
+          --secondary-500: #ec4899;
+          --accent-500: #3b82f6;
+
+          --neutral-0: #ffffff;
+          --neutral-50: #fafafa;
+          --neutral-100: #f4f4f5;
+          --neutral-200: #e4e4e7;
+          --neutral-300: #d4d4d8;
+          --neutral-400: #a1a1aa;
+          --neutral-500: #71717a;
+          --neutral-600: #52525b;
+          --neutral-700: #3f3f46;
+          --neutral-800: #27272a;
+          --neutral-900: #18181b;
+
+          --success: #10b981;
+          --warning: #f59e0b;
+          --error: #ef4444;
+          --info: #3b82f6;
+
+          --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #3b82f6 100%);
+          --gradient-light: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+          --gradient-mesh:
+            radial-gradient(at 40% 20%, hsla(280, 100%, 74%, 0.15) 0px, transparent 50%),
+            radial-gradient(at 80% 0%, hsla(330, 100%, 71%, 0.1) 0px, transparent 50%),
+            radial-gradient(at 0% 50%, hsla(217, 100%, 62%, 0.1) 0px, transparent 50%);
+
           --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
           --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
           --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -1179,18 +1117,26 @@ const ScriptsPriorityDashboard = () => {
           --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
           --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
           --shadow-purple: 0 10px 40px -10px rgba(139, 92, 246, 0.25);
-          
+
           --radius-sm: 0.375rem;
           --radius-md: 0.5rem;
           --radius-lg: 0.75rem;
           --radius-xl: 1rem;
-          
+
           --ease-out: cubic-bezier(0, 0, 0.2, 1);
           --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-          
+
           min-height: 100vh;
-          background: var(--gradient-mesh), linear-gradient(135deg, var(--neutral-50) 0%, var(--neutral-100) 100%);
-          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background:
+            var(--gradient-mesh),
+            linear-gradient(135deg, var(--neutral-50) 0%, var(--neutral-100) 100%);
+          font-family:
+            'Plus Jakarta Sans',
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            Roboto,
+            sans-serif;
           color: var(--neutral-900);
         }
 
@@ -1259,7 +1205,7 @@ const ScriptsPriorityDashboard = () => {
           left: -100%;
           width: 100%;
           height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
           transition: left 0.5s;
         }
 
@@ -1339,17 +1285,17 @@ const ScriptsPriorityDashboard = () => {
         }
 
         .stat-card.urgent .stat-icon {
-          background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+          background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
           color: var(--error);
         }
 
         .stat-card.warning .stat-icon {
-          background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
           color: var(--warning);
         }
 
         .stat-card.success .stat-icon {
-          background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
+          background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
           color: var(--success);
         }
 
@@ -1497,7 +1443,8 @@ const ScriptsPriorityDashboard = () => {
           color: var(--neutral-700);
         }
 
-        .form-input, .form-select {
+        .form-input,
+        .form-select {
           padding: 0.875rem 1rem;
           border: 2px solid var(--neutral-200);
           border-radius: var(--radius-md);
@@ -1508,7 +1455,8 @@ const ScriptsPriorityDashboard = () => {
           outline: none;
         }
 
-        .form-input:focus, .form-select:focus {
+        .form-input:focus,
+        .form-select:focus {
           border-color: var(--primary-500);
           box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
@@ -1897,13 +1845,13 @@ const ScriptsPriorityDashboard = () => {
           align-items: center;
           gap: 0.5rem;
           padding: 0.875rem;
-          background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
           border-radius: var(--radius-md);
           font-size: 0.8125rem;
-          color: #92400E;
+          color: #92400e;
           margin-bottom: 1rem;
           font-weight: 500;
-          border: 1px solid #FCD34D;
+          border: 1px solid #fcd34d;
         }
 
         .script-stats {
@@ -2110,8 +2058,8 @@ const ScriptsPriorityDashboard = () => {
           display: flex;
           gap: 1rem;
           padding: 1.5rem;
-          background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
-          border: 1px solid #BBF7D0;
+          background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+          border: 1px solid #bbf7d0;
           border-radius: var(--radius-lg);
         }
 
@@ -2138,13 +2086,22 @@ const ScriptsPriorityDashboard = () => {
         }
 
         @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
         }
 
         @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
         }
 
         /* Responsive Design */
@@ -2210,7 +2167,9 @@ const ScriptsPriorityDashboard = () => {
             max-height: 95vh;
           }
 
-          .modal-header, .modal-content, .modal-footer {
+          .modal-header,
+          .modal-content,
+          .modal-footer {
             padding: 1.5rem;
           }
 
@@ -2242,7 +2201,7 @@ const ScriptsPriorityDashboard = () => {
         }
       `}</style>
     </div>
-  );
-};
+  )
+}
 
-export default ScriptsPriorityDashboard;
+export default ScriptsPriorityDashboard

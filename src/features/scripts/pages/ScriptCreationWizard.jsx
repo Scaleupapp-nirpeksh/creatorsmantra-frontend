@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
+import { useState, useEffect, useCallback, useRef } from 'react'
+import {
   ArrowLeft,
   ArrowRight,
   FileText,
@@ -20,127 +20,187 @@ import {
   AlertTriangle,
   Loader2,
   XCircle,
-  HardDrive,
-  Database,
-  Mic
-} from 'lucide-react';
+  Mic,
+} from 'lucide-react'
+import { useScriptsStore } from '../../../store'
 
 const ScriptCreationWizard = () => {
   // Mock navigation functions since we can't import react-router-dom
   const navigate = (path) => {
-    console.log('Navigate to:', path);
+    console.log('Navigate to:', path)
     // In real app this would use useNavigate from react-router-dom
-  };
+  }
 
   const navigateBack = () => {
-    console.log('Navigate back to scripts');
+    console.log('Navigate back to scripts')
     // In real app: navigate('/scripts');
-  };
+  }
 
   // Mock store functions
-  const createTextScript = async (data) => {
-    console.log('Creating text script:', data);
-    return { success: true, script: { id: 'mock-id' } };
-  };
+  // const createTextScript = async (data) => {
+  //   console.log('Creating text script:', data)
+  //   return { success: true, script: { id: 'mock-id' } }
+  // }
+  const { createTextScript } = useScriptsStore((state) => ({
+    createTextScript: state.createTextScript,
+  }))
 
   const createFileScript = async (data, file) => {
-    console.log('Creating file script:', data, file);
-    return { success: true, script: { id: 'mock-id' } };
-  };
+    console.log('Creating file script:', data, file)
+    return { success: true, script: { id: 'mock-id' } }
+  }
 
-  const fetchScriptMetadata = async () => console.log('Fetching metadata');
-  const fetchAvailableDeals = async () => console.log('Fetching deals');
+  const fetchScriptMetadata = async () => console.log('Fetching metadata')
+  const fetchAvailableDeals = async () => console.log('Fetching deals')
 
   // Mock toast function
   const toast = {
     success: (message) => console.log('Success:', message),
     error: (message) => console.log('Error:', message),
-    warning: (message) => console.log('Warning:', message)
-  };
+    warning: (message) => console.log('Warning:', message),
+  }
 
   // Mock store state
-  const isCreating = false;
-  const isUploading = false;
-  const uploadProgress = 0;
-  const scriptMetadata = null;
-  const availableDeals = [];
+  const isCreating = false
+  const isUploading = false
+  const uploadProgress = 0
+  const scriptMetadata = null
+  const availableDeals = []
 
   // Wizard state
-  const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 4;
+  const [currentStep, setCurrentStep] = useState(1)
+  const totalSteps = 4
 
   // Upload limits state
   const [uploadLimits, setUploadLimits] = useState({
     maxFileSize: 25 * 1024 * 1024, // 25MB
-    allowedFileTypes: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'],
+    allowedFileTypes: [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+    ],
     maxConcurrentUploads: 1,
-    maxFilesPerScript: 1
-  });
-  const [isLoadingLimits, setIsLoadingLimits] = useState(false);
+    maxFilesPerScript: 1,
+  })
+  // const [isLoadingLimits, setIsLoadingLimits] = useState(false)
 
   // Generation status tracking
-  const [generationStatus, setGenerationStatus] = useState(null);
-  const [isPollingStatus, setIsPollingStatus] = useState(false);
-  const [createdScriptId, setCreatedScriptId] = useState(null);
-  const pollingIntervalRef = useRef(null);
+  const [generationStatus, setGenerationStatus] = useState(null)
+  const [isPollingStatus, setIsPollingStatus] = useState(false)
+  const [createdScriptId, setCreatedScriptId] = useState(null)
+  const pollingIntervalRef = useRef(null)
 
   // Storage usage state
   const [storageUsage, setStorageUsage] = useState({
-    used: 15 * 1024 * 1024,  // 15MB used
+    used: 15 * 1024 * 1024, // 15MB used
     total: 100 * 1024 * 1024, // 100MB total
-    percentage: 15
-  });
+    percentage: 15,
+  })
 
   // Enhanced validation state
   const [fileValidation, setFileValidation] = useState({
     isValid: true,
     message: '',
-    type: 'info'
-  });
+    type: 'info',
+  })
 
   // Form data - removed video-related fields
   const [formData, setFormData] = useState({
     // Step 1: Input Method
     inputMethod: 'text_brief',
-    
+
     // Step 2: Content Input
     title: '',
     briefText: '',
     uploadedFile: null,
-    
+
     // Step 3: Configuration
     platform: 'instagram_reel',
     granularityLevel: 'detailed',
     targetDuration: '60_seconds',
     customDuration: '',
-    
+
     // Step 4: Additional Settings
     creatorStyleNotes: '',
     tags: [],
     notes: '',
-    dealId: ''
-  });
+    dealId: '',
+  })
 
   // Validation state
-  const [errors, setErrors] = useState({});
-  const [showLimitsInfo, setShowLimitsInfo] = useState(false);
+  const [errors, setErrors] = useState({})
+  const [showLimitsInfo, setShowLimitsInfo] = useState(false)
 
   // File handling
-  const [filePreview, setFilePreview] = useState(null);
+  const [filePreview, setFilePreview] = useState(null)
 
   // Platform options
   const platformOptions = [
-    { value: 'instagram_reel', label: 'Instagram Reel', duration: '15-90s', ratio: '9:16', icon: Hash },
-    { value: 'instagram_post', label: 'Instagram Post', duration: 'Static', ratio: '1:1', icon: Hash },
-    { value: 'instagram_story', label: 'Instagram Story', duration: '15s', ratio: '9:16', icon: Hash },
-    { value: 'youtube_video', label: 'YouTube Video', duration: 'Up to 60min', ratio: '16:9', icon: Play },
-    { value: 'youtube_shorts', label: 'YouTube Shorts', duration: '60s', ratio: '9:16', icon: Play },
-    { value: 'linkedin_video', label: 'LinkedIn Video', duration: 'Up to 10min', ratio: '16:9', icon: Link2 },
-    { value: 'linkedin_post', label: 'LinkedIn Post', duration: 'Static', ratio: '1:1', icon: Link2 },
-    { value: 'twitter_post', label: 'Twitter Post', duration: 'Static/Video', ratio: 'Various', icon: Hash },
-    { value: 'facebook_reel', label: 'Facebook Reel', duration: '15-90s', ratio: '9:16', icon: Hash },
-    { value: 'tiktok_video', label: 'TikTok Video', duration: '15-180s', ratio: '9:16', icon: Mic }
-  ];
+    {
+      value: 'instagram_reel',
+      label: 'Instagram Reel',
+      duration: '15-90s',
+      ratio: '9:16',
+      icon: Hash,
+    },
+    {
+      value: 'instagram_post',
+      label: 'Instagram Post',
+      duration: 'Static',
+      ratio: '1:1',
+      icon: Hash,
+    },
+    {
+      value: 'instagram_story',
+      label: 'Instagram Story',
+      duration: '15s',
+      ratio: '9:16',
+      icon: Hash,
+    },
+    {
+      value: 'youtube_video',
+      label: 'YouTube Video',
+      duration: 'Up to 60min',
+      ratio: '16:9',
+      icon: Play,
+    },
+    {
+      value: 'youtube_shorts',
+      label: 'YouTube Shorts',
+      duration: '60s',
+      ratio: '9:16',
+      icon: Play,
+    },
+    {
+      value: 'linkedin_video',
+      label: 'LinkedIn Video',
+      duration: 'Up to 10min',
+      ratio: '16:9',
+      icon: Link2,
+    },
+    {
+      value: 'linkedin_post',
+      label: 'LinkedIn Post',
+      duration: 'Static',
+      ratio: '1:1',
+      icon: Link2,
+    },
+    {
+      value: 'twitter_post',
+      label: 'Twitter Post',
+      duration: 'Static/Video',
+      ratio: 'Various',
+      icon: Hash,
+    },
+    {
+      value: 'facebook_reel',
+      label: 'Facebook Reel',
+      duration: '15-90s',
+      ratio: '9:16',
+      icon: Hash,
+    },
+    { value: 'tiktok_video', label: 'TikTok Video', duration: '15-180s', ratio: '9:16', icon: Mic },
+  ]
 
   const durationOptions = [
     { value: '15_seconds', label: '15 seconds' },
@@ -150,261 +210,287 @@ const ScriptCreationWizard = () => {
     { value: '3_minutes', label: '3 minutes' },
     { value: '5_minutes', label: '5 minutes' },
     { value: '10_minutes', label: '10 minutes' },
-    { value: 'custom', label: 'Custom Duration' }
-  ];
+    { value: 'custom', label: 'Custom Duration' },
+  ]
 
   const granularityOptions = [
     { value: 'basic', label: 'Basic', description: 'Main content flow and key points' },
-    { value: 'detailed', label: 'Detailed', description: 'Scene-by-scene with camera angles and visuals' },
-    { value: 'comprehensive', label: 'Comprehensive', description: 'Shot-by-shot with complete production details' }
-  ];
+    {
+      value: 'detailed',
+      label: 'Detailed',
+      description: 'Scene-by-scene with camera angles and visuals',
+    },
+    {
+      value: 'comprehensive',
+      label: 'Comprehensive',
+      description: 'Shot-by-shot with complete production details',
+    },
+  ]
 
   // Initialize on mount
   useEffect(() => {
     const initializeDashboard = async () => {
-      await Promise.all([
-        fetchScriptMetadata(),
-        fetchAvailableDeals()
-      ]);
-    };
-    
-    initializeDashboard();
-  }, []);
+      await Promise.all([fetchScriptMetadata(), fetchAvailableDeals()])
+    }
+
+    initializeDashboard()
+  }, [])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
+        clearInterval(pollingIntervalRef.current)
       }
-    };
-  }, []);
+    }
+  }, [])
 
   // Start polling for generation status
   const startGenerationStatusPolling = useCallback((scriptId) => {
-    setCreatedScriptId(scriptId);
-    setIsPollingStatus(true);
-    
+    setCreatedScriptId(scriptId)
+    setIsPollingStatus(true)
+
     // Mock polling - in real app this would call the API
     setTimeout(() => {
       setGenerationStatus({
         status: 'completed',
-        message: 'Script generated successfully!'
-      });
-      setIsPollingStatus(false);
-      toast.success('Script generated successfully!');
-    }, 3000);
-  }, []);
+        message: 'Script generated successfully!',
+      })
+      setIsPollingStatus(false)
+      toast.success('Script generated successfully!')
+    }, 3000)
+  }, [])
 
   // Validate file size
   const validateFileSize = (file) => {
-    if (!uploadLimits) return { isValid: true };
-    
-    const maxSize = uploadLimits.maxFileSize;
-    
+    if (!uploadLimits) return { isValid: true }
+
+    const maxSize = uploadLimits.maxFileSize
+
     if (file.size > maxSize) {
-      const maxSizeMB = (maxSize / (1024 * 1024)).toFixed(0);
+      const maxSizeMB = (maxSize / (1024 * 1024)).toFixed(0)
       return {
         isValid: false,
         message: `File size exceeds maximum limit of ${maxSizeMB}MB`,
-        type: 'error'
-      };
+        type: 'error',
+      }
     }
-    
+
     // Check if storage quota would be exceeded
     if (storageUsage.total > 0) {
-      const newUsage = storageUsage.used + file.size;
-      const newPercentage = (newUsage / storageUsage.total) * 100;
-      
+      const newUsage = storageUsage.used + file.size
+      const newPercentage = (newUsage / storageUsage.total) * 100
+
       if (newPercentage > 95) {
         return {
           isValid: false,
           message: 'This upload would exceed your storage quota',
-          type: 'error'
-        };
+          type: 'error',
+        }
       } else if (newPercentage > 80) {
         return {
           isValid: true,
           message: `Warning: You're using ${Math.round(newPercentage)}% of your storage`,
-          type: 'warning'
-        };
+          type: 'warning',
+        }
       }
     }
-    
-    return { isValid: true };
-  };
+
+    return { isValid: true }
+  }
 
   // Enhanced file upload handler
   const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+    const file = event.target.files[0]
+    if (!file) return
 
     // Validate file type
     const allowedTypes = uploadLimits?.allowedFileTypes || [
-      'application/pdf', 
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
-      'text/plain'
-    ];
-    
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+    ]
+
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Invalid file type. Please upload PDF, DOCX, or TXT files only');
-      return;
+      toast.error('Invalid file type. Please upload PDF, DOCX, or TXT files only')
+      return
     }
 
     // Validate file size
-    const validation = validateFileSize(file);
-    setFileValidation(validation);
-    
+    const validation = validateFileSize(file)
+    setFileValidation(validation)
+
     if (!validation.isValid) {
-      toast.error(validation.message);
-      return;
-    }
-    
-    if (validation.type === 'warning') {
-      toast.warning(validation.message);
+      toast.error(validation.message)
+      return
     }
 
-    setFormData(prev => ({ ...prev, uploadedFile: file }));
+    if (validation.type === 'warning') {
+      toast.warning(validation.message)
+    }
+
+    setFormData((prev) => ({ ...prev, uploadedFile: file }))
     setFilePreview({
       name: file.name,
       size: formatFileSize(file.size),
       type: file.type,
-      sizeBytes: file.size
-    });
-  };
+      sizeBytes: file.size,
+    })
+  }
 
   // Format file size
   const formatFileSize = (bytes) => {
-    if (!bytes) return '0 MB';
-    const mb = bytes / (1024 * 1024);
+    if (!bytes) return '0 MB'
+    const mb = bytes / (1024 * 1024)
     if (mb < 1) {
-      const kb = bytes / 1024;
-      return `${kb.toFixed(1)} KB`;
+      const kb = bytes / 1024
+      return `${kb.toFixed(1)} KB`
     }
-    return `${mb.toFixed(2)} MB`;
-  };
+    return `${mb.toFixed(2)} MB`
+  }
 
   // Calculate upload percentage for progress display
   const calculateUploadPercentage = (fileSize) => {
-    if (!uploadLimits) return 0;
-    const maxSize = uploadLimits.maxFileSize || (25 * 1024 * 1024);
-    return Math.min(100, Math.round((fileSize / maxSize) * 100));
-  };
+    if (!uploadLimits) return 0
+    const maxSize = uploadLimits.maxFileSize || 25 * 1024 * 1024
+    return Math.min(100, Math.round((fileSize / maxSize) * 100))
+  }
 
   // Handle input changes
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
+    setFormData((prev) => ({ ...prev, [field]: value }))
+
     // Clear field-specific errors
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: '' }))
     }
-  };
+  }
 
   // Remove uploaded file
   const removeFile = () => {
-    setFormData(prev => ({ ...prev, uploadedFile: null }));
-    setFilePreview(null);
-    setFileValidation({ isValid: true, message: '', type: 'info' });
-  };
+    setFormData((prev) => ({ ...prev, uploadedFile: null }))
+    setFilePreview(null)
+    setFileValidation({ isValid: true, message: '', type: 'info' })
+  }
 
   // Add tag
   const addTag = (tag) => {
     if (tag && !formData.tags.includes(tag) && formData.tags.length < 10) {
-      handleInputChange('tags', [...formData.tags, tag]);
+      handleInputChange('tags', [...formData.tags, tag])
     } else if (formData.tags.length >= 10) {
-      toast.warning('Maximum 10 tags allowed');
+      toast.warning('Maximum 10 tags allowed')
     }
-  };
+  }
 
   // Remove tag
   const removeTag = (tagIndex) => {
-    const newTags = formData.tags.filter((_, index) => index !== tagIndex);
-    handleInputChange('tags', newTags);
-  };
+    const newTags = formData.tags.filter((_, index) => index !== tagIndex)
+    handleInputChange('tags', newTags)
+  }
 
   // Validate step
   const validateStep = (step) => {
-    const newErrors = {};
+    const newErrors = {}
 
     switch (step) {
       case 1:
         // Input method validation is just selection
-        break;
-        
+        break
+
       case 2:
         if (!formData.title?.trim()) {
-          newErrors.title = 'Script title is required';
+          newErrors.title = 'Script title is required'
         } else if (formData.title.length > 100) {
-          newErrors.title = 'Title must be less than 100 characters';
+          newErrors.title = 'Title must be less than 100 characters'
         }
-        
+
         if (formData.inputMethod === 'text_brief' && !formData.briefText?.trim()) {
-          newErrors.briefText = 'Brief content is required';
+          newErrors.briefText = 'Brief content is required'
         } else if (formData.inputMethod === 'text_brief' && formData.briefText.length < 50) {
-          newErrors.briefText = 'Brief should be at least 50 characters for better AI generation';
+          newErrors.briefText = 'Brief should be at least 50 characters for better AI generation'
         }
-        
+
         if (formData.inputMethod === 'file_upload' && !formData.uploadedFile) {
-          newErrors.uploadedFile = 'Please upload a file';
+          newErrors.uploadedFile = 'Please upload a file'
         }
-        break;
-        
+        break
+
       case 3:
         if (!formData.platform) {
-          newErrors.platform = 'Platform is required';
+          newErrors.platform = 'Platform is required'
         }
         if (formData.targetDuration === 'custom') {
           if (!formData.customDuration) {
-            newErrors.customDuration = 'Custom duration is required';
+            newErrors.customDuration = 'Custom duration is required'
           } else {
-            const duration = parseInt(formData.customDuration);
+            const duration = parseInt(formData.customDuration)
             if (isNaN(duration) || duration < 5 || duration > 3600) {
-              newErrors.customDuration = 'Duration must be between 5 and 3600 seconds';
+              newErrors.customDuration = 'Duration must be between 5 and 3600 seconds'
             }
           }
         }
-        break;
-        
+        break
+
       case 4:
         // Optional fields, but validate if provided
         if (formData.creatorStyleNotes && formData.creatorStyleNotes.length > 500) {
-          newErrors.creatorStyleNotes = 'Style notes must be less than 500 characters';
+          newErrors.creatorStyleNotes = 'Style notes must be less than 500 characters'
         }
         if (formData.notes && formData.notes.length > 1000) {
-          newErrors.notes = 'Notes must be less than 1000 characters';
+          newErrors.notes = 'Notes must be less than 1000 characters'
         }
-        break;
+        break
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   // Navigate between steps
   const nextStep = () => {
     if (validateStep(currentStep)) {
       if (currentStep < totalSteps) {
-        setCurrentStep(currentStep + 1);
-        window.scrollTo(0, 0);
+        setCurrentStep(currentStep + 1)
+        window.scrollTo(0, 0)
       }
     }
-  };
+  }
 
   const prevStep = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-      window.scrollTo(0, 0);
+      setCurrentStep(currentStep - 1)
+      window.scrollTo(0, 0)
     }
-  };
+  }
+
+  // TEMP: For testing
+  // useEffect(() => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     inputMethod: 'text_brief',
+  //     title: 'CORS in Depth',
+  //     briefText:
+  //       'Campaign: \nEducate developers on secure cross-domain requests. Audience: Frontend and backend engineers. \nKey Messages: \nCORS extends the Same-Origin Policy, manages simple, preflight, and credentialed requests, and uses headers like Access-Control-Allow-Origin to control access. \nProduct Details: \nBrowser-enforced mechanism for safe resource sharing across domains. \nOutcome: \nDevelopers build secure, API-friendly apps while avoiding common CORS pitfalls.',
+  //     uploadedFile: null,
+  //     platform: 'linkedin_post',
+  //     granularityLevel: 'detailed',
+  //     targetDuration: '3_minutes',
+  //     customDuration: '',
+  //     creatorStyleNotes:
+  //       'Personal Style & Tone: Clear, concise, and professional with a friendly touch; practical and actionable insights; prefers structured content with signature elements like bullet points, short paragraphs, and emphasis on key terms; avoids jargon unless necessary; focuses on clarity, relevance, and engagement.',
+  //     tags: ['CORS', 'Javascript', 'API'],
+  //     notes: 'Keep it simple a 5 year old should understand this.',
+  //     dealId: '',
+  //   }))
+  // }, [])
 
   // Handle submit
   const handleSubmit = async () => {
-    if (!validateStep(currentStep)) return;
+    if (!validateStep(currentStep)) return
 
     try {
-      let result;
-      
+      let result
+
       const baseData = {
         title: formData.title,
         platform: formData.platform,
@@ -412,55 +498,57 @@ const ScriptCreationWizard = () => {
         targetDuration: formData.targetDuration,
         creatorStyleNotes: formData.creatorStyleNotes,
         tags: formData.tags,
-        notes: formData.notes
-      };
+        notes: formData.notes,
+      }
 
       // Only include customDuration if targetDuration is 'custom' and value exists
       if (formData.targetDuration === 'custom' && formData.customDuration) {
-        baseData.customDuration = parseInt(formData.customDuration);
+        baseData.customDuration = parseInt(formData.customDuration)
       }
 
       // Only include dealId if it exists
       if (formData.dealId) {
-        baseData.dealId = formData.dealId;
+        baseData.dealId = formData.dealId
       }
 
       switch (formData.inputMethod) {
         case 'text_brief':
           result = await createTextScript({
             ...baseData,
-            briefText: formData.briefText
-          });
-          break;
-          
+            briefText: formData.briefText,
+          })
+          break
+
         case 'file_upload':
-          result = await createFileScript(baseData, formData.uploadedFile);
-          break;
+          result = await createFileScript(baseData, formData.uploadedFile)
+          break
       }
 
       if (result.success) {
-        toast.success('Script created successfully! AI generation started.');
-        
+        toast.success('Script created successfully! AI generation started.')
+
         // Start polling for generation status
-        const scriptId = result.script.id || result.script._id;
-        startGenerationStatusPolling(scriptId);
-        
+        const scriptId = result.script.id || result.script._id
+        startGenerationStatusPolling(scriptId)
       } else {
-        toast.error(result.message || 'Failed to create script');
+        toast.error(result.message || 'Failed to create script')
       }
-      
     } catch (error) {
-      console.error('Script creation failed:', error);
-      toast.error('An error occurred while creating the script');
+      console.error('Script creation failed:', error)
+      toast.error('An error occurred while creating the script')
     }
-  };
+  }
 
   const renderStep1 = () => (
     <>
       <h2 className="step-title">Choose Input Method</h2>
-      
+
       {/* Upload Limits Info */}
-      {uploadLimits && (
+      {/* 
+        TEMP:
+        REASON: No API Built for this in backend
+      */}
+      {/* {uploadLimits && (
         <div className="upload-limits-bar">
           <div className="limits-header">
             <Shield size={14} />
@@ -479,20 +567,24 @@ const ScriptCreationWizard = () => {
                 <span>{storageUsage.percentage}%</span>
               </div>
               <div className="storage-progress">
-                <div 
+                <div
                   className="storage-fill"
                   style={{
                     width: `${storageUsage.percentage}%`,
-                    backgroundColor: storageUsage.percentage > 80 ? '#F59E0B' : 
-                                   storageUsage.percentage > 95 ? '#EF4444' : '#10B981'
+                    backgroundColor:
+                      storageUsage.percentage > 80
+                        ? '#F59E0B'
+                        : storageUsage.percentage > 95
+                          ? '#EF4444'
+                          : '#10B981',
                   }}
                 />
               </div>
             </div>
           )}
         </div>
-      )}
-      
+      )} */}
+
       <div className="input-method-grid">
         <div
           className={`input-method-card ${formData.inputMethod === 'text_brief' ? 'selected' : ''}`}
@@ -519,26 +611,22 @@ const ScriptCreationWizard = () => {
             Upload PDF, DOCX, or TXT files with your campaign details
           </p>
           {uploadLimits && (
-            <p className="file-limit-hint">
-              Max: {formatFileSize(uploadLimits.maxFileSize)}
-            </p>
+            <p className="file-limit-hint">Max: {formatFileSize(uploadLimits.maxFileSize)}</p>
           )}
         </div>
       </div>
     </>
-  );
+  )
 
   const renderStep2 = () => (
     <>
       <h2 className="step-title">Content Input</h2>
-      
+
       <div className="form-grid">
         <div className="form-group full-width">
           <label className="form-label">
             Script Title <span className="required">*</span>
-            <span className="character-count">
-              {formData.title.length}/100
-            </span>
+            <span className="character-count">{formData.title.length}/100</span>
           </label>
           <input
             type="text"
@@ -561,9 +649,7 @@ const ScriptCreationWizard = () => {
         <div className="form-group">
           <label className="form-label">
             Campaign Brief <span className="required">*</span>
-            <span className="character-count">
-              {formData.briefText.length} characters
-            </span>
+            <span className="character-count">{formData.briefText.length} characters</span>
           </label>
           <textarea
             value={formData.briefText}
@@ -585,32 +671,29 @@ const ScriptCreationWizard = () => {
           <label className="form-label">
             Upload Document <span className="required">*</span>
             {uploadLimits && (
-              <span className="file-limit">
-                Max: {formatFileSize(uploadLimits.maxFileSize)}
-              </span>
+              <span className="file-limit">Max: {formatFileSize(uploadLimits.maxFileSize)}</span>
             )}
           </label>
-          
+
           {!filePreview ? (
             <div
               className="file-upload-area"
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
-                e.preventDefault();
-                const files = e.dataTransfer.files;
+                e.preventDefault()
+                const files = e.dataTransfer.files
                 if (files[0]) {
-                  const event = { target: { files } };
-                  handleFileUpload(event);
+                  const event = { target: { files } }
+                  handleFileUpload(event)
                 }
               }}
               onClick={() => document.getElementById('file-input').click()}
             >
               <Upload size={32} className="upload-icon" />
-              <p className="upload-text">
-                Click to upload or drag and drop
-              </p>
+              <p className="upload-text">Click to upload or drag and drop</p>
               <p className="upload-hint">
-                PDF, DOCX, TXT (Max {uploadLimits ? formatFileSize(uploadLimits.maxFileSize) : '25MB'})
+                PDF, DOCX, TXT (Max{' '}
+                {uploadLimits ? formatFileSize(uploadLimits.maxFileSize) : '25MB'})
               </p>
               <input
                 id="file-input"
@@ -630,28 +713,25 @@ const ScriptCreationWizard = () => {
                     <div className="file-size">{filePreview.size}</div>
                   </div>
                 </div>
-                <button
-                  className="remove-file-btn"
-                  onClick={removeFile}
-                >
+                <button className="remove-file-btn" onClick={removeFile}>
                   <X size={16} />
                 </button>
               </div>
-              
+
               {fileValidation.type === 'warning' && (
                 <div className="warning-message">
                   <AlertTriangle size={12} />
                   {fileValidation.message}
                 </div>
               )}
-              
+
               {uploadLimits && filePreview.sizeBytes && (
                 <div className="upload-progress-info">
                   <div className="progress-label">
                     Upload size: {calculateUploadPercentage(filePreview.sizeBytes)}% of limit
                   </div>
                   <div className="progress-bar">
-                    <div 
+                    <div
                       className="progress-fill"
                       style={{ width: `${calculateUploadPercentage(filePreview.sizeBytes)}%` }}
                     />
@@ -660,7 +740,7 @@ const ScriptCreationWizard = () => {
               )}
             </div>
           )}
-          
+
           {errors.uploadedFile && (
             <span className="error-message">
               <AlertCircle size={12} />
@@ -670,12 +750,12 @@ const ScriptCreationWizard = () => {
         </div>
       )}
     </>
-  );
+  )
 
   const renderStep3 = () => (
     <>
       <h2 className="step-title">Platform & Configuration</h2>
-      
+
       <div className="form-group">
         <label className="form-label">
           <Target size={16} />
@@ -683,7 +763,7 @@ const ScriptCreationWizard = () => {
         </label>
         <div className="platform-grid">
           {platformOptions.map((platform) => {
-            const IconComponent = platform.icon;
+            const IconComponent = platform.icon
             return (
               <div
                 key={platform.value}
@@ -698,7 +778,7 @@ const ScriptCreationWizard = () => {
                   {platform.duration} • {platform.ratio}
                 </div>
               </div>
-            );
+            )
           })}
         </div>
         {errors.platform && (
@@ -771,19 +851,17 @@ const ScriptCreationWizard = () => {
         )}
       </div>
     </>
-  );
+  )
 
   const renderStep4 = () => (
     <>
       <h2 className="step-title">Additional Settings</h2>
-      
+
       <div className="form-group">
         <label className="form-label">
           <Palette size={16} />
           Creator Style Notes
-          <span className="character-count">
-            {formData.creatorStyleNotes.length}/500
-          </span>
+          <span className="character-count">{formData.creatorStyleNotes.length}/500</span>
         </label>
         <textarea
           value={formData.creatorStyleNotes}
@@ -804,9 +882,7 @@ const ScriptCreationWizard = () => {
         <label className="form-label">
           <Hash size={16} />
           Tags
-          <span className="character-count">
-            {formData.tags.length}/10
-          </span>
+          <span className="character-count">{formData.tags.length}/10</span>
         </label>
         <div className="tag-input">
           <input
@@ -815,11 +891,11 @@ const ScriptCreationWizard = () => {
             className="form-input"
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
-                e.preventDefault();
-                const value = e.target.value.trim();
+                e.preventDefault()
+                const value = e.target.value.trim()
                 if (value) {
-                  addTag(value);
-                  e.target.value = '';
+                  addTag(value)
+                  e.target.value = ''
                 }
               }
             }}
@@ -830,11 +906,7 @@ const ScriptCreationWizard = () => {
             {formData.tags.map((tag, index) => (
               <span key={index} className="tag">
                 {tag}
-                <X
-                  size={14}
-                  className="tag-remove"
-                  onClick={() => removeTag(index)}
-                />
+                <X size={14} className="tag-remove" onClick={() => removeTag(index)} />
               </span>
             ))}
           </div>
@@ -865,9 +937,7 @@ const ScriptCreationWizard = () => {
       <div className="form-group">
         <label className="form-label">
           Internal Notes
-          <span className="character-count">
-            {formData.notes.length}/1000
-          </span>
+          <span className="character-count">{formData.notes.length}/1000</span>
         </label>
         <textarea
           value={formData.notes}
@@ -884,25 +954,25 @@ const ScriptCreationWizard = () => {
         )}
       </div>
     </>
-  );
+  )
 
   // Render generation status popup
   const renderGenerationStatus = () => {
-    if (!generationStatus || !isPollingStatus) return null;
-    
+    if (!generationStatus || !isPollingStatus) return null
+
     const getStatusIcon = () => {
       switch (generationStatus.status) {
         case 'processing':
-          return <Loader2 size={20} className="spin" style={{ color: '#F59E0B' }} />;
+          return <Loader2 size={20} className="spin" style={{ color: '#F59E0B' }} />
         case 'completed':
-          return <CheckCircle size={20} style={{ color: '#10B981' }} />;
+          return <CheckCircle size={20} style={{ color: '#10B981' }} />
         case 'failed':
-          return <XCircle size={20} style={{ color: '#EF4444' }} />;
+          return <XCircle size={20} style={{ color: '#EF4444' }} />
         default:
-          return <Clock size={20} style={{ color: '#64748B' }} />;
+          return <Clock size={20} style={{ color: '#64748B' }} />
       }
-    };
-    
+    }
+
     return (
       <div className="generation-status">
         <div className="status-header">
@@ -914,13 +984,13 @@ const ScriptCreationWizard = () => {
             </div>
           </div>
         </div>
-        
+
         {generationStatus.status === 'processing' && (
           <div className="status-progress">
             <div className="status-progress-fill" />
           </div>
         )}
-        
+
         <div className="status-actions">
           {generationStatus.status === 'completed' && (
             <button
@@ -930,22 +1000,19 @@ const ScriptCreationWizard = () => {
               View Script
             </button>
           )}
-          
+
           {generationStatus.status === 'failed' && (
-            <button
-              className="status-btn error"
-              onClick={() => handleSubmit()}
-            >
+            <button className="status-btn error" onClick={() => handleSubmit()}>
               Retry
             </button>
           )}
-          
+
           <button
             className="status-btn secondary"
             onClick={() => {
-              setIsPollingStatus(false);
+              setIsPollingStatus(false)
               if (pollingIntervalRef.current) {
-                clearInterval(pollingIntervalRef.current);
+                clearInterval(pollingIntervalRef.current)
               }
             }}
           >
@@ -953,32 +1020,26 @@ const ScriptCreationWizard = () => {
           </button>
         </div>
       </div>
-    );
-  };
+    )
+  }
 
   return (
     <div className="wizard-container">
       {/* Header */}
       <div className="wizard-header">
-        <button
-          className="back-button"
-          onClick={navigateBack}
-        >
+        <button className="back-button" onClick={navigateBack}>
           <ArrowLeft size={18} />
           Back to Scripts
         </button>
-        
+
         <h1 className="wizard-title">Create AI Script</h1>
-        
+
         <div className="limits-info">
-          <button
-            className="limits-button"
-            onClick={() => setShowLimitsInfo(!showLimitsInfo)}
-          >
+          <button className="limits-button" onClick={() => setShowLimitsInfo(!showLimitsInfo)}>
             <Info size={16} />
             Limits
           </button>
-          
+
           {showLimitsInfo && uploadLimits && (
             <div className="limits-tooltip">
               <div className="tooltip-title">Upload Limits</div>
@@ -992,20 +1053,26 @@ const ScriptCreationWizard = () => {
                   <span>{uploadLimits.maxConcurrentUploads} file</span>
                 </div>
               </div>
-              
+
               {storageUsage.total > 0 && (
                 <div className="storage-section">
                   <div className="storage-header">
                     <span>Storage</span>
-                    <span>{formatFileSize(storageUsage.used)} / {formatFileSize(storageUsage.total)}</span>
+                    <span>
+                      {formatFileSize(storageUsage.used)} / {formatFileSize(storageUsage.total)}
+                    </span>
                   </div>
                   <div className="storage-progress">
-                    <div 
+                    <div
                       className="storage-fill"
                       style={{
                         width: `${storageUsage.percentage}%`,
-                        backgroundColor: storageUsage.percentage > 80 ? '#F59E0B' : 
-                                       storageUsage.percentage > 95 ? '#EF4444' : '#10B981'
+                        backgroundColor:
+                          storageUsage.percentage > 80
+                            ? '#F59E0B'
+                            : storageUsage.percentage > 95
+                              ? '#EF4444'
+                              : '#10B981',
                       }}
                     />
                   </div>
@@ -1019,23 +1086,25 @@ const ScriptCreationWizard = () => {
       {/* Progress Bar */}
       <div className="progress-container">
         <div className="progress-line"></div>
-        <div 
+        <div
           className="progress-line-filled"
           style={{ width: `${((currentStep - 1) / (totalSteps - 1)) * 80}%` }}
         />
-        
+
         {['Input', 'Content', 'Config', 'Settings'].map((label, index) => {
-          const stepNumber = index + 1;
+          const stepNumber = index + 1
           return (
             <div key={stepNumber} className="progress-step">
-              <div className={`progress-circle ${
-                currentStep >= stepNumber ? 'active' : ''
-              } ${currentStep > stepNumber ? 'completed' : ''}`}>
+              <div
+                className={`progress-circle ${
+                  currentStep >= stepNumber ? 'active' : ''
+                } ${currentStep > stepNumber ? 'completed' : ''}`}
+              >
                 {currentStep > stepNumber ? <CheckCircle size={18} /> : stepNumber}
               </div>
               <span className="progress-label">{label}</span>
             </div>
-          );
+          )
         })}
       </div>
 
@@ -1051,7 +1120,9 @@ const ScriptCreationWizard = () => {
           <div className="progress-indicator">
             <div className="progress-content">
               <Wand2 size={16} />
-              {isUploading ? `Uploading... ${uploadProgress}%` : 'Creating script and starting AI generation...'}
+              {isUploading
+                ? `Uploading... ${uploadProgress}%`
+                : 'Creating script and starting AI generation...'}
             </div>
           </div>
         )}
@@ -1070,7 +1141,7 @@ const ScriptCreationWizard = () => {
               </button>
             )}
           </div>
-          
+
           <div>
             {currentStep < totalSteps ? (
               <button
@@ -1094,60 +1165,69 @@ const ScriptCreationWizard = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Generation Status Popup */}
       {renderGenerationStatus()}
-      
+
       <style jsx>{`
         /* Design System Variables */
         .wizard-container {
-          --primary-50: #F5F3FF;
-          --primary-100: #EDE9FE;
-          --primary-500: #8B5CF6;
-          --primary-600: #7C3AED;
-          --primary-700: #6D28D9;
-          
-          --secondary-500: #EC4899;
-          --accent-500: #3B82F6;
-          
-          --neutral-0: #FFFFFF;
-          --neutral-50: #FAFAFA;
-          --neutral-100: #F4F4F5;
-          --neutral-200: #E4E4E7;
-          --neutral-300: #D4D4D8;
-          --neutral-400: #A1A1AA;
-          --neutral-500: #71717A;
-          --neutral-600: #52525B;
-          --neutral-700: #3F3F46;
-          --neutral-800: #27272A;
-          --neutral-900: #18181B;
-          
-          --success: #10B981;
-          --warning: #F59E0B;
-          --error: #EF4444;
-          --info: #3B82F6;
-          
-          --gradient-primary: linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #3B82F6 100%);
-          --gradient-mesh: radial-gradient(at 40% 20%, hsla(280, 100%, 74%, 0.1) 0px, transparent 50%),
-                           radial-gradient(at 80% 0%, hsla(330, 100%, 71%, 0.05) 0px, transparent 50%),
-                           radial-gradient(at 0% 50%, hsla(217, 100%, 62%, 0.05) 0px, transparent 50%);
-          
+          --primary-50: #f5f3ff;
+          --primary-100: #ede9fe;
+          --primary-500: #8b5cf6;
+          --primary-600: #7c3aed;
+          --primary-700: #6d28d9;
+
+          --secondary-500: #ec4899;
+          --accent-500: #3b82f6;
+
+          --neutral-0: #ffffff;
+          --neutral-50: #fafafa;
+          --neutral-100: #f4f4f5;
+          --neutral-200: #e4e4e7;
+          --neutral-300: #d4d4d8;
+          --neutral-400: #a1a1aa;
+          --neutral-500: #71717a;
+          --neutral-600: #52525b;
+          --neutral-700: #3f3f46;
+          --neutral-800: #27272a;
+          --neutral-900: #18181b;
+
+          --success: #10b981;
+          --warning: #f59e0b;
+          --error: #ef4444;
+          --info: #3b82f6;
+
+          --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #3b82f6 100%);
+          --gradient-mesh:
+            radial-gradient(at 40% 20%, hsla(280, 100%, 74%, 0.1) 0px, transparent 50%),
+            radial-gradient(at 80% 0%, hsla(330, 100%, 71%, 0.05) 0px, transparent 50%),
+            radial-gradient(at 0% 50%, hsla(217, 100%, 62%, 0.05) 0px, transparent 50%);
+
           --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
           --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
           --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
           --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
           --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-          
+
           --radius-sm: 0.375rem;
           --radius-md: 0.5rem;
           --radius-lg: 0.75rem;
           --radius-xl: 1rem;
-          
+
           --ease-out: cubic-bezier(0, 0, 0.2, 1);
-          
+
           min-height: 100vh;
-          background: var(--gradient-mesh), linear-gradient(135deg, var(--neutral-50) 0%, var(--neutral-100) 100%);
-          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background:
+            var(--gradient-mesh),
+            linear-gradient(135deg, var(--neutral-50) 0%, var(--neutral-100) 100%);
+          font-family:
+            'Plus Jakarta Sans',
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            Roboto,
+            sans-serif;
           padding: 2rem;
           color: var(--neutral-900);
         }
@@ -2013,14 +2093,24 @@ const ScriptCreationWizard = () => {
         }
 
         @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
         }
 
         @keyframes progress {
-          0% { width: 0%; }
-          50% { width: 70%; }
-          100% { width: 100%; }
+          0% {
+            width: 0%;
+          }
+          50% {
+            width: 70%;
+          }
+          100% {
+            width: 100%;
+          }
         }
 
         /* Responsive Design */
@@ -2062,7 +2152,7 @@ const ScriptCreationWizard = () => {
         }
       `}</style>
     </div>
-  );
-};
+  )
+}
 
-export default ScriptCreationWizard;
+export default ScriptCreationWizard

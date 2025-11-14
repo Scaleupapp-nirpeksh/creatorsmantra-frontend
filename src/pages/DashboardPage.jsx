@@ -1,21 +1,20 @@
 // src/pages/DashboardPage.jsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useEffect, useMemo } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import {
   DollarSign,
   Briefcase,
   FileText,
   ArrowUpRight,
-  RefreshCw,
   ChevronRight,
   Zap,
-  Download,
   MessageSquare,
   Brain,
-  BarChart3,
   ClipboardList, // Added Icon for Rate Cards
-} from 'lucide-react';
+  Newspaper,
+  PercentCircle,
+} from 'lucide-react'
 import {
   Line,
   AreaChart,
@@ -30,210 +29,54 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from 'recharts';
-import useAuthStore from '../store/authStore';
-import useDataStore from '../store/dataStore';
-import useUIStore from '../store/uiStore';
-import useScriptsStore from '../store/scriptsStore';
-import useRateCardStore from '../store/ratecardStore'; // Import the new store
-import toast from 'react-hot-toast';
+} from 'recharts'
+import useAuthStore from '../store/authStore'
+import useUIStore from '../store/uiStore'
+
+// Styles
+import '../styles/animateSpin.css'
+import { DashboardConstants } from '../utils/constants'
+import { useDashboardStore } from '../store'
+
+// Component
+import { Loading } from '../components/index'
+import { formatCurrency } from '../utils/helpers'
+import { useState } from 'react'
 
 const DashboardPage = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   // Get data from stores with safe defaults
-  const user = useAuthStore((state) => state.user) || {};
-  const subscription = useAuthStore((state) => state.subscription) || { tier: 'starter' };
-
-  // Data store - with safe access
-  const fetchDashboardData =
-    useDataStore((state) => state.fetchAnalyticsDashboard) || (() => Promise.resolve());
-  const dashboardData = useDataStore((state) => state.analytics?.dashboard) || {};
-  const isDataLoading = useDataStore((state) => state.analytics?.isLoading) || false;
-  const refreshData = useDataStore((state) => state.refreshAllData) || (() => Promise.resolve());
-
-  // Scripts store
-  const { dashboardStats: scriptsStats } = useScriptsStore();
-
-  // Rate Card store
-  const fetchRateCards = useRateCardStore((state) => state.fetchRateCards);
-  const rateCards = useRateCardStore((state) => state.rateCards) || [];
+  const user = useAuthStore((state) => state.user) || {}
+  const subscription = useAuthStore((state) => state.subscription)
+  const {
+    fetchDashboardAnalytics,
+    stats: Analytics,
+    dealPipelineStats,
+    revenueData,
+    recentActivities,
+    upcomingTasks,
+    isLoading,
+  } = useDashboardStore((state) => ({
+    fetchDashboardAnalytics: state.fetchDashboardAnalytics,
+    stats: state.stats,
+    dealPipelineStats: state.dealPipelineStats,
+    revenueData: state.revenueData,
+    recentActivities: state.recentActivities,
+    upcomingTasks: state.upcomingTasks,
+    isLoading: state.isLoading,
+  }))
 
   // UI Store - with safe access
-  const viewport = useUIStore((state) => state.viewport) || { isMobile: false };
+  const viewport = useUIStore((state) => state.viewport) || { isMobile: false }
 
-  // State
-  const [timeRange, setTimeRange] = useState('month'); // week, month, quarter, year
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Fetch dashboard data on mount or when time range changes
-  useEffect(() => {
-    loadDashboardData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeRange]);
-
-  const loadDashboardData = async () => {
-    try {
-      if (fetchDashboardData) {
-        await fetchDashboardData(timeRange);
-      }
-      // Also fetch rate card data
-      if (fetchRateCards) {
-        await fetchRateCards();
-      }
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error);
-      // No toast on initial load
-    }
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      if (refreshData) {
-        await refreshData();
-      }
-      await loadDashboardData();
-      toast.success('Dashboard refreshed');
-    } catch (error) {
-      console.error('Refresh error:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  // Sample data structure for charts (to be replaced with real API data)
-  const revenueData = [
-    { month: 'Jan', revenue: 45000, deals: 3 },
-    { month: 'Feb', revenue: 52000, deals: 4 },
-    { month: 'Mar', revenue: 48000, deals: 3 },
-    { month: 'Apr', revenue: 61000, deals: 5 },
-    { month: 'May', revenue: 55000, deals: 4 },
-    { month: 'Jun', revenue: 67000, deals: 6 },
-  ];
-
-  const dealStageData = [
-    { name: 'Leads', value: 12, color: '#667eea' },
-    { name: 'Negotiation', value: 8, color: '#764ba2' },
-    { name: 'Contract', value: 5, color: '#f59e0b' },
-    { name: 'Ongoing', value: 3, color: '#10b981' },
-  ];
-
-  const platformData = [
-    { platform: 'Instagram', value: 60, color: '#E4405F' },
-    { platform: 'YouTube', value: 30, color: '#FF0000' },
-    { platform: 'Twitter', value: 10, color: '#1DA1F2' },
-  ];
-
-  // Calculate stats
-  const stats = {
-    totalRevenue: dashboardData?.totalRevenue || 325000,
-    revenueGrowth: dashboardData?.revenueGrowth || 12.5,
-    activeDeals: dashboardData?.activeDeals || 8,
-    dealsGrowth: dashboardData?.dealsGrowth || 25,
-    pendingInvoices: dashboardData?.pendingInvoices || 3,
-    invoiceAmount: dashboardData?.pendingAmount || 85000,
-    completionRate: dashboardData?.completionRate || 92,
-    avgDealValue: dashboardData?.avgDealValue || 40625,
-    totalScripts: scriptsStats?.totalScripts || 0,
-    scriptsGenerated: scriptsStats?.generatedScripts || 0,
-    // Add new rate card stats
-    activeRateCards: rateCards.filter((rc) => rc.status === 'active').length || 0,
-    totalRateCards: rateCards.length || 0,
-  };
-
-  // Recent activities
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'deal',
-      title: 'New deal with Nike India',
-      description: 'Instagram Reel + Story package',
-      time: '2 hours ago',
-      icon: Briefcase,
-      color: '#667eea',
-    },
-    {
-      id: 2,
-      type: 'invoice',
-      title: 'Invoice paid by Myntra',
-      description: '₹45,000 received',
-      time: '5 hours ago',
-      icon: DollarSign,
-      color: '#10b981',
-    },
-    {
-      id: 3,
-      type: 'script',
-      title: 'Script generated for Amazon',
-      description: 'AI generation completed',
-      time: '1 day ago',
-      icon: MessageSquare,
-      color: '#f59e0b',
-    },
-  ];
-
-  // Upcoming tasks
-  const upcomingTasks = [
-    {
-      id: 1,
-      title: 'Submit content to Flipkart',
-      dueDate: 'Today, 6:00 PM',
-      priority: 'high',
-      status: 'pending',
-    },
-    {
-      id: 2,
-      title: 'Review Zomato contract',
-      dueDate: 'Tomorrow',
-      priority: 'medium',
-      status: 'pending',
-    },
-    {
-      id: 3,
-      title: 'Send invoice to Swiggy',
-      dueDate: 'Dec 28',
-      priority: 'low',
-      status: 'pending',
-    },
-  ];
-
-  // Quick actions
-  const quickActions = [
-    {
-      id: 'new-deal',
-      label: 'New Deal',
-      icon: Briefcase,
-      color: '#667eea',
-      path: '/deals/create',
-    },
-    {
-      id: 'create-invoice',
-      label: 'Create Invoice',
-      icon: FileText,
-      color: '#10b981',
-      path: '/invoices/create',
-    },
-    {
-      id: 'create-script',
-      label: 'Create Script',
-      icon: MessageSquare,
-      color: '#f59e0b',
-      path: '/scripts/create',
-    },
-    {
-      id: 'view-analytics',
-      label: 'Analytics',
-      icon: BarChart3,
-      color: '#06b6d4',
-      path: '/performance',
-    },
-  ];
+  // Constants
+  const { quickActions } = DashboardConstants
 
   const styles = {
     container: {
       maxWidth: '1400px',
-      margin: '0 auto',
+      margin: '2rem',
     },
 
     header: {
@@ -658,13 +501,104 @@ const DashboardPage = () => {
       transition: 'all 0.2s ease',
       boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
     },
-  };
+  }
+
+  useEffect(() => {
+    fetchDashboardAnalytics()
+  }, [])
+
+  const StatsData = useMemo(() => {
+    let Stats = []
+    if (Object.entries(Analytics).length == 0) return Stats
+
+    const { dealsReport, invoiceReport, scriptsReport, rateCardsReport, contractsReport } =
+      Analytics
+
+    Stats = [
+      {
+        label: 'Total Revenue',
+        value: `₹ ${(dealsReport?.totalRevenue / 100000).toFixed(1)}L`,
+        change: `${formatCurrency(dealsReport?.avgDealValue?.toFixed(0) ?? 0)} Avg. Deal Value`,
+        changeIcon: <ArrowUpRight size={16} />,
+        changeStyle: { ...styles.statChange, ...styles.statChangePositive },
+        icon: <DollarSign size={24} color="#10b981" />,
+        iconBg: 'rgba(16, 185, 129, 0.1)',
+        route: '/deals',
+      },
+      {
+        label: 'Active Deals',
+        value: dealsReport?.activeDeals,
+        change: `${(dealsReport?.conversionRate).toFixed(2)}% conversion rate`,
+        changeIcon: <ArrowUpRight size={16} />,
+        changeStyle: { ...styles.statChange, ...styles.statChangePositive },
+        icon: <Briefcase size={24} color="#667eea" />,
+        iconBg: 'rgba(102, 126, 234, 0.1)',
+        route: '/deals',
+      },
+      {
+        label: 'Pending Invoices',
+        value: invoiceReport?.pendingInvoices,
+        change: `${formatCurrency(invoiceReport?.pendingAmount)} pending amount`,
+        changeStyle: { ...styles.statChange, color: '#f59e0b' },
+        icon: <FileText size={24} color="#f59e0b" />,
+        iconBg: 'rgba(251, 191, 36, 0.1)',
+        route: '/invoices',
+      },
+      {
+        label: 'Active Rate Cards',
+        value: rateCardsReport.activeRateCards ?? 0,
+        change: (
+          <>
+            <FileText size={16} />
+            &nbsp;out of {rateCardsReport.totalRateCards} total
+          </>
+        ),
+        changeStyle: { ...styles.statChange, color: '#06b6d4' },
+        icon: <ClipboardList size={24} color="#06b6d4" />,
+        iconBg: 'rgba(6, 182, 212, 0.1)',
+        route: '/dashboard/rate-cards',
+      },
+      {
+        label: 'AI Scripts',
+        value: scriptsReport?.totalScripts,
+        change: (
+          <>
+            <Brain size={16} />
+            &nbsp;{scriptsReport?.generatedScripts} generated
+          </>
+        ),
+        changeStyle: { ...styles.statChange, ...styles.statChangePositive },
+        icon: <MessageSquare size={24} color="#8b5cf6" />,
+        iconBg: 'rgba(139, 92, 246, 0.1)',
+        route: '/scripts',
+      },
+      {
+        label: 'Contracts',
+        value: contractsReport?.totalContracts,
+        change: (
+          <>
+            <PercentCircle size={16} />
+            &nbsp; Avg. risk score {contractsReport?.averageRiskScore}%
+          </>
+        ),
+        changeStyle: { ...styles.statChange, ...styles.statChangePositive },
+        icon: <Newspaper size={24} color="#06b6d4" />,
+        iconBg: 'rgba(102, 126, 234, 0.1)',
+        route: '/contracts',
+      },
+    ]
+
+    return Stats
+  }, [Analytics])
+
+  if (isLoading) return <Loading page={'Dashboard'} />
 
   return (
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerTop}>
+          {/* Greeting Section */}
           <div style={styles.greeting}>
             <h1 style={styles.greetingTitle}>
               Welcome back, {user?.fullName?.split(' ')[0] || 'Creator'}!
@@ -672,36 +606,19 @@ const DashboardPage = () => {
             <p style={styles.greetingSubtitle}>Here's how your creator business is performing</p>
           </div>
 
-          <div style={styles.headerActions}>
-            <div style={styles.timeRangeSelector}>
-              {['week', 'month', 'quarter', 'year'].map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  style={{
-                    ...styles.timeRangeOption,
-                    ...(timeRange === range ? styles.timeRangeActive : {}),
-                  }}
-                >
-                  {range.charAt(0).toUpperCase() + range.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            <button onClick={handleRefresh} style={styles.refreshButton} disabled={refreshing}>
-              <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
-            </button>
-
-            <button style={styles.downloadButton}>
+          {/* Sort Actions */}
+          {/* TEMP */}
+          {/* <div style={styles.headerActions}>
+            <button style={styles.downloadButton} onClick={() => toast.success('TODO: Export CSV')}>
               <Download size={18} />
               Export
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
       {/* Subscription Banner (for free/trial users) */}
-      {subscription?.tier === 'starter' && (
+      {subscription === 'starter' && (
         <div style={styles.subscriptionBanner}>
           <div style={styles.subscriptionContent}>
             <div style={styles.subscriptionInfo}>
@@ -710,7 +627,7 @@ const DashboardPage = () => {
                 Upgrade to Pro for AI-powered insights, unlimited invoices, and priority support
               </div>
             </div>
-            <button onClick={() => navigate('/settings/subscription')} style={styles.upgradeButton}>
+            <button onClick={() => navigate('/profile/subscription')} style={styles.upgradeButton}>
               <Zap size={18} />
               Upgrade to Pro
             </button>
@@ -719,144 +636,32 @@ const DashboardPage = () => {
       )}
 
       {/* Stats Grid */}
+      {/* TODO: Convert this to map() */}
       <div style={styles.statsGrid}>
-        <motion.div
-          style={styles.statCard}
-          whileHover={styles.statCardHover}
-          onClick={() => navigate('/analytics/revenue')}
-        >
-          <div style={styles.statHeader}>
-            <div style={styles.statInfo}>
-              <div style={styles.statLabel}>Total Revenue</div>
-              <div style={styles.statValue}>₹{(stats.totalRevenue / 100000).toFixed(1)}L</div>
-              <div style={{ ...styles.statChange, ...styles.statChangePositive }}>
-                <ArrowUpRight size={16} />
-                +{stats.revenueGrowth}% from last month
+        {StatsData.map((item, i) => (
+          <motion.div
+            key={i}
+            style={styles.statCard}
+            whileHover={styles.statCardHover}
+            onClick={() => navigate(item.route)}
+          >
+            <div style={styles.statHeader}>
+              <div style={styles.statInfo}>
+                <div style={styles.statLabel}>{item.label}</div>
+                <div style={styles.statValue}>{item.value}</div>
+                <div style={item.changeStyle}>
+                  {item.changeIcon}
+                  {item.change}
+                </div>
               </div>
+              <div style={{ ...styles.statIcon, background: item.iconBg }}>{item.icon}</div>
             </div>
-            <div
-              style={{
-                ...styles.statIcon,
-                background: 'rgba(16, 185, 129, 0.1)',
-              }}
-            >
-              <DollarSign size={24} color="#10b981" />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          style={styles.statCard}
-          whileHover={styles.statCardHover}
-          onClick={() => navigate('/deals')}
-        >
-          <div style={styles.statHeader}>
-            <div style={styles.statInfo}>
-              <div style={styles.statLabel}>Active Deals</div>
-              <div style={styles.statValue}>{stats.activeDeals}</div>
-              <div style={{ ...styles.statChange, ...styles.statChangePositive }}>
-                <ArrowUpRight size={16} />
-                +{stats.dealsGrowth}% from last month
-              </div>
-            </div>
-            <div
-              style={{
-                ...styles.statIcon,
-                background: 'rgba(102, 126, 234, 0.1)',
-              }}
-            >
-              <Briefcase size={24} color="#667eea" />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          style={styles.statCard}
-          whileHover={styles.statCardHover}
-          onClick={() => navigate('/invoices')}
-        >
-          <div style={styles.statHeader}>
-            <div style={styles.statInfo}>
-              <div style={styles.statLabel}>Pending Invoices</div>
-              <div style={styles.statValue}>{stats.pendingInvoices}</div>
-              <div
-                style={{
-                  ...styles.statChange,
-                  color: '#f59e0b',
-                }}
-              >
-                ₹{(stats.invoiceAmount / 1000).toFixed(0)}K pending
-              </div>
-            </div>
-            <div
-              style={{
-                ...styles.statIcon,
-                background: 'rgba(251, 191, 36, 0.1)',
-              }}
-            >
-              <FileText size={24} color="#f59e0b" />
-            </div>
-          </div>
-        </motion.div>
-        
-        {/* ADDED: Rate Cards Stat Card */}
-        <motion.div
-          style={styles.statCard}
-          whileHover={styles.statCardHover}
-          onClick={() => navigate('/dashboard/rate-cards')}
-        >
-          <div style={styles.statHeader}>
-            <div style={styles.statInfo}>
-              <div style={styles.statLabel}>Active Rate Cards</div>
-              <div style={styles.statValue}>{stats.activeRateCards}</div>
-              <div
-                style={{
-                  ...styles.statChange,
-                  color: '#06b6d4',
-                }}
-              >
-                <FileText size={16} />
-                out of {stats.totalRateCards} total
-              </div>
-            </div>
-            <div
-              style={{
-                ...styles.statIcon,
-                background: 'rgba(6, 182, 212, 0.1)',
-              }}
-            >
-              <ClipboardList size={24} color="#06b6d4" />
-            </div>
-          </div>
-        </motion.div>
-        
-        <motion.div
-          style={styles.statCard}
-          whileHover={styles.statCardHover}
-          onClick={() => navigate('/scripts')}
-        >
-          <div style={styles.statHeader}>
-            <div style={styles.statInfo}>
-              <div style={styles.statLabel}>AI Scripts</div>
-              <div style={styles.statValue}>{stats.totalScripts}</div>
-              <div style={{ ...styles.statChange, ...styles.statChangePositive }}>
-                <Brain size={16} />
-                {stats.scriptsGenerated} generated
-              </div>
-            </div>
-            <div
-              style={{
-                ...styles.statIcon,
-                background: 'rgba(139, 92, 246, 0.1)',
-              }}
-            >
-              <MessageSquare size={24} color="#8b5cf6" />
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        ))}
       </div>
 
       {/* Main Grid */}
+
       <div style={styles.mainGrid}>
         {/* Left Column */}
         <div>
@@ -895,7 +700,7 @@ const DashboardPage = () => {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
                 <Area
                   type="monotone"
@@ -910,43 +715,45 @@ const DashboardPage = () => {
           </div>
 
           {/* Deal Pipeline */}
-          <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
-            <div style={styles.chartHeader}>
-              <h3 style={styles.chartTitle}>Deal Pipeline</h3>
-              <Link to="/deals" style={styles.viewAllLink}>
-                View all
-                <ChevronRight size={16} />
-              </Link>
+          {
+            <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
+              <div style={styles.chartHeader}>
+                <h3 style={styles.chartTitle}>Deal Pipeline</h3>
+                <Link to="/deals" style={styles.viewAllLink}>
+                  View all
+                  <ChevronRight size={16} />
+                </Link>
+              </div>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={dealPipelineStats}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                    {dealPipelineStats?.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={'#10b981'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={dealStageData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                  {dealStageData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          }
 
           {/* Recent Activities */}
           <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
             <div style={styles.sectionHeader}>
               <h3 style={styles.sectionTitle}>Recent Activities</h3>
-              <Link to="/activities" style={styles.viewAllLink}>
+              {/* <Link to="/activities" style={styles.viewAllLink}>
                 View all
                 <ChevronRight size={16} />
-              </Link>
+              </Link> */}
             </div>
             <div style={styles.activityList}>
-              {recentActivities.map((activity) => {
-                const Icon = activity.icon;
+              {recentActivities.map((activity, idx) => {
+                const Icon = activity.icon
                 return (
-                  <div key={activity.id} style={styles.activityItem}>
+                  <div key={idx + 1} style={styles.activityItem}>
                     <div
                       style={{
                         ...styles.activityIcon,
@@ -961,7 +768,7 @@ const DashboardPage = () => {
                     </div>
                     <div style={styles.activityTime}>{activity.time}</div>
                   </div>
-                );
+                )
               })}
             </div>
           </div>
@@ -974,7 +781,7 @@ const DashboardPage = () => {
             <h3 style={styles.sectionTitle}>Quick Actions</h3>
             <div style={styles.quickActionsGrid}>
               {quickActions.map((action) => {
-                const Icon = action.icon;
+                const Icon = action.icon
                 return (
                   <Link key={action.id} to={action.path} style={styles.quickActionCard}>
                     <div
@@ -987,13 +794,13 @@ const DashboardPage = () => {
                     </div>
                     <span style={styles.quickActionLabel}>{action.label}</span>
                   </Link>
-                );
+                )
               })}
             </div>
           </div>
 
           {/* Platform Distribution */}
-          <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
+          {/* <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
             <h3 style={styles.sectionTitle}>Platform Distribution</h3>
             <ResponsiveContainer width="100%" height={200}>
               <RePieChart>
@@ -1033,7 +840,7 @@ const DashboardPage = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Upcoming Tasks */}
           <div style={{ ...styles.chartCard, marginTop: '1.5rem' }}>
@@ -1045,9 +852,9 @@ const DashboardPage = () => {
               </Link>
             </div>
             <div style={styles.tasksList}>
-              {upcomingTasks.map((task) => (
-                <div key={task.id} style={styles.taskItem}>
-                  <div style={styles.taskCheckbox} />
+              {upcomingTasks?.map((task, idx) => (
+                <div key={idx + 1} style={styles.taskItem}>
+                  {/* <div style={styles.taskCheckbox} /> */}
                   <div style={styles.taskContent}>
                     <div style={styles.taskTitle}>{task.title}</div>
                     <div style={styles.taskDue}>{task.dueDate}</div>
@@ -1058,8 +865,8 @@ const DashboardPage = () => {
                       ...(task.priority === 'high'
                         ? styles.priorityHigh
                         : task.priority === 'medium'
-                        ? styles.priorityMedium
-                        : styles.priorityLow),
+                          ? styles.priorityMedium
+                          : styles.priorityLow),
                     }}
                   >
                     {task.priority}
@@ -1070,18 +877,8 @@ const DashboardPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Add spinning animation */}
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-      `}</style>
     </div>
-  );
-};
+  )
+}
 
-export default DashboardPage; 
+export default DashboardPage

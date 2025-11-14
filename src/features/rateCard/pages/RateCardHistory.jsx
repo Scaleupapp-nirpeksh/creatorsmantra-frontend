@@ -1,7 +1,7 @@
 /**
  * Rate Card History Page
  * Version control and change tracking for rate cards
- * 
+ *
  * Features:
  * - Complete version history timeline
  * - Detailed change tracking and diff views
@@ -11,13 +11,13 @@
  * - Pagination for large history sets
  * - Export version comparison reports
  * - Backup and recovery workflows
- * 
+ *
  * @filepath src/features/rateCard/pages/RateCardHistory.jsx
  * @author CreatorsMantra Frontend Team
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
+import React, { useState, useEffect, useMemo } from 'react'
+import {
   ArrowLeft,
   History,
   RotateCcw,
@@ -41,14 +41,13 @@ import {
   CheckCircle,
   Info,
   Download,
-  Compare,
   Loader2,
   RefreshCw,
   Filter,
   Search,
-  X
-} from 'lucide-react';
-import useRateCardStore from '../../../store/ratecardStore';
+  X,
+} from 'lucide-react'
+import useRateCardStore from '../../../store/ratecardStore'
 
 const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
   const {
@@ -58,188 +57,193 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
     error,
     fetchRateCard,
     fetchHistory,
-    clearCurrentRateCard
-  } = useRateCardStore();
+    clearCurrentRateCard,
+  } = useRateCardStore()
 
   // Local state
-  const [historyData, setHistoryData] = useState([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
-  const [historyError, setHistoryError] = useState(null);
-  const [expandedVersions, setExpandedVersions] = useState(new Set());
-  const [selectedVersions, setSelectedVersions] = useState([]);
-  const [showComparisonMode, setShowComparisonMode] = useState(false);
-  const [filterType, setFilterType] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(null);
+  const [historyData, setHistoryData] = useState([])
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true)
+  const [historyError, setHistoryError] = useState(null)
+  const [expandedVersions, setExpandedVersions] = useState(new Set())
+  const [selectedVersions, setSelectedVersions] = useState([])
+  const [showComparisonMode, setShowComparisonMode] = useState(false)
+  const [filterType, setFilterType] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
+  const [isRestoring, setIsRestoring] = useState(null)
 
   // Change type configuration
   const changeTypes = {
-    creation: { 
-      label: 'Created', 
-      icon: Plus, 
-      color: 'var(--color-success)', 
-      bgColor: 'var(--color-success-light)' 
+    creation: {
+      label: 'Created',
+      icon: Plus,
+      color: 'var(--color-success)',
+      bgColor: 'var(--color-success-light)',
     },
-    metrics_update: { 
-      label: 'Metrics Updated', 
-      icon: TrendingUp, 
-      color: 'var(--color-primary-600)', 
-      bgColor: 'var(--color-primary-100)' 
+    metrics_update: {
+      label: 'Metrics Updated',
+      icon: TrendingUp,
+      color: 'var(--color-primary-600)',
+      bgColor: 'var(--color-primary-100)',
     },
-    pricing_change: { 
-      label: 'Pricing Changed', 
-      icon: DollarSign, 
-      color: 'var(--color-warning-dark)', 
-      bgColor: 'var(--color-warning-light)' 
+    pricing_change: {
+      label: 'Pricing Changed',
+      icon: DollarSign,
+      color: 'var(--color-warning-dark)',
+      bgColor: 'var(--color-warning-light)',
     },
-    package_update: { 
-      label: 'Package Modified', 
-      icon: Package, 
-      color: 'var(--color-secondary-600)', 
-      bgColor: 'var(--color-secondary-100)' 
+    package_update: {
+      label: 'Package Modified',
+      icon: Package,
+      color: 'var(--color-secondary-600)',
+      bgColor: 'var(--color-secondary-100)',
     },
-    terms_update: { 
-      label: 'Terms Updated', 
-      icon: FileText, 
-      color: 'var(--color-accent-600)', 
-      bgColor: 'var(--color-accent-100)' 
+    terms_update: {
+      label: 'Terms Updated',
+      icon: FileText,
+      color: 'var(--color-accent-600)',
+      bgColor: 'var(--color-accent-100)',
     },
-    restore: { 
-      label: 'Restored', 
-      icon: RotateCcw, 
-      color: 'var(--color-info)', 
-      bgColor: 'var(--color-info-light)' 
+    restore: {
+      label: 'Restored',
+      icon: RotateCcw,
+      color: 'var(--color-info)',
+      bgColor: 'var(--color-info-light)',
     },
-    other: { 
-      label: 'Other Changes', 
-      icon: Edit3, 
-      color: 'var(--color-neutral-600)', 
-      bgColor: 'var(--color-neutral-100)' 
-    }
-  };
+    other: {
+      label: 'Other Changes',
+      icon: Edit3,
+      color: 'var(--color-neutral-600)',
+      bgColor: 'var(--color-neutral-100)',
+    },
+  }
 
   // Fetch history data
   const fetchHistoryData = async () => {
     try {
-      setIsLoadingHistory(true);
-      setHistoryError(null);
+      setIsLoadingHistory(true)
+      setHistoryError(null)
 
       const response = await fetch(`/api/ratecards/${rateCardId}/history`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // Adjust based on auth implementation
-        }
-      });
+          Authorization: `Bearer ${localStorage.getItem('token')}`, // Adjust based on auth implementation
+        },
+      })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch history data');
+        throw new Error('Failed to fetch history data')
       }
 
-      const data = await response.json();
-      
+      const data = await response.json()
+
       if (data.success) {
-        setHistoryData(data.data.history || []);
+        setHistoryData(data.data.history || [])
       } else {
-        throw new Error(data.message || 'Failed to load history');
+        throw new Error(data.message || 'Failed to load history')
       }
     } catch (err) {
-      setHistoryError(err.message || 'Failed to load history data');
+      setHistoryError(err.message || 'Failed to load history data')
       // Fallback to store history if available
       if (history && history.length > 0) {
-        setHistoryData(history);
-        setHistoryError(null);
+        setHistoryData(history)
+        setHistoryError(null)
       }
     } finally {
-      setIsLoadingHistory(false);
+      setIsLoadingHistory(false)
     }
-  };
+  }
 
   // Restore version function
   const handleRestoreVersion = async (historyId, version) => {
-    if (!window.confirm(`Are you sure you want to restore to version ${version}? This will create a new version with the restored data.`)) {
-      return;
+    if (
+      !window.confirm(
+        `Are you sure you want to restore to version ${version}? This will create a new version with the restored data.`
+      )
+    ) {
+      return
     }
 
     try {
-      setIsRestoring(historyId);
-      
+      setIsRestoring(historyId)
+
       const response = await fetch(`/api/ratecards/${rateCardId}/restore/${historyId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
 
       if (!response.ok) {
-        throw new Error('Failed to restore version');
+        throw new Error('Failed to restore version')
       }
 
-      const data = await response.json();
-      
+      const data = await response.json()
+
       if (data.success) {
         // Refresh both rate card and history
-        await fetchRateCard(rateCardId);
-        await fetchHistoryData();
-        
+        await fetchRateCard(rateCardId)
+        await fetchHistoryData()
+
         // Show success message
-        alert('Version restored successfully!');
+        alert('Version restored successfully!')
       } else {
-        throw new Error(data.message || 'Failed to restore version');
+        throw new Error(data.message || 'Failed to restore version')
       }
     } catch (err) {
-      alert(`Failed to restore version: ${err.message}`);
+      alert(`Failed to restore version: ${err.message}`)
     } finally {
-      setIsRestoring(null);
+      setIsRestoring(null)
     }
-  };
+  }
 
   // Load data on mount
   useEffect(() => {
     if (rateCardId) {
-      fetchRateCard(rateCardId);
-      fetchHistoryData();
+      fetchRateCard(rateCardId)
+      fetchHistoryData()
     }
-    
+
     return () => {
-      clearCurrentRateCard();
-    };
-  }, [rateCardId]);
+      clearCurrentRateCard()
+    }
+  }, [rateCardId])
 
   // Filter and search history
   const filteredHistory = useMemo(() => {
-    if (!historyData) return [];
-    
-    return historyData.filter(item => {
-      const matchesType = filterType === 'all' || item.changeType === filterType;
-      const matchesSearch = searchQuery === '' || 
+    if (!historyData) return []
+
+    return historyData.filter((item) => {
+      const matchesType = filterType === 'all' || item.changeType === filterType
+      const matchesSearch =
+        searchQuery === '' ||
         item.changeSummary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.editedBy?.fullName?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      return matchesType && matchesSearch;
-    });
-  }, [historyData, filterType, searchQuery]);
+        item.editedBy?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
+
+      return matchesType && matchesSearch
+    })
+  }, [historyData, filterType, searchQuery])
 
   // Toggle version expansion
   const toggleExpansion = (versionId) => {
-    const newExpanded = new Set(expandedVersions);
+    const newExpanded = new Set(expandedVersions)
     if (newExpanded.has(versionId)) {
-      newExpanded.delete(versionId);
+      newExpanded.delete(versionId)
     } else {
-      newExpanded.add(versionId);
+      newExpanded.add(versionId)
     }
-    setExpandedVersions(newExpanded);
-  };
+    setExpandedVersions(newExpanded)
+  }
 
   // Toggle version selection for comparison
   const toggleVersionSelection = (versionId) => {
-    const newSelected = selectedVersions.includes(versionId) 
-      ? selectedVersions.filter(id => id !== versionId)
-      : [...selectedVersions, versionId].slice(-2); // Limit to 2 versions
-    setSelectedVersions(newSelected);
-  };
+    const newSelected = selectedVersions.includes(versionId)
+      ? selectedVersions.filter((id) => id !== versionId)
+      : [...selectedVersions, versionId].slice(-2) // Limit to 2 versions
+    setSelectedVersions(newSelected)
+  }
 
   // Helper functions
   const formatDate = (dateString) => {
@@ -248,80 +252,92 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+      minute: '2-digit',
+    })
+  }
 
   const getTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
-    
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${Math.floor(diffInHours)} hours ago`;
-    if (diffInHours < 24 * 7) return `${Math.floor(diffInHours / 24)} days ago`;
-    if (diffInHours < 24 * 30) return `${Math.floor(diffInHours / (24 * 7))} weeks ago`;
-    return `${Math.floor(diffInHours / (24 * 30))} months ago`;
-  };
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInHours = (now - date) / (1000 * 60 * 60)
+
+    if (diffInHours < 1) return 'Just now'
+    if (diffInHours < 24) return `${Math.floor(diffInHours)} hours ago`
+    if (diffInHours < 24 * 7) return `${Math.floor(diffInHours / 24)} days ago`
+    if (diffInHours < 24 * 30) return `${Math.floor(diffInHours / (24 * 7))} weeks ago`
+    return `${Math.floor(diffInHours / (24 * 30))} months ago`
+  }
 
   // Loading state
   if (isLoading && !currentRateCard) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        background: 'linear-gradient(to bottom right, var(--color-primary-50), var(--color-secondary-50))',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          background:
+            'linear-gradient(to bottom right, var(--color-primary-50), var(--color-secondary-50))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            width: '4rem', 
-            height: '4rem', 
-            margin: '0 auto var(--space-4)',
-            borderRadius: '50%',
-            background: 'var(--gradient-primary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
+          <div
+            style={{
+              width: '4rem',
+              height: '4rem',
+              margin: '0 auto var(--space-4)',
+              borderRadius: '50%',
+              background: 'var(--gradient-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <Loader2 size={24} style={{ color: 'white' }} className="animate-spin" />
           </div>
           <p style={{ color: 'var(--color-text-secondary)' }}>Loading version history...</p>
         </div>
       </div>
-    );
+    )
   }
 
   // Error state
   if (error && !currentRateCard) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        background: 'linear-gradient(to bottom right, var(--color-primary-50), var(--color-secondary-50))',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          background:
+            'linear-gradient(to bottom right, var(--color-primary-50), var(--color-secondary-50))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <div style={{ textAlign: 'center', maxWidth: '28rem' }}>
-          <div style={{ 
-            width: '4rem', 
-            height: '4rem', 
-            margin: '0 auto var(--space-4)',
-            borderRadius: '50%',
-            backgroundColor: 'var(--color-error-light)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
+          <div
+            style={{
+              width: '4rem',
+              height: '4rem',
+              margin: '0 auto var(--space-4)',
+              borderRadius: '50%',
+              backgroundColor: 'var(--color-error-light)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <AlertTriangle size={24} style={{ color: 'var(--color-error)' }} />
           </div>
-          <h3 style={{ 
-            fontSize: 'var(--text-xl)', 
-            fontWeight: 'var(--font-semibold)', 
-            color: 'var(--color-text)', 
-            marginBottom: 'var(--space-2)' 
-          }}>
+          <h3
+            style={{
+              fontSize: 'var(--text-xl)',
+              fontWeight: 'var(--font-semibold)',
+              color: 'var(--color-text)',
+              marginBottom: 'var(--space-2)',
+            }}
+          >
             Failed to Load History
           </h3>
           <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-6)' }}>
@@ -336,37 +352,45 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
               borderRadius: 'var(--radius-lg)',
               fontWeight: 'var(--font-semibold)',
               border: 'none',
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
             Go Back
           </button>
         </div>
       </div>
-    );
+    )
   }
 
-  if (!currentRateCard) return null;
+  if (!currentRateCard) return null
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(to bottom right, var(--color-primary-50), var(--color-secondary-50))'
-    }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background:
+          'linear-gradient(to bottom right, var(--color-primary-50), var(--color-secondary-50))',
+      }}
+    >
       {/* Header */}
-      <div style={{ 
-        backgroundColor: 'white', 
-        borderBottom: '1px solid var(--color-border)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 10
-      }}>
+      <div
+        style={{
+          backgroundColor: 'white',
+          borderBottom: '1px solid var(--color-border)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }}
+      >
         <div style={{ maxWidth: '80rem', margin: '0 auto', padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             {/* Left side */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
               <button
-                onClick={onBack || (() => onNavigate && onNavigate(`/dashboard/rate-cards/${rateCardId}/edit`))}
+                onClick={
+                  onBack ||
+                  (() => onNavigate && onNavigate(`/dashboard/rate-cards/${rateCardId}/edit`))
+                }
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -377,15 +401,15 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                   backgroundColor: 'white',
                   color: 'var(--color-text-secondary)',
                   cursor: 'pointer',
-                  transition: 'all var(--duration-200) ease'
+                  transition: 'all var(--duration-200) ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.borderColor = 'var(--color-primary-500)';
-                  e.target.style.color = 'var(--color-primary-600)';
+                  e.target.style.borderColor = 'var(--color-primary-500)'
+                  e.target.style.color = 'var(--color-primary-600)'
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.borderColor = 'var(--color-border)';
-                  e.target.style.color = 'var(--color-text-secondary)';
+                  e.target.style.borderColor = 'var(--color-border)'
+                  e.target.style.color = 'var(--color-text-secondary)'
                 }}
               >
                 <ArrowLeft size={16} />
@@ -393,19 +417,25 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
               </button>
 
               <div>
-                <h1 style={{ 
-                  fontSize: 'var(--text-2xl)', 
-                  fontWeight: 'var(--font-bold)', 
-                  color: 'var(--color-text)',
-                  marginBottom: 'var(--space-1)'
-                }}>
+                <h1
+                  style={{
+                    fontSize: 'var(--text-2xl)',
+                    fontWeight: 'var(--font-bold)',
+                    color: 'var(--color-text)',
+                    marginBottom: 'var(--space-1)',
+                  }}
+                >
                   Version History - {currentRateCard.title}
                 </h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                  <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
+                  <span
+                    style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}
+                  >
                     Current Version: v{currentRateCard.version?.current || 1}
                   </span>
-                  <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
+                  <span
+                    style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}
+                  >
                     {filteredHistory.length} changes tracked
                   </span>
                 </div>
@@ -427,16 +457,15 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                     backgroundColor: 'white',
                     color: 'var(--color-accent)',
                     cursor: 'pointer',
-                    transition: 'all var(--duration-200) ease'
+                    transition: 'all var(--duration-200) ease',
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = 'var(--color-accent-50)';
+                    e.target.style.backgroundColor = 'var(--color-accent-50)'
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'white';
+                    e.target.style.backgroundColor = 'white'
                   }}
                 >
-                  <Compare size={16} />
                   Compare Versions
                 </button>
               )}
@@ -455,7 +484,7 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                   fontWeight: 'var(--font-medium)',
                   border: 'none',
                   cursor: isLoadingHistory ? 'not-allowed' : 'pointer',
-                  opacity: isLoadingHistory ? 0.7 : 1
+                  opacity: isLoadingHistory ? 0.7 : 1,
                 }}
               >
                 <RefreshCw size={16} className={isLoadingHistory ? 'animate-spin' : ''} />
@@ -469,22 +498,26 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
       {/* Filters and Search */}
       <div style={{ padding: 'var(--space-6)' }}>
         <div style={{ maxWidth: '80rem', margin: '0 auto' }}>
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: 'var(--space-4)', 
-            alignItems: 'flex-start',
-            justifyContent: 'space-between'
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-4)',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+            }}
+          >
             {/* Search */}
             <div style={{ position: 'relative', flex: '1 1 0%', maxWidth: '28rem' }}>
-              <div style={{ 
-                position: 'absolute', 
-                left: 'var(--space-3)', 
-                top: '50%', 
-                transform: 'translateY(-50%)', 
-                color: 'var(--color-neutral-400)' 
-              }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 'var(--space-3)',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--color-neutral-400)',
+                }}
+              >
                 <Search size={20} />
               </div>
               <input
@@ -502,15 +535,15 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                   borderRadius: 'var(--radius-lg)',
                   backgroundColor: 'white',
                   fontSize: 'var(--text-base)',
-                  outline: 'none'
+                  outline: 'none',
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = 'var(--color-primary-500)';
-                  e.target.style.boxShadow = '0 0 0 2px var(--color-primary-200)';
+                  e.target.style.borderColor = 'var(--color-primary-500)'
+                  e.target.style.boxShadow = '0 0 0 2px var(--color-primary-200)'
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = 'var(--color-border)';
-                  e.target.style.boxShadow = 'none';
+                  e.target.style.borderColor = 'var(--color-border)'
+                  e.target.style.boxShadow = 'none'
                 }}
               />
               {searchQuery && (
@@ -524,7 +557,7 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: 'var(--color-neutral-400)'
+                    color: 'var(--color-neutral-400)',
                   }}
                 >
                   <X size={20} />
@@ -533,17 +566,24 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
             </div>
 
             {/* Change Type Filter */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-3)',
+                flexWrap: 'wrap',
+              }}
+            >
               <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
                 Filter by:
               </span>
               {Object.entries(changeTypes).map(([key, config]) => {
-                const Icon = config.icon;
-                const isActive = filterType === key;
-                const count = historyData.filter(item => item.changeType === key).length;
-                
-                if (count === 0 && key !== 'all') return null;
-                
+                const Icon = config.icon
+                const isActive = filterType === key
+                const count = historyData.filter((item) => item.changeType === key).length
+
+                if (count === 0 && key !== 'all') return null
+
                 return (
                   <button
                     key={key}
@@ -561,27 +601,29 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                       cursor: 'pointer',
                       transition: 'all var(--duration-200) ease',
                       fontSize: 'var(--text-sm)',
-                      fontWeight: isActive ? 'var(--font-medium)' : 'var(--font-normal)'
+                      fontWeight: isActive ? 'var(--font-medium)' : 'var(--font-normal)',
                     }}
                   >
                     {key !== 'all' && <Icon size={14} />}
                     {config.label}
                     {count > 0 && (
-                      <span style={{
-                        backgroundColor: isActive ? config.color : 'var(--color-neutral-200)',
-                        color: isActive ? 'white' : 'var(--color-text-secondary)',
-                        padding: 'var(--space-1) var(--space-2)',
-                        borderRadius: 'var(--radius-full)',
-                        fontSize: 'var(--text-xs)',
-                        fontWeight: 'var(--font-medium)',
-                        minWidth: '1.5rem',
-                        textAlign: 'center'
-                      }}>
+                      <span
+                        style={{
+                          backgroundColor: isActive ? config.color : 'var(--color-neutral-200)',
+                          color: isActive ? 'white' : 'var(--color-text-secondary)',
+                          padding: 'var(--space-1) var(--space-2)',
+                          borderRadius: 'var(--radius-full)',
+                          fontSize: 'var(--text-xs)',
+                          fontWeight: 'var(--font-medium)',
+                          minWidth: '1.5rem',
+                          textAlign: 'center',
+                        }}
+                      >
                         {count}
                       </span>
                     )}
                   </button>
-                );
+                )
               })}
             </div>
           </div>
@@ -591,20 +633,21 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
       {/* Main Content */}
       <div style={{ padding: '0 var(--space-6) var(--space-12)' }}>
         <div style={{ maxWidth: '80rem', margin: '0 auto' }}>
-          
           {/* Loading State */}
           {isLoadingHistory && (
             <div style={{ textAlign: 'center', padding: 'var(--space-16)' }}>
-              <div style={{ 
-                width: '3rem', 
-                height: '3rem', 
-                margin: '0 auto var(--space-4)',
-                borderRadius: '50%',
-                background: 'var(--gradient-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+              <div
+                style={{
+                  width: '3rem',
+                  height: '3rem',
+                  margin: '0 auto var(--space-4)',
+                  borderRadius: '50%',
+                  background: 'var(--gradient-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <Loader2 size={20} style={{ color: 'white' }} className="animate-spin" />
               </div>
               <p style={{ color: 'var(--color-text-secondary)' }}>Loading version history...</p>
@@ -613,20 +656,27 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
 
           {/* Error State */}
           {historyError && !historyData.length && (
-            <div style={{
-              backgroundColor: 'var(--color-error-light)',
-              border: '1px solid var(--color-error)',
-              borderRadius: 'var(--radius-lg)',
-              padding: 'var(--space-6)',
-              textAlign: 'center'
-            }}>
-              <AlertTriangle size={24} style={{ color: 'var(--color-error)', margin: '0 auto var(--space-4)' }} />
-              <h3 style={{ 
-                fontSize: 'var(--text-lg)', 
-                fontWeight: 'var(--font-semibold)', 
-                color: 'var(--color-error-dark)', 
-                marginBottom: 'var(--space-2)' 
-              }}>
+            <div
+              style={{
+                backgroundColor: 'var(--color-error-light)',
+                border: '1px solid var(--color-error)',
+                borderRadius: 'var(--radius-lg)',
+                padding: 'var(--space-6)',
+                textAlign: 'center',
+              }}
+            >
+              <AlertTriangle
+                size={24}
+                style={{ color: 'var(--color-error)', margin: '0 auto var(--space-4)' }}
+              />
+              <h3
+                style={{
+                  fontSize: 'var(--text-lg)',
+                  fontWeight: 'var(--font-semibold)',
+                  color: 'var(--color-error-dark)',
+                  marginBottom: 'var(--space-2)',
+                }}
+              >
                 Failed to Load History
               </h3>
               <p style={{ color: 'var(--color-error-dark)' }}>{historyError}</p>
@@ -636,31 +686,36 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
           {/* Empty State */}
           {!isLoadingHistory && filteredHistory.length === 0 && (
             <div style={{ textAlign: 'center', padding: 'var(--space-16)' }}>
-              <div style={{
-                width: '4rem',
-                height: '4rem',
-                margin: '0 auto var(--space-4)',
-                borderRadius: '50%',
-                backgroundColor: 'var(--color-neutral-100)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+              <div
+                style={{
+                  width: '4rem',
+                  height: '4rem',
+                  margin: '0 auto var(--space-4)',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--color-neutral-100)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <History size={24} style={{ color: 'var(--color-neutral-500)' }} />
               </div>
-              <h3 style={{
-                fontSize: 'var(--text-xl)',
-                fontWeight: 'var(--font-semibold)',
-                color: 'var(--color-text)',
-                marginBottom: 'var(--space-2)'
-              }}>
-                {searchQuery || filterType !== 'all' ? 'No matching history found' : 'No version history yet'}
+              <h3
+                style={{
+                  fontSize: 'var(--text-xl)',
+                  fontWeight: 'var(--font-semibold)',
+                  color: 'var(--color-text)',
+                  marginBottom: 'var(--space-2)',
+                }}
+              >
+                {searchQuery || filterType !== 'all'
+                  ? 'No matching history found'
+                  : 'No version history yet'}
               </h3>
               <p style={{ color: 'var(--color-text-secondary)' }}>
-                {searchQuery || filterType !== 'all' 
+                {searchQuery || filterType !== 'all'
                   ? 'Try adjusting your search or filter criteria'
-                  : 'Changes to this rate card will appear here'
-                }
+                  : 'Changes to this rate card will appear here'}
               </p>
             </div>
           )}
@@ -669,117 +724,181 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
           {filteredHistory.length > 0 && (
             <div style={{ position: 'relative' }}>
               {/* Timeline line */}
-              <div style={{
-                position: 'absolute',
-                left: '2rem',
-                top: '2rem',
-                bottom: '2rem',
-                width: '2px',
-                backgroundColor: 'var(--color-border)',
-                zIndex: 1
-              }} />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '2rem',
+                  top: '2rem',
+                  bottom: '2rem',
+                  width: '2px',
+                  backgroundColor: 'var(--color-border)',
+                  zIndex: 1,
+                }}
+              />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                 {filteredHistory.map((item, index) => {
-                  const changeConfig = changeTypes[item.changeType] || changeTypes.other;
-                  const ChangeIcon = changeConfig.icon;
-                  const isExpanded = expandedVersions.has(item._id);
-                  const isSelected = selectedVersions.includes(item._id);
-                  const isRestoring = isRestoring === item._id;
-                  
+                  const changeConfig = changeTypes[item.changeType] || changeTypes.other
+                  const ChangeIcon = changeConfig.icon
+                  const isExpanded = expandedVersions.has(item._id)
+                  const isSelected = selectedVersions.includes(item._id)
+                  const isRestoring = isRestoring === item._id
+
                   return (
                     <div key={item._id} style={{ position: 'relative', zIndex: 2 }}>
-                      <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: 'var(--radius-xl)',
-                        boxShadow: isSelected ? 'var(--shadow-lg)' : 'var(--shadow-sm)',
-                        border: isSelected ? '2px solid var(--color-primary-500)' : '1px solid var(--color-border)',
-                        padding: 'var(--space-6)',
-                        marginLeft: '4rem',
-                        transition: 'all var(--duration-200) ease'
-                      }}>
-                        
+                      <div
+                        style={{
+                          backgroundColor: 'white',
+                          borderRadius: 'var(--radius-xl)',
+                          boxShadow: isSelected ? 'var(--shadow-lg)' : 'var(--shadow-sm)',
+                          border: isSelected
+                            ? '2px solid var(--color-primary-500)'
+                            : '1px solid var(--color-border)',
+                          padding: 'var(--space-6)',
+                          marginLeft: '4rem',
+                          transition: 'all var(--duration-200) ease',
+                        }}
+                      >
                         {/* Timeline marker */}
-                        <div style={{
-                          position: 'absolute',
-                          left: '-3.25rem',
-                          top: '1.5rem',
-                          width: '3rem',
-                          height: '3rem',
-                          backgroundColor: changeConfig.bgColor,
-                          border: `2px solid ${changeConfig.color}`,
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: '-3.25rem',
+                            top: '1.5rem',
+                            width: '3rem',
+                            height: '3rem',
+                            backgroundColor: changeConfig.bgColor,
+                            border: `2px solid ${changeConfig.color}`,
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
                           <ChangeIcon size={16} style={{ color: changeConfig.color }} />
                         </div>
 
                         {/* Header */}
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            justifyContent: 'space-between',
+                            marginBottom: 'var(--space-4)',
+                          }}
+                        >
                           <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
-                              <h3 style={{ 
-                                fontSize: 'var(--text-lg)', 
-                                fontWeight: 'var(--font-semibold)', 
-                                color: 'var(--color-text)' 
-                              }}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 'var(--space-3)',
+                                marginBottom: 'var(--space-2)',
+                              }}
+                            >
+                              <h3
+                                style={{
+                                  fontSize: 'var(--text-lg)',
+                                  fontWeight: 'var(--font-semibold)',
+                                  color: 'var(--color-text)',
+                                }}
+                              >
                                 Version {item.version}
                               </h3>
-                              <span style={{
-                                padding: 'var(--space-1) var(--space-3)',
-                                backgroundColor: changeConfig.bgColor,
-                                color: changeConfig.color,
-                                borderRadius: 'var(--radius-full)',
-                                fontSize: 'var(--text-xs)',
-                                fontWeight: 'var(--font-medium)'
-                              }}>
+                              <span
+                                style={{
+                                  padding: 'var(--space-1) var(--space-3)',
+                                  backgroundColor: changeConfig.bgColor,
+                                  color: changeConfig.color,
+                                  borderRadius: 'var(--radius-full)',
+                                  fontSize: 'var(--text-xs)',
+                                  fontWeight: 'var(--font-medium)',
+                                }}
+                              >
                                 {changeConfig.label}
                               </span>
                               {index === 0 && (
-                                <span style={{
-                                  padding: 'var(--space-1) var(--space-3)',
-                                  backgroundColor: 'var(--color-success-light)',
-                                  color: 'var(--color-success-dark)',
-                                  borderRadius: 'var(--radius-full)',
-                                  fontSize: 'var(--text-xs)',
-                                  fontWeight: 'var(--font-medium)'
-                                }}>
+                                <span
+                                  style={{
+                                    padding: 'var(--space-1) var(--space-3)',
+                                    backgroundColor: 'var(--color-success-light)',
+                                    color: 'var(--color-success-dark)',
+                                    borderRadius: 'var(--radius-full)',
+                                    fontSize: 'var(--text-xs)',
+                                    fontWeight: 'var(--font-medium)',
+                                  }}
+                                >
                                   Current
                                 </span>
                               )}
                             </div>
-                            
-                            <p style={{ 
-                              fontSize: 'var(--text-base)', 
-                              color: 'var(--color-text)',
-                              marginBottom: 'var(--space-3)'
-                            }}>
+
+                            <p
+                              style={{
+                                fontSize: 'var(--text-base)',
+                                color: 'var(--color-text)',
+                                marginBottom: 'var(--space-3)',
+                              }}
+                            >
                               {item.changeSummary}
                             </p>
-                            
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 'var(--space-4)',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 'var(--space-2)',
+                                }}
+                              >
                                 <User size={14} style={{ color: 'var(--color-text-secondary)' }} />
-                                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+                                <span
+                                  style={{
+                                    fontSize: 'var(--text-sm)',
+                                    color: 'var(--color-text-secondary)',
+                                  }}
+                                >
                                   {item.editedBy?.fullName || 'Unknown User'}
                                 </span>
                               </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 'var(--space-2)',
+                                }}
+                              >
                                 <Clock size={14} style={{ color: 'var(--color-text-secondary)' }} />
-                                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+                                <span
+                                  style={{
+                                    fontSize: 'var(--text-sm)',
+                                    color: 'var(--color-text-secondary)',
+                                  }}
+                                >
                                   {getTimeAgo(item.createdAt)}
                                 </span>
                               </div>
-                              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-light)' }}>
+                              <span
+                                style={{
+                                  fontSize: 'var(--text-sm)',
+                                  color: 'var(--color-text-light)',
+                                }}
+                              >
                                 {formatDate(item.createdAt)}
                               </span>
                             </div>
                           </div>
 
                           {/* Actions */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                          <div
+                            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
+                          >
                             <input
                               type="checkbox"
                               checked={isSelected}
@@ -787,11 +906,11 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                               style={{
                                 width: '1rem',
                                 height: '1rem',
-                                cursor: 'pointer'
+                                cursor: 'pointer',
                               }}
                               title="Select for comparison"
                             />
-                            
+
                             <button
                               onClick={() => toggleExpansion(item._id)}
                               style={{
@@ -800,7 +919,7 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                                 borderRadius: 'var(--radius-base)',
                                 backgroundColor: 'white',
                                 color: 'var(--color-text-secondary)',
-                                cursor: 'pointer'
+                                cursor: 'pointer',
                               }}
                               title={isExpanded ? 'Hide details' : 'Show details'}
                             >
@@ -823,7 +942,7 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                                   cursor: isRestoring ? 'not-allowed' : 'pointer',
                                   opacity: isRestoring ? 0.7 : 1,
                                   fontSize: 'var(--text-sm)',
-                                  fontWeight: 'var(--font-medium)'
+                                  fontWeight: 'var(--font-medium)',
                                 }}
                                 title="Restore to this version"
                               >
@@ -840,85 +959,123 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
 
                         {/* Expanded Details */}
                         {isExpanded && item.snapshot && (
-                          <div style={{
-                            borderTop: '1px solid var(--color-border)',
-                            paddingTop: 'var(--space-4)',
-                            marginTop: 'var(--space-4)'
-                          }}>
-                            <h4 style={{ 
-                              fontSize: 'var(--text-base)', 
-                              fontWeight: 'var(--font-semibold)', 
-                              color: 'var(--color-text)',
-                              marginBottom: 'var(--space-4)'
-                            }}>
+                          <div
+                            style={{
+                              borderTop: '1px solid var(--color-border)',
+                              paddingTop: 'var(--space-4)',
+                              marginTop: 'var(--space-4)',
+                            }}
+                          >
+                            <h4
+                              style={{
+                                fontSize: 'var(--text-base)',
+                                fontWeight: 'var(--font-semibold)',
+                                color: 'var(--color-text)',
+                                marginBottom: 'var(--space-4)',
+                              }}
+                            >
                               Snapshot Details
                             </h4>
-                            
-                            <div style={{ 
-                              display: 'grid', 
-                              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                              gap: 'var(--space-4)' 
-                            }}>
+
+                            <div
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                gap: 'var(--space-4)',
+                              }}
+                            >
                               {item.snapshot.metrics && (
                                 <div>
-                                  <h5 style={{ 
-                                    fontSize: 'var(--text-sm)', 
-                                    fontWeight: 'var(--font-medium)', 
-                                    color: 'var(--color-text)',
-                                    marginBottom: 'var(--space-2)'
-                                  }}>
+                                  <h5
+                                    style={{
+                                      fontSize: 'var(--text-sm)',
+                                      fontWeight: 'var(--font-medium)',
+                                      color: 'var(--color-text)',
+                                      marginBottom: 'var(--space-2)',
+                                    }}
+                                  >
                                     Platforms
                                   </h5>
-                                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-                                    {item.snapshot.metrics.platforms?.length || 0} platforms configured
+                                  <p
+                                    style={{
+                                      fontSize: 'var(--text-sm)',
+                                      color: 'var(--color-text-secondary)',
+                                    }}
+                                  >
+                                    {item.snapshot.metrics.platforms?.length || 0} platforms
+                                    configured
                                   </p>
                                 </div>
                               )}
-                              
+
                               {item.snapshot.pricing && (
                                 <div>
-                                  <h5 style={{ 
-                                    fontSize: 'var(--text-sm)', 
-                                    fontWeight: 'var(--font-medium)', 
-                                    color: 'var(--color-text)',
-                                    marginBottom: 'var(--space-2)'
-                                  }}>
+                                  <h5
+                                    style={{
+                                      fontSize: 'var(--text-sm)',
+                                      fontWeight: 'var(--font-medium)',
+                                      color: 'var(--color-text)',
+                                      marginBottom: 'var(--space-2)',
+                                    }}
+                                  >
                                     Deliverables
                                   </h5>
-                                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-                                    {item.snapshot.pricing.deliverables?.reduce((acc, platform) => 
-                                      acc + (platform.rates?.length || 0), 0) || 0} pricing items
+                                  <p
+                                    style={{
+                                      fontSize: 'var(--text-sm)',
+                                      color: 'var(--color-text-secondary)',
+                                    }}
+                                  >
+                                    {item.snapshot.pricing.deliverables?.reduce(
+                                      (acc, platform) => acc + (platform.rates?.length || 0),
+                                      0
+                                    ) || 0}{' '}
+                                    pricing items
                                   </p>
                                 </div>
                               )}
-                              
+
                               {item.snapshot.packages && (
                                 <div>
-                                  <h5 style={{ 
-                                    fontSize: 'var(--text-sm)', 
-                                    fontWeight: 'var(--font-medium)', 
-                                    color: 'var(--color-text)',
-                                    marginBottom: 'var(--space-2)'
-                                  }}>
+                                  <h5
+                                    style={{
+                                      fontSize: 'var(--text-sm)',
+                                      fontWeight: 'var(--font-medium)',
+                                      color: 'var(--color-text)',
+                                      marginBottom: 'var(--space-2)',
+                                    }}
+                                  >
                                     Packages
                                   </h5>
-                                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+                                  <p
+                                    style={{
+                                      fontSize: 'var(--text-sm)',
+                                      color: 'var(--color-text-secondary)',
+                                    }}
+                                  >
                                     {item.snapshot.packages?.length || 0} package deals
                                   </p>
                                 </div>
                               )}
-                              
+
                               {item.snapshot.professionalDetails && (
                                 <div>
-                                  <h5 style={{ 
-                                    fontSize: 'var(--text-sm)', 
-                                    fontWeight: 'var(--font-medium)', 
-                                    color: 'var(--color-text)',
-                                    marginBottom: 'var(--space-2)'
-                                  }}>
+                                  <h5
+                                    style={{
+                                      fontSize: 'var(--text-sm)',
+                                      fontWeight: 'var(--font-medium)',
+                                      color: 'var(--color-text)',
+                                      marginBottom: 'var(--space-2)',
+                                    }}
+                                  >
                                     Terms
                                   </h5>
-                                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+                                  <p
+                                    style={{
+                                      fontSize: 'var(--text-sm)',
+                                      color: 'var(--color-text-secondary)',
+                                    }}
+                                  >
                                     Professional terms configured
                                   </p>
                                 </div>
@@ -928,7 +1085,7 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                         )}
                       </div>
                     </div>
-                  );
+                  )
                 })}
               </div>
             </div>
@@ -936,22 +1093,23 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
 
           {/* Comparison Instructions */}
           {selectedVersions.length > 0 && (
-            <div style={{
-              position: 'fixed',
-              bottom: 'var(--space-6)',
-              right: 'var(--space-6)',
-              backgroundColor: 'var(--color-primary-600)',
-              color: 'white',
-              padding: 'var(--space-4) var(--space-6)',
-              borderRadius: 'var(--radius-lg)',
-              boxShadow: 'var(--shadow-xl)',
-              zIndex: 50
-            }}>
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 'var(--space-6)',
+                right: 'var(--space-6)',
+                backgroundColor: 'var(--color-primary-600)',
+                color: 'white',
+                padding: 'var(--space-4) var(--space-6)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--shadow-xl)',
+                zIndex: 50,
+              }}
+            >
               <p style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-2)' }}>
-                {selectedVersions.length === 1 
+                {selectedVersions.length === 1
                   ? 'Select one more version to compare'
-                  : `${selectedVersions.length} versions selected`
-                }
+                  : `${selectedVersions.length} versions selected`}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                 <button
@@ -963,7 +1121,7 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                     backgroundColor: 'transparent',
                     color: 'white',
                     cursor: 'pointer',
-                    fontSize: 'var(--text-sm)'
+                    fontSize: 'var(--text-sm)',
                   }}
                 >
                   Clear Selection
@@ -979,7 +1137,7 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
                       color: 'var(--color-primary-600)',
                       cursor: 'pointer',
                       fontSize: 'var(--text-sm)',
-                      fontWeight: 'var(--font-medium)'
+                      fontWeight: 'var(--font-medium)',
                     }}
                   >
                     Compare Now
@@ -991,7 +1149,7 @@ const RateCardHistory = ({ rateCardId, onNavigate, onBack }) => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default RateCardHistory;
+export default RateCardHistory
