@@ -229,11 +229,11 @@ const MainLayout = () => {
     },
 
     logoIcon: {
-      width: '32px',
-      height: '32px',
-      background:
-        'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
-      borderRadius: '10px',
+      width: '30px',
+      height: '30px',
+      // background:
+      //   'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%)',
+      // borderRadius: '10px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -487,8 +487,20 @@ const MainLayout = () => {
         {/* Sidebar Header */}
         <div style={styles.sidebarHeader}>
           <Link to="/dashboard" style={styles.logo}>
-            <div style={styles.logoIcon}>C</div>
-            {!sidebar.isCollapsed && <span style={styles.logoText}>CreatorsMantra</span>}
+            {sidebar.isCollapsed ? (
+              <div style={styles.logoIcon}>
+                {/* C */}
+                <img src="/cm_icon.png" />
+              </div>
+            ) : (
+              <div
+                style={{
+                  width: '80%',
+                }}
+              >
+                <img src="/logo.png" />
+              </div>
+            )}
           </Link>
 
           <button
